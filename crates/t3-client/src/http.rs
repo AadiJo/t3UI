@@ -425,18 +425,21 @@ fn map_reqwest_error(error: reqwest::Error) -> HttpError {
     } else if error.is_decode() {
         HttpError::Decode(error.to_string())
     } else {
-        HttpError::Network(error_chain(&error))
+        // Upstream's wording (`rpc/http.ts:156`), with the root cause rather than reqwest's
+        // generic "error sending request" chain.
+        let url = error.url().map(Url::as_str).unwrap_or("(unknown)").to_owned();
+        HttpError::Network(format!(
+            "Failed to fetch remote environment endpoint {url} ({}).",
+            root_cause(&error)
+        ))
     }
 }
 
-/// reqwest's top-level message is generic ("error sending request"); include the causes.
-fn error_chain(error: &dyn std::error::Error) -> String {
-    let mut message = error.to_string();
-    let mut source = error.source();
-    while let Some(cause) = source {
-        message.push_str(": ");
-        message.push_str(&cause.to_string());
-        source = cause.source();
+/// The innermost error message, e.g. "Connection refused (os error 111)".
+fn root_cause(error: &dyn std::error::Error) -> String {
+    let mut current = error;
+    while let Some(source) = current.source() {
+        current = source;
     }
-    message
+    current.to_string()
 }

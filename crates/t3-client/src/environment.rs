@@ -85,6 +85,15 @@ pub struct EnvironmentOptions {
 }
 
 impl EnvironmentOptions {
+    /// Options for a catalog entry (id, label, enabled flag) with its endpoint, e.g. from
+    /// [`saved_bearer_endpoint`](crate::auth::saved_bearer_endpoint).
+    pub fn from_saved(saved: &crate::store::SavedEnvironment, endpoint: Arc<dyn Endpoint>) -> Self {
+        EnvironmentOptions {
+            enabled: saved.enabled && saved.unsupported_reason.is_none(),
+            ..Self::new(saved.environment_id.clone(), saved.label.clone(), endpoint)
+        }
+    }
+
     pub fn new(id: EnvironmentId, label: impl Into<String>, endpoint: Arc<dyn Endpoint>) -> Self {
         EnvironmentOptions {
             id,
@@ -232,6 +241,12 @@ impl Environment {
     /// Projects and active threads. Survives reconnects (resumes from its cursor).
     pub fn shell(&self) -> watch::Receiver<Arc<ShellState>> {
         self.inner.shared.shell.subscribe()
+    }
+
+    /// Session changes: `Some` on every new connection, `None` when it drops. App-owned
+    /// streams (terminal attach, VCS status) resubscribe on each new `Some`.
+    pub fn sessions(&self) -> watch::Receiver<Option<Session>> {
+        self.inner.shared.session.subscribe()
     }
 
     /// The live session, if connected.

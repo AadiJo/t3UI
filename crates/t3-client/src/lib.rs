@@ -23,7 +23,9 @@ pub mod shell;
 pub mod store;
 pub mod thread;
 
-pub use auth::{BearerEndpoint, ClientInfo, Endpoint, PairedEnvironment, pair};
+pub use auth::{
+    BearerEndpoint, ClientInfo, Endpoint, PairedEnvironment, pair, saved_bearer_endpoint,
+};
 pub use connection::{ConnectStage, ConnectionFailure, ConnectionStatus};
 pub use environment::{Environment, EnvironmentOptions, Session, ThreadHandle};
 pub use http::{EnvironmentHttp, HttpAuth, HttpError};

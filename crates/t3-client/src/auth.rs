@@ -16,7 +16,7 @@ use crate::{
     connection::{BlockedReason, ConnectionFailure},
     http::{BearerAuth, EnvironmentHttp, HttpAuth},
     pairing::PairingTarget,
-    store::{KnownTarget, SavedEnvironment, SavedTarget},
+    store::{KnownTarget, SavedEnvironment, SavedTarget, SecretStore, StoreError},
 };
 
 /// How this client describes itself to servers (pairing labels, WS query params).
@@ -230,6 +230,30 @@ pub trait Endpoint: Send + Sync + 'static {
 
     /// Base URL shown in the UI (`None` for relay environments).
     fn display_url(&self) -> Option<Url>;
+}
+
+/// The endpoint for a saved bearer environment, with its token from `secrets`. `Ok(None)` for
+/// other target kinds (T3 Connect builds relay endpoints) or when the token is missing (the
+/// user has to pair again).
+pub fn saved_bearer_endpoint(
+    saved: &SavedEnvironment,
+    secrets: &dyn SecretStore,
+) -> Result<Option<Arc<dyn Endpoint>>, StoreError> {
+    let SavedTarget::Known(KnownTarget::Bearer {
+        connection_id,
+        http_base_url,
+        ws_base_url,
+    }) = &saved.target
+    else {
+        return Ok(None);
+    };
+    Ok(secrets.get(connection_id)?.map(|token| {
+        Arc::new(BearerEndpoint::new(
+            http_base_url.clone(),
+            ws_base_url.clone(),
+            token,
+        )) as Arc<dyn Endpoint>
+    }))
 }
 
 /// A directly paired environment authenticated with a bearer token.
