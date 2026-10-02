@@ -7115,6 +7115,7 @@ dependencies = [
  "t3-diff",
  "t3-highlight",
  "t3-logic",
+ "t3-markdown",
  "t3-protocol",
  "t3-ui",
  "tokio",

@@ -92,6 +92,22 @@ pub fn format_short_timestamp(iso: &str, format: TimestampFormat) -> String {
     local_time(iso).map_or_else(String::new, |time| clock(&time, format))
 }
 
+/// Timestamp with seconds (`formatTimestamp`), in local time: `4:29:07 AM` / `04:29:07`. The plan
+/// sidebar header uses it.
+pub fn format_timestamp(iso: &str, format: TimestampFormat) -> String {
+    local_time(iso).map_or_else(String::new, |time| {
+        let minutes = clock(&time, format);
+        // Insert `:SS` after the minutes, before any ` AM`/` PM`.
+        let split = minutes.find(' ').unwrap_or(minutes.len());
+        format!(
+            "{}:{:02}{}",
+            &minutes[..split],
+            time.second(),
+            &minutes[split..]
+        )
+    })
+}
+
 /// Timestamp tooltip (`formatChatTimestampTooltip`): `4:29 AM, 2nd October 2026`.
 pub fn format_timestamp_tooltip(iso: &str, format: TimestampFormat) -> String {
     let Some(time) = local_time(iso) else {
@@ -255,6 +271,26 @@ mod tests {
         assert_eq!(
             format_workspace_relative_path("src/a.ts:7", None),
             "src/a.ts:7"
+        );
+    }
+
+    /// `format_timestamp` adds `:SS` to the short clock: after the minutes and before the
+    /// meridiem in 12-hour formats, at the end in 24-hour. Checked against the short form so
+    /// the test holds in any local time zone.
+    #[test]
+    fn timestamp_with_seconds_extends_the_short_clock() {
+        let iso = "2026-10-02T04:30:17.000Z";
+        for format in [TimestampFormat::TwelveHour, TimestampFormat::TwentyFourHour] {
+            let short = format_short_timestamp(iso, format);
+            let (clock, meridiem) = short.split_at(short.find(' ').unwrap_or(short.len()));
+            assert_eq!(
+                format_timestamp(iso, format),
+                format!("{clock}:17{meridiem}")
+            );
+        }
+        assert_eq!(
+            format_timestamp("not a date", TimestampFormat::TwelveHour),
+            ""
         );
     }
 }

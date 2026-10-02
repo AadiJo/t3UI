@@ -31,8 +31,8 @@ use t3_protocol::{
 };
 
 pub use format::{
-    elapsed_millis, format_duration, format_short_timestamp, format_timestamp_tooltip,
-    format_working_timer, format_workspace_relative_path,
+    elapsed_millis, format_duration, format_short_timestamp, format_timestamp,
+    format_timestamp_tooltip, format_working_timer, format_workspace_relative_path,
 };
 pub use rows::{
     EntryKind, MessageRow, RowKind, RowsDiff, RowsInput, TimelineEntry, TimelineRow, derive_rows,
