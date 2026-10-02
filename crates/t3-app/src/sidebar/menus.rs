@@ -12,8 +12,16 @@ use gpui_kit::{
         native_menu::NativeMenu,
     },
 };
+use t3_logic::paths::display_basename;
 use t3_logic::{ProjectRef, ThreadRef};
-use t3_protocol::orchestration::OrchestrationThreadShell;
+use t3_protocol::{
+    CommandId,
+    commands::ClientCommand,
+    methods::{TerminalClose, VcsRemoveWorktree},
+    orchestration::{OrchestrationThreadShell, SessionStatus},
+    terminal::TerminalCloseInput,
+    vcs::VcsRemoveWorktreeInput,
+};
 use t3_ui::IconName;
 
 use super::Sidebar;
@@ -77,6 +85,13 @@ pub struct ProjectMenuAction {
 #[action(namespace = sidebar, no_json)]
 pub struct NewThreadInMember {
     pub project: ProjectRef,
+}
+
+/// A worktree the deleted thread was the last one to use.
+struct OrphanedWorktree {
+    path: String,
+    /// The project's checkout, where `git worktree remove` runs.
+    project_root: String,
 }
 
 /// Inline rename state for one thread row.
@@ -436,18 +451,29 @@ impl Sidebar {
         };
         let confirmed = confirm_first.then(|| confirm(&message, window, cx));
         let single = threads.len() == 1;
-        cx.spawn(async move |this, cx| {
+        let batch = threads.clone();
+        cx.spawn_in(window, async move |this, cx| {
             if let Some(confirmed) = confirmed
                 && !confirmed.await
             {
                 return;
             }
             for thread in threads {
-                let Ok(task) = this.update(cx, |this, cx| this.dispatch_delete(&thread, cx)) else {
+                // "Delete the worktree too?" when no surviving thread shares its worktree.
+                let Ok(orphan) = this.update_in(cx, |this, window, cx| {
+                    this.orphaned_worktree(&thread, &batch, window, cx)
+                }) else {
                     return;
                 };
-                let Some(task) = task else { continue };
-                if let Err(error) = task.await {
+                let remove_worktree = match orphan {
+                    Some((worktree, question)) => question.await.then_some(worktree),
+                    None => None,
+                };
+                let Ok(Some(steps)) = this.update(cx, |this, cx| this.dispatch_delete(&thread, cx))
+                else {
+                    continue;
+                };
+                if let Err(error) = steps.await {
                     this.update(cx, |_, cx| {
                         let title = if single {
                             "Failed to delete thread"
@@ -464,11 +490,106 @@ impl Sidebar {
                 }
                 this.update(cx, |this, cx| this.after_delete(&thread, cx))
                     .ok();
+                if let Some(worktree) = remove_worktree {
+                    let Ok(Some(removal)) =
+                        this.update(cx, |this, cx| this.remove_worktree(&thread, &worktree, cx))
+                    else {
+                        continue;
+                    };
+                    if let Err(message) = removal.await {
+                        this.update(cx, |_, cx| {
+                            toast::show(
+                                Toast::error("Thread deleted, but worktree removal failed")
+                                    .description(format!(
+                                        "Could not remove {}. {message}",
+                                        display_basename(&worktree.path)
+                                    ))
+                                    .stacked(),
+                                cx,
+                            );
+                        })
+                        .ok();
+                    }
+                }
             }
         })
         .detach();
     }
 
+    /// The thread's worktree when no other active thread in its environment (outside `batch`)
+    /// uses it, with the confirmation asking whether to delete it too.
+    fn orphaned_worktree(
+        &self,
+        thread: &ThreadRef,
+        batch: &[ThreadRef],
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Option<(OrphanedWorktree, impl Future<Output = bool> + use<>)> {
+        let environment = self
+            .app_state
+            .read(cx)
+            .environment(&thread.environment_id, cx)?;
+        let environment = environment.read(cx);
+        let shell = environment.thread(&thread.thread_id)?;
+        let path = shell
+            .worktree_path
+            .as_deref()
+            .map(str::trim)
+            .filter(|path| !path.is_empty())?;
+        let shared = environment.threads().iter().any(|other| {
+            other.id != shell.id
+                && !batch.iter().any(|deleted| {
+                    deleted.environment_id == thread.environment_id && deleted.thread_id == other.id
+                })
+                && other.worktree_path.as_deref().map(str::trim) == Some(path)
+        });
+        if shared {
+            return None;
+        }
+        let project_root = environment
+            .project(&shell.project_id)?
+            .workspace_root
+            .clone();
+        let worktree = OrphanedWorktree {
+            path: path.to_owned(),
+            project_root,
+        };
+        let question = format!(
+            "This thread is the only one linked to this worktree:\n{}\n\nDelete the worktree too?",
+            display_basename(path)
+        );
+        Some((worktree, confirm(&question, window, cx)))
+    }
+
+    /// `vcs.removeWorktree` with force, from the project's checkout.
+    fn remove_worktree(
+        &self,
+        thread: &ThreadRef,
+        worktree: &OrphanedWorktree,
+        cx: &App,
+    ) -> Option<gpui_kit::Task<Result<(), String>>> {
+        let client = self
+            .app_state
+            .read(cx)
+            .environment(&thread.environment_id, cx)?
+            .read(cx)
+            .client()?
+            .clone();
+        let input = VcsRemoveWorktreeInput {
+            cwd: worktree.project_root.clone(),
+            path: worktree.path.clone(),
+            force: Some(true),
+        };
+        Some(cx.background_spawn(async move {
+            client
+                .request::<VcsRemoveWorktree>(&input)
+                .await
+                .map_err(|error| error.to_string())
+        }))
+    }
+
+    /// Stops a live session, closes the thread's terminals (deleting their history), then
+    /// deletes the thread. Resolves with the delete result.
     fn dispatch_delete(
         &self,
         thread: &ThreadRef,
@@ -478,10 +599,42 @@ impl Sidebar {
             .app_state
             .read(cx)
             .environment(&thread.environment_id, cx)?;
-        Some(environment.read(cx).dispatch(
-            t3_client::commands::delete_thread(thread.thread_id.clone()),
-            cx,
-        ))
+        let environment = environment.read(cx);
+        let running = environment
+            .thread(&thread.thread_id)
+            .and_then(|shell| shell.session.as_ref())
+            .is_some_and(|session| session.status != SessionStatus::Stopped);
+        let Some(client) = environment.client().cloned() else {
+            // Detached environments (fixtures) report the usual "not connected" failure.
+            return Some(environment.dispatch(
+                t3_client::commands::delete_thread(thread.thread_id.clone()),
+                cx,
+            ));
+        };
+        let thread_id = thread.thread_id.clone();
+        // Strictly in order, like the web: stop, close terminals, delete.
+        Some(cx.background_spawn(async move {
+            if running {
+                let stop = ClientCommand::ThreadSessionStop {
+                    command_id: CommandId::random(),
+                    thread_id: thread_id.clone(),
+                    created_at: t3_client::commands::now(),
+                    only_if_settled: None,
+                };
+                client.dispatch(stop).await.ok();
+            }
+            let close = TerminalCloseInput {
+                thread_id: thread_id.clone(),
+                terminal_id: None,
+                delete_history: Some(true),
+            };
+            client.request::<TerminalClose>(&close).await.ok();
+            client
+                .dispatch(t3_client::commands::delete_thread(thread_id))
+                .await
+                .map(|_| ())
+                .map_err(|error| anyhow::anyhow!("{error}"))
+        }))
     }
 
     fn after_delete(&mut self, thread: &ThreadRef, cx: &mut Context<Self>) {
