@@ -158,6 +158,22 @@ where
         .collect())
 }
 
+/// `deserialize_with` for `ForwardCompatibleArray(X) | null` fields that keep `null` distinct
+/// from an empty list. Pair with `#[serde(default)]`.
+pub fn forward_compatible_option<'de, D, T>(deserializer: D) -> Result<Option<Vec<T>>, D::Error>
+where
+    D: Deserializer<'de>,
+    T: DeserializeOwned,
+{
+    let values = Option::<Vec<serde_json::Value>>::deserialize(deserializer)?;
+    Ok(values.map(|values| {
+        values
+            .into_iter()
+            .filter_map(|value| serde_json::from_value(value).ok())
+            .collect()
+    }))
+}
+
 /// `deserialize_with` for nullable `ForwardCompatibleArray` fields (`null` or missing is empty).
 pub fn forward_compatible_or_null<'de, D, T>(deserializer: D) -> Result<Vec<T>, D::Error>
 where
@@ -181,6 +197,18 @@ where
     T: Deserialize<'de>,
 {
     Option::<T>::deserialize(deserializer).map(Some)
+}
+
+/// `deserialize_with` for optional fields inside forward-compatible rows (upstream
+/// `ForwardCompatibleOptional`): a value that does not decode becomes `None` instead of failing
+/// (and dropping) the whole row. Pair with `#[serde(default)]`.
+pub fn lenient<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+where
+    D: Deserializer<'de>,
+    T: DeserializeOwned,
+{
+    let value = Option::<serde_json::Value>::deserialize(deserializer)?;
+    Ok(value.and_then(|value| serde_json::from_value(value).ok()))
 }
 
 /// `deserialize_with` for `Array(X) | null` fields the client treats as "empty when null".

@@ -23,6 +23,12 @@ pub struct ServerError {
 
 impl ServerError {
     pub const AUTHORIZATION: &'static str = "EnvironmentAuthorizationError";
+    /// Provider CLI missing or signed out, or the host is unsupported. See [`reason`](Self::reason)
+    /// (`cli-missing`, `cli-unauthenticated`, `provider-unsupported`) and
+    /// [`provider`](Self::provider).
+    pub const PULL_REQUEST_UNAVAILABLE: &'static str = "PullRequestUnavailableError";
+    /// A host call failed. See [`operation`](Self::operation) and `detail`.
+    pub const PULL_REQUEST_OPERATION: &'static str = "PullRequestOperationError";
     pub const DISPATCH: &'static str = "OrchestrationDispatchCommandError";
     pub const GET_SNAPSHOT: &'static str = "OrchestrationGetSnapshotError";
 
@@ -31,12 +37,32 @@ impl ServerError {
         self.tag == Self::AUTHORIZATION
     }
 
-    /// Text to show the user: `message`, else `detail`, else the tag.
+    /// Text to show the user: `message`, else `detail`, else `reason`, else the tag.
     pub fn display_message(&self) -> &str {
         self.message
             .as_deref()
             .or(self.detail.as_deref())
+            .or_else(|| self.reason())
             .unwrap_or(&self.tag)
+    }
+
+    fn field(&self, key: &str) -> Option<&str> {
+        self.fields.get(key).and_then(Value::as_str)
+    }
+
+    /// `reason` of errors that carry one (`PullRequestUnavailableError`, `UsageReadError`, ...).
+    pub fn reason(&self) -> Option<&str> {
+        self.field("reason")
+    }
+
+    /// `provider` of errors that carry one (source control kind or provider driver).
+    pub fn provider(&self) -> Option<&str> {
+        self.field("provider")
+    }
+
+    /// `operation` of errors that carry one (`PullRequestOperationError`, git errors, ...).
+    pub fn operation(&self) -> Option<&str> {
+        self.field("operation")
     }
 
     /// For a failed `thread.turn.start` with `bootstrap.create_thread`: `"not-created"` or

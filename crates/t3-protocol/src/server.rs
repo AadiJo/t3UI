@@ -12,6 +12,7 @@ use crate::{
     open_enum,
     orchestration::{ModelSelection, ProjectScript, RuntimeMode, ThreadEnvMode},
     schema::forward_compatible,
+    usage::{ServerProviderUsageLimits, UsageLimitSourceSnapshot},
 };
 
 open_enum! {
@@ -80,7 +81,9 @@ pub struct ServerConfig {
     pub scratch_workspace_root: Option<String>,
     pub new_projects_root: Option<String>,
     pub environment_themes: Option<Vec<Value>>,
-    pub usage_limit_sources: Option<Vec<Value>>,
+    /// Proxied rate-limit accounts; only when subscribed with `usageLimitSources: true`.
+    #[serde(default, deserialize_with = "crate::schema::forward_compatible_option")]
+    pub usage_limit_sources: Option<Vec<UsageLimitSourceSnapshot>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -259,7 +262,8 @@ pub struct ServerProvider {
     #[serde(default, deserialize_with = "forward_compatible")]
     pub skills: Vec<ProviderSkill>,
     pub workspace_snapshots: Option<Value>,
-    pub usage_limits: Option<Value>,
+    #[serde(default, deserialize_with = "crate::schema::lenient")]
+    pub usage_limits: Option<ServerProviderUsageLimits>,
     pub version_advisory: Option<Value>,
     pub compatibility_advisory: Option<Value>,
     pub update_state: Option<Value>,
@@ -454,6 +458,8 @@ pub struct ServerSettings {
     pub source_control_writer_model_selection: Option<ModelSelection>,
     pub pull_request_merge_method: Option<String>,
     pub provider_instances: Option<BTreeMap<String, ProviderInstanceConfig>>,
+    /// Read Cursor usage from the macOS Keychain (usage page "Enable" action).
+    pub cursor_keychain_usage_enabled: Option<bool>,
     #[serde(flatten)]
     pub other: Map<String, Value>,
 }
@@ -498,6 +504,8 @@ pub struct ServerSettingsPatch {
     pub text_generation_model_selection: Option<ModelSelection>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub add_project_base_directory: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cursor_keychain_usage_enabled: Option<bool>,
     #[serde(flatten)]
     pub other: Map<String, Value>,
 }
@@ -544,10 +552,16 @@ pub enum ServerConfigStreamEvent {
         payload: Value,
     },
     UsageLimitSourcesUpdated {
-        payload: Value,
+        payload: UsageLimitSourcesUpdatedPayload,
     },
     #[serde(other)]
     Unknown,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct UsageLimitSourcesUpdatedPayload {
+    #[serde(default, deserialize_with = "forward_compatible")]
+    pub sources: Vec<UsageLimitSourceSnapshot>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -582,8 +596,7 @@ impl ServerConfig {
                 true
             }
             ServerConfigStreamEvent::UsageLimitSourcesUpdated { payload } => {
-                self.usage_limit_sources =
-                    payload.get("sources").and_then(Value::as_array).cloned();
+                self.usage_limit_sources = Some(payload.sources);
                 true
             }
             ServerConfigStreamEvent::Unknown => false,

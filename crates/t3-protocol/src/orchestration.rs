@@ -52,6 +52,14 @@ open_enum! {
 }
 
 open_enum! {
+    /// Fork only: whether an assistant message is interim commentary or the final answer.
+    pub enum AssistantMessagePhase {
+        Commentary = "commentary",
+        FinalAnswer = "final_answer",
+    }
+}
+
+open_enum! {
     /// Provider session status. The server never produces `idle` (protocol.md 5.7).
     pub enum SessionStatus {
         Idle = "idle",
@@ -576,6 +584,9 @@ pub struct OrchestrationMessage {
     pub id: MessageId,
     pub role: MessageRole,
     pub text: String,
+    /// Fork servers only; `None` from upstream.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub phase: Option<AssistantMessagePhase>,
     pub attachments: Option<Vec<ChatAttachment>>,
     pub context: Option<OrchestrationMessageContext>,
     pub turn_id: Option<TurnId>,
@@ -1220,6 +1231,8 @@ pub struct ThreadMessageSentPayload {
     pub message_id: MessageId,
     pub role: MessageRole,
     pub text: String,
+    /// Fork servers only.
+    pub phase: Option<AssistantMessagePhase>,
     pub attachments: Option<Vec<ChatAttachment>>,
     pub context: Option<OrchestrationMessageContext>,
     pub turn_id: Option<TurnId>,

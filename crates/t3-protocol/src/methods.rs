@@ -26,6 +26,20 @@ use crate::{
         ProjectSearchContentsResult, ProjectSearchEntriesInput, ProjectWriteFileInput,
         ProjectWriteFileResult,
     },
+    pull_requests::{
+        PullRequestActionInput, PullRequestActivity, PullRequestCommentInput,
+        PullRequestCommentUpdateInput, PullRequestDetail, PullRequestDiffFileContentsInput,
+        PullRequestDiffFileContentsResult, PullRequestFilesViewedResult,
+        PullRequestInvalidateInput, PullRequestLabelCandidateList, PullRequestLabelChangeInput,
+        PullRequestLinkedThreadsResult, PullRequestListInput, PullRequestListResult,
+        PullRequestListStatsInput, PullRequestListStatsResult, PullRequestPreview,
+        PullRequestReactionInput, PullRequestRef, PullRequestReviewerCandidateList,
+        PullRequestReviewerRequestInput, PullRequestRoutingIdentityInput,
+        PullRequestRoutingIdentityResult, PullRequestRoutingResult, PullRequestSetFilesViewedInput,
+        PullRequestStack, PullRequestSubmitReviewInput, PullRequestSummary,
+        PullRequestThreadCommentsInput, PullRequestThreadCommentsResult,
+        PullRequestThreadReplyInput, PullRequestThreadResolutionInput, PullRequestUpdateInput,
+    },
     server::{
         AuthAccessStreamEvent, KeybindingsUpdated, ProvidersUpdated, RefreshProvidersInput,
         RemoveKeybindingInput, ServerConfig, ServerConfigStreamEvent, ServerLifecycleStreamEvent,
@@ -39,6 +53,10 @@ use crate::{
         TerminalSessionSnapshot, TerminalWriteInput,
     },
     unary,
+    usage::{
+        ConsumeResetCreditInput, ConsumeResetCreditResult, UsagePricing, UsageSummary,
+        UsageSummaryInput,
+    },
     vcs::{
         GitActionProgressEvent, GitPreparePullRequestThreadInput,
         GitPreparePullRequestThreadResult, GitPullRequestRefInput, GitResolvePullRequestResult,
@@ -125,3 +143,46 @@ unary!(
 );
 stream!(SubscribeShell, "orchestration.subscribeShell", SubscribeShellInput => ShellStreamItem, ServerError);
 stream!(SubscribeThread, "orchestration.subscribeThread", SubscribeThreadInput => ThreadStreamItem, ServerError);
+
+// Pull requests (the `/pull-requests` route). The diff itself is HTTP:
+// `EnvironmentHttp::pull_request_diff`.
+unary!(PullRequestsList, "pullRequests.list", PullRequestListInput => PullRequestListResult, ServerError);
+unary!(PullRequestsListStats, "pullRequests.listStats", PullRequestListStatsInput => PullRequestListStatsResult, ServerError);
+unary!(PullRequestsSummary, "pullRequests.summary", PullRequestRef => PullRequestSummary, ServerError);
+unary!(PullRequestsRouting, "pullRequests.routing", PullRequestRef => PullRequestRoutingResult, ServerError);
+unary!(PullRequestsRoutingIdentity, "pullRequests.routingIdentity", PullRequestRoutingIdentityInput => PullRequestRoutingIdentityResult, ServerError);
+unary!(
+    /// `None` when the pull request is not part of a stack.
+    PullRequestsStack, "pullRequests.stack", PullRequestRef => Option<PullRequestStack>, ServerError
+);
+unary!(PullRequestsLinkedThreads, "pullRequests.linkedThreads", PullRequestRef => PullRequestLinkedThreadsResult, ServerError);
+unary!(PullRequestsDetail, "pullRequests.detail", PullRequestRef => PullRequestDetail, ServerError);
+unary!(PullRequestsPreview, "pullRequests.preview", PullRequestRef => PullRequestPreview, ServerError);
+unary!(PullRequestsActivity, "pullRequests.activity", PullRequestRef => PullRequestActivity, ServerError);
+unary!(PullRequestsThreadComments, "pullRequests.threadComments", PullRequestThreadCommentsInput => PullRequestThreadCommentsResult, ServerError);
+unary!(PullRequestsDiffFileContents, "pullRequests.diffFileContents", PullRequestDiffFileContentsInput => PullRequestDiffFileContentsResult, ServerError);
+unary!(PullRequestsFilesViewed, "pullRequests.filesViewed", PullRequestRef => PullRequestFilesViewedResult, ServerError);
+unary!(PullRequestsSetFilesViewed, "pullRequests.setFilesViewed", PullRequestSetFilesViewedInput => (), ServerError);
+unary!(PullRequestsRunAction, "pullRequests.runAction", PullRequestActionInput => (), ServerError);
+unary!(PullRequestsUpdate, "pullRequests.update", PullRequestUpdateInput => (), ServerError);
+unary!(PullRequestsComment, "pullRequests.comment", PullRequestCommentInput => (), ServerError);
+unary!(PullRequestsUpdateComment, "pullRequests.updateComment", PullRequestCommentUpdateInput => (), ServerError);
+unary!(PullRequestsSubmitReview, "pullRequests.submitReview", PullRequestSubmitReviewInput => (), ServerError);
+unary!(PullRequestsReplyToThread, "pullRequests.replyToThread", PullRequestThreadReplyInput => (), ServerError);
+unary!(PullRequestsSetThreadResolution, "pullRequests.setThreadResolution", PullRequestThreadResolutionInput => (), ServerError);
+unary!(PullRequestsSetReaction, "pullRequests.setReaction", PullRequestReactionInput => (), ServerError);
+unary!(PullRequestsInvalidate, "pullRequests.invalidate", PullRequestInvalidateInput => (), ServerError);
+stream!(
+    /// A revision counter that ticks whenever cached pull request data changed; refetch what
+    /// is on screen.
+    PullRequestsSubscribeRefreshes, "pullRequests.subscribeRefreshes", Empty => u64, ServerError
+);
+unary!(PullRequestsReviewerCandidates, "pullRequests.reviewerCandidates", PullRequestRef => PullRequestReviewerCandidateList, ServerError);
+unary!(PullRequestsRequestReviewers, "pullRequests.requestReviewers", PullRequestReviewerRequestInput => (), ServerError);
+unary!(PullRequestsLabelCandidates, "pullRequests.labelCandidates", PullRequestRef => PullRequestLabelCandidateList, ServerError);
+unary!(PullRequestsSetLabels, "pullRequests.setLabels", PullRequestLabelChangeInput => (), ServerError);
+
+// Usage (the `/usage` route)
+unary!(ServerGetUsageSummary, "server.getUsageSummary", UsageSummaryInput => UsageSummary, ServerError);
+unary!(ServerRefreshUsageRates, "server.refreshUsageRates", Empty => UsagePricing, ServerError);
+unary!(ProviderConsumeResetCredit, "provider.consumeResetCredit", ConsumeResetCreditInput => ConsumeResetCreditResult, ServerError);
