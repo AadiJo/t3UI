@@ -753,12 +753,7 @@ async fn establish(
                 "The server did not send its configuration.",
             ));
         }
-        Some(Err(error)) => {
-            return Err(ConnectionFailure::transient(
-                TransientReason::Transport,
-                error.to_string(),
-            ));
-        }
+        Some(Err(error)) => return Err(establishment_failure(error)),
         None => {
             return Err(ConnectionFailure::transient(
                 TransientReason::Transport,
@@ -788,6 +783,18 @@ async fn establish(
         http: prepared.http,
         descriptor: prepared.descriptor,
     })
+}
+
+/// Classifies an RPC failure during establishment. A missing scope is permanent for this
+/// credential, so it blocks (like HTTP 403) instead of retrying on the backoff ladder.
+fn establishment_failure(error: RpcError<ServerError>) -> ConnectionFailure {
+    match error {
+        RpcError::Failed(error) if error.is_authorization() => ConnectionFailure::blocked(
+            BlockedReason::Permission,
+            "The environment credential does not grant the required access.",
+        ),
+        other => ConnectionFailure::transient(TransientReason::Transport, other.to_string()),
+    }
 }
 
 fn connect_failure(error: ConnectError) -> ConnectionFailure {
