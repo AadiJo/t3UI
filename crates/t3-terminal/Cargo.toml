@@ -11,12 +11,13 @@ default = ["gpui"]
 # The GPUI view and element. Without it only the pure modules build (input encoding, links,
 # session), so their tests run on hosts without GPUI's system libraries:
 # `cargo test -p t3-terminal --no-default-features`.
-gpui = ["dep:gpui-kit"]
+gpui = ["dep:gpui-kit", "dep:t3-ui"]
 
 [dependencies]
 alacritty_terminal = { version = "0.26", default-features = false }
 gpui-kit = { workspace = true, optional = true }
 regex = "1"
+t3-ui = { workspace = true, optional = true }
 
 [lints]
 workspace = true

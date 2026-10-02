@@ -3,7 +3,6 @@
 
 use std::{
     ops::Range,
-    sync::OnceLock,
     time::{Duration, Instant},
 };
 
@@ -27,18 +26,10 @@ use crate::{
     session::{GridSize, LinkHit, TermRequest, TerminalSession},
     theme::TerminalTheme,
 };
+use t3_ui::{ActiveColors as _, Theme};
 
 /// Font size of the drawer's xterm (`fontSize: 12`, `lineHeight: 1`).
 pub(crate) const FONT_SIZE: Pixels = px(12.);
-/// The fork's xterm `fontFamily` stack; the first installed family wins, like CSS.
-const FONT_STACK: [&str; 6] = [
-    "SF Mono",
-    "SFMono-Regular",
-    "JetBrains Mono",
-    "Consolas",
-    "Liberation Mono",
-    "Menlo",
-];
 /// Width FitAddon reserves for xterm's scrollbar whenever scrollback is enabled.
 pub(crate) const FIT_SCROLLBAR_RESERVE: Pixels = px(14.);
 /// xterm's DOM cursor blink: a 1s `step-end` animation, so 500ms on and 500ms off.
@@ -143,7 +134,6 @@ enum Drag {
 /// the selection menu.
 pub struct TerminalView {
     session: TerminalSession,
-    theme: TerminalTheme,
     focus_handle: FocusHandle,
     font_family: SharedString,
     metrics: Option<CellMetrics>,
@@ -184,7 +174,7 @@ impl Focusable for TerminalView {
 
 impl TerminalView {
     /// A blank 80x24 terminal (xterm's size before the first fit).
-    pub fn new(theme: TerminalTheme, window: &mut Window, cx: &mut Context<Self>) -> Self {
+    pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
         let focus_handle = cx.focus_handle();
         let subscriptions = vec![
             cx.on_focus(&focus_handle, window, |this, window, cx| {
@@ -197,9 +187,8 @@ impl TerminalView {
         ];
         Self {
             session: TerminalSession::new(GridSize { cols: 80, rows: 24 }),
-            theme,
             focus_handle,
-            font_family: resolve_font_family(cx),
+            font_family: Theme::global(cx).mono_family().clone(),
             metrics: None,
             geometry: None,
             blink_on: true,
@@ -236,7 +225,9 @@ impl TerminalView {
         for request in self.session.take_requests() {
             let reply = match request {
                 TermRequest::Reply(text) => text,
-                TermRequest::Color(index, format) => format(self.theme.query_color(index)),
+                TermRequest::Color(index, format) => {
+                    format(TerminalTheme::new(cx.colors()).query_color(index))
+                }
             };
             cx.emit(TerminalEvent::Input(reply));
         }
@@ -256,13 +247,6 @@ impl TerminalView {
         self.feed_output(&format!("\r\n[terminal] {message}\r\n"), cx);
     }
 
-    pub fn set_theme(&mut self, theme: TerminalTheme, cx: &mut Context<Self>) {
-        if self.theme != theme {
-            self.theme = theme;
-            cx.notify();
-        }
-    }
-
     /// Grid size as `(cols, rows)`, the values last sent in [`TerminalEvent::Resize`].
     pub fn grid_size(&self) -> (u16, u16) {
         let size = self.session.size();
@@ -275,27 +259,14 @@ impl TerminalView {
         cx.notify();
     }
 
-    /// Selects viewport cells from `(row, col)` to `(row, col)` inclusive.
-    pub fn select_viewport_range(
-        &mut self,
-        start: (usize, usize),
-        end: (usize, usize),
-        cx: &mut Context<Self>,
-    ) {
-        let offset = self.session.term().grid().display_offset() as i32;
-        let to_grid =
-            |(row, col): (usize, usize)| GridPoint::new(Line(row as i32 - offset), Column(col));
-        self.session.start_selection(to_grid(start), Side::Left, 1);
-        self.session.update_selection(to_grid(end), Side::Right);
-        cx.notify();
+    /// Window position of viewport cell `(col, row)`'s top-left corner, once the view has
+    /// been laid out. For anchoring popovers to terminal content.
+    pub fn cell_origin(&self, col: usize, row: usize) -> Option<Point<Pixels>> {
+        Some(self.geometry?.cell_bounds(col, row, 1).origin)
     }
 
     pub(crate) fn session(&self) -> &TerminalSession {
         &self.session
-    }
-
-    pub(crate) fn theme(&self) -> &TerminalTheme {
-        &self.theme
     }
 
     pub(crate) fn font_family(&self) -> &SharedString {
@@ -1087,21 +1058,4 @@ fn measure_cell(family: &SharedString, window: &Window) -> CellMetrics {
         cell: size(width, height),
         scale,
     }
-}
-
-/// First family of the fork's mono stack that is installed or registered, like CSS
-/// `font-family`. Enumerating fonts is slow, so the answer is computed once.
-fn resolve_font_family(cx: &App) -> SharedString {
-    static FAMILY: OnceLock<SharedString> = OnceLock::new();
-    FAMILY
-        .get_or_init(|| {
-            let installed = cx.text_system().all_font_names();
-            FONT_STACK
-                .iter()
-                .find(|family| installed.iter().any(|name| name == *family))
-                .map_or(SharedString::new_static("Menlo"), |family| {
-                    SharedString::new_static(family)
-                })
-        })
-        .clone()
 }

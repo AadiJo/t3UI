@@ -17,7 +17,4 @@ mod view;
 
 pub use links::{TerminalLinkKind, resolve_path_link_target};
 #[cfg(feature = "gpui")]
-pub use {
-    theme::TerminalTheme,
-    view::{TerminalEvent, TerminalView},
-};
+pub use view::{TerminalEvent, TerminalView};

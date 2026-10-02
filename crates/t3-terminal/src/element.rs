@@ -20,6 +20,8 @@ use gpui_kit::{
     Window, fill, font, outline, point, px, quad, relative, size, transparent_black,
 };
 
+use t3_ui::ActiveColors as _;
+
 use crate::{
     theme::{TerminalTheme, rgb_to_hsla},
     view::{FONT_SIZE, GridGeometry, TerminalView},
@@ -98,7 +100,8 @@ impl Element for TerminalElement {
         let hitbox = window.insert_hitbox(bounds, HitboxBehavior::Normal);
         let view = self.view.read(cx);
         let focused = view.focus_handle_ref().is_focused(window) && window.is_window_active();
-        FrameBuilder::new(view, geometry, focused, window).build(hitbox)
+        let theme = TerminalTheme::new(cx.colors());
+        FrameBuilder::new(view, &theme, geometry, focused, window).build(hitbox)
     }
 
     fn paint(
@@ -291,6 +294,7 @@ struct FrameBuilder<'a> {
 impl<'a> FrameBuilder<'a> {
     fn new(
         view: &'a TerminalView,
+        theme: &'a TerminalTheme,
         geometry: GridGeometry,
         focused: bool,
         window: &'a Window,
@@ -303,7 +307,7 @@ impl<'a> FrameBuilder<'a> {
         };
         Self {
             view,
-            theme: view.theme(),
+            theme,
             colors: view.session().term().colors(),
             geometry,
             focused,
