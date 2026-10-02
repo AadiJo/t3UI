@@ -37,6 +37,12 @@ When a spec and the source disagree, the source wins; fix the spec.
 - Comments: a short doc comment on types/functions explaining how they are used. Keep in sync.
 - Commits: lowercase conventional commits (`feat(chat): render work log rows`). No co-author trailers.
 
+## Landing on main
+
+Run `script/preland.sh` before every push to main and only push if it prints `preland: ok`.
+It runs rustfmt, Linux clippy + tests for GPUI-free crates, and macOS clippy for the workspace.
+A red main breaks every other agent's CI signal.
+
 ## Commands
 
 ```sh
