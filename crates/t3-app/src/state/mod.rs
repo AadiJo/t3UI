@@ -222,6 +222,30 @@ impl AppState {
         cx.notify();
     }
 
+    /// Removes an environment (Settings > Connections "Disconnect", re-pairing). Its connection
+    /// is stopped; a route into it falls back to the index.
+    pub fn remove_environment(&mut self, id: &EnvironmentId, cx: &mut Context<Self>) {
+        let Some(index) = self
+            .environments
+            .iter()
+            .position(|environment| environment.read(cx).id() == id)
+        else {
+            return;
+        };
+        let environment = self.environments.remove(index);
+        if let Some(client) = environment.read(cx).client() {
+            client.disconnect();
+        }
+        if self
+            .route
+            .thread()
+            .is_some_and(|thread| &thread.environment_id == id)
+        {
+            self.route = Route::Index;
+        }
+        cx.notify();
+    }
+
     /// The active keybinding rules.
     pub fn keybindings(&self, cx: &App) -> Keybindings {
         self.primary_environment()
