@@ -31,14 +31,15 @@ use std::{
 use parking_lot::Mutex;
 use t3_protocol::{
     EnvironmentId, Stream, ThreadId, Unary,
-    commands::ClientCommand,
+    commands::{ClientCommand, TurnAttachment},
     environment::ExecutionEnvironmentDescriptor,
     errors::ServerError,
     methods::{
-        DispatchCommand, Empty, ServerGetConfig, ServerProbe, SubscribeServerConfig,
-        SubscribeShell, SubscribeThread,
+        AttachmentsCreateUploadUrl, DispatchCommand, Empty, ServerGetConfig, ServerProbe,
+        SubscribeServerConfig, SubscribeShell, SubscribeThread,
     },
-    orchestration::{DispatchResult, SubscribeShellInput, SubscribeThreadInput},
+    orchestration::{AttachmentKind, DispatchResult, SubscribeShellInput, SubscribeThreadInput},
+    projects::AttachmentCreateUploadUrlInput,
     server::{ServerConfig, ServerConfigStreamEvent, SubscribeServerConfigInput},
 };
 use tokio::{
@@ -324,6 +325,44 @@ impl Environment {
         self.request::<DispatchCommand>(&command).await
     }
 
+    /// Uploads a file for a new message: `attachments.createUploadUrl`, then the raw bytes over
+    /// HTTP. Put the result in `TurnStartMessage.attachments`. Needs
+    /// `capabilities.attachment_uploads`; images can be sent inline (`data_url`) instead.
+    pub async fn upload_attachment(
+        &self,
+        kind: AttachmentKind,
+        name: impl Into<String>,
+        mime_type: impl Into<String>,
+        bytes: Vec<u8>,
+    ) -> Result<TurnAttachment, UploadError> {
+        let (name, mime_type) = (name.into(), mime_type.into());
+        let size_bytes = bytes.len() as u64;
+        let session = self
+            .session()
+            .ok_or(UploadError::Rpc(RpcError::Disconnected(CloseReason::NotConnected)))?;
+        let upload = session
+            .rpc
+            .request::<AttachmentsCreateUploadUrl>(&AttachmentCreateUploadUrlInput {
+                kind: kind.clone(),
+                name: name.clone(),
+                mime_type: mime_type.clone(),
+                size_bytes,
+            })
+            .await?;
+        session
+            .http
+            .upload_attachment(&upload.relative_url, &mime_type, bytes)
+            .await?;
+        Ok(TurnAttachment {
+            kind,
+            id: Some(upload.attachment_id),
+            name,
+            mime_type,
+            size_bytes,
+            data_url: None,
+        })
+    }
+
     /// Wants a connection (the "Connect" button). No-op if already connecting or connected.
     pub fn connect(&self) {
         self.update_intent(|intent| intent.desired = true);
@@ -362,6 +401,15 @@ impl Environment {
             let _ = self.inner.signals.send(Signal::Wake);
         }
     }
+}
+
+/// Why [`Environment::upload_attachment`] failed.
+#[derive(Debug, thiserror::Error)]
+pub enum UploadError {
+    #[error(transparent)]
+    Rpc(#[from] RpcError<ServerError>),
+    #[error(transparent)]
+    Http(#[from] HttpError),
 }
 
 fn closed_failure() -> ConnectionFailure {

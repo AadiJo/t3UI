@@ -325,6 +325,18 @@ async fn run(args: &Args) -> Result<String> {
             InteractionMode::Default,
         );
         turn.model_selection = Some(model);
+        if config.environment.capabilities.attachment_uploads {
+            let attachment = env
+                .upload_attachment(
+                    t3_protocol::orchestration::AttachmentKind::File,
+                    "notes.txt",
+                    "text/plain",
+                    b"probe attachment\n".to_vec(),
+                )
+                .await?;
+            println!("uploaded attachment {:?}", attachment.id);
+            turn.message.attachments.push(attachment);
+        }
         match env.dispatch(turn.into()).await {
             Ok(result) => println!("thread.turn.start -> sequence {}", result.sequence),
             Err(error) => println!("thread.turn.start failed: {error}"),

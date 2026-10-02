@@ -27,7 +27,7 @@ pub use auth::{
     BearerEndpoint, ClientInfo, Endpoint, PairedEnvironment, pair, saved_bearer_endpoint,
 };
 pub use connection::{ConnectStage, ConnectionFailure, ConnectionStatus};
-pub use environment::{Environment, EnvironmentOptions, Session, ThreadHandle};
+pub use environment::{Environment, EnvironmentOptions, Session, ThreadHandle, UploadError};
 pub use http::{EnvironmentHttp, HttpAuth, HttpError};
 pub use rpc::{CloseReason, ConnectError, RpcConnection, RpcError, Subscription};
 pub use shell::{ShellState, SyncStatus};
