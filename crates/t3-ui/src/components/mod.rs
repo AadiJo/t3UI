@@ -55,7 +55,7 @@ pub(crate) type ChangeHandler<T> = Rc<dyn Fn(&T, &mut Window, &mut App)>;
 /// Callback without arguments beyond the contexts.
 pub(crate) type Callback = Rc<dyn Fn(&mut Window, &mut App)>;
 
-use crate::{Colors, tokens::shadow};
+use crate::{Colors, Icon, tokens::shadow};
 
 /// A forced interaction state, so the gallery and snapshots can show hover, pressed and
 /// focus-visible looks without a pointer or keyboard. Live UI leaves it at `Rest` and gets
@@ -67,6 +67,19 @@ pub enum Interaction {
     Hover,
     Pressed,
     FocusVisible,
+}
+
+/// An icon whose layout box is `left + right` narrower than the glyph, which spills over by
+/// those amounts: the CSS `-mx-0.5` / `-me-1` on icons inside controls. Negative margins
+/// can't be used directly: taffy then drops the content width of a fit-content parent, and
+/// the control collapses to its padding.
+pub(crate) fn overhang(icon: Icon, size: Pixels, left: Pixels, right: Pixels) -> Div {
+    div()
+        .relative()
+        .flex_none()
+        .w(size - left - right)
+        .h(size)
+        .child(icon.size(size).absolute().top_0().left(-left))
 }
 
 /// GPUI group name shared by interactive primitives, so their bevel and inset children can

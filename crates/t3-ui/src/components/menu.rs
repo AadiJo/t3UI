@@ -15,7 +15,8 @@ use gpui_kit::{
 };
 
 use super::{
-    ChangeHandler, ClickHandler, Interaction, popover::Align, popup_surface, switch::Switch,
+    ChangeHandler, ClickHandler, Interaction, overhang, popover::Align, popup_surface,
+    switch::Switch,
 };
 use crate::{ActiveColors as _, Icon, IconName, tokens::DISABLED_OPACITY};
 
@@ -189,12 +190,14 @@ impl RenderOnce for MenuItem {
             .pr(px(8.))
             .when_some(fg, |this, fg| this.text_color(fg))
             .when_some(self.icon, |this, icon| {
-                this.child(
+                this.child(overhang(
                     Icon::new(icon)
                         .color(icon_color)
-                        .opacity(crate::tokens::ICON_OPACITY)
-                        .mx(px(-2.)),
-                )
+                        .opacity(crate::tokens::ICON_OPACITY),
+                    px(16.),
+                    px(2.),
+                    px(2.),
+                ))
             })
             .child(div().flex_1().min_w_0().truncate().child(self.label))
             .when_some(self.shortcut, |this, shortcut| {

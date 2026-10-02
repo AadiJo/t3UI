@@ -11,7 +11,9 @@ use gpui_kit::{
 
 use std::rc::Rc;
 
-use super::{ClickHandler, GROUP, Interaction, TooltipExt as _, bevel, focus_ring, inset_line};
+use super::{
+    ClickHandler, GROUP, Interaction, TooltipExt as _, bevel, focus_ring, inset_line, overhang,
+};
 use crate::{
     ActiveColors as _, Colors, Icon, IconName,
     tokens::{DISABLED_OPACITY, ICON_OPACITY, shadow},
@@ -389,11 +391,14 @@ impl RenderOnce for Button {
         let radius = metrics.radius;
         let icon_color = looks.icon;
         let icon = |name: IconName| {
-            Icon::new(name)
-                .size(metrics.icon)
-                .mx(px(-2.))
-                .opacity(ICON_OPACITY)
-                .when_some(icon_color, |this, color| this.color(color))
+            overhang(
+                Icon::new(name)
+                    .opacity(ICON_OPACITY)
+                    .when_some(icon_color, |this, color| this.color(color)),
+                metrics.icon,
+                px(2.),
+                px(2.),
+            )
         };
 
         let mut button = base::Button::new(self.id)

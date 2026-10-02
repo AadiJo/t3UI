@@ -16,7 +16,8 @@ use gpui_kit::{
 };
 
 use super::{
-    Callback, ChangeHandler, GROUP, Interaction, bevel, focus_ring, popup_surface, ring_band,
+    Callback, ChangeHandler, GROUP, Interaction, bevel, focus_ring, overhang, popup_surface,
+    ring_band,
 };
 use crate::{
     ActiveColors as _, Icon, IconName,
@@ -259,13 +260,14 @@ impl RenderOnce for SelectTrigger {
                     .when(placeholder, |this| this.text_color(colors.muted_foreground))
                     .child(self.value.unwrap_or(self.placeholder)),
             )
-            .child(
+            .child(overhang(
                 Icon::new(IconName::ChevronDown)
-                    .size(px(12.))
-                    .mr(px(-4.))
                     .opacity(0.5)
                     .when(!ghost, |this| this.color(colors.muted_foreground)),
-            );
+                px(12.),
+                px(0.),
+                px(4.),
+            ));
         gpui_kit::Refineable::refine(trigger.style(), &self.style);
         trigger
     }
