@@ -213,9 +213,18 @@ function percent(text) {
   return NaN;
 }
 
+// `light-dark(a, b)` follows the element's color-scheme: `:root` is light and its dark variant
+// sets `color-scheme: dark`, so the mode being resolved decides.
+let currentMode = "light";
+
 /** Evaluates a fully substituted color expression to a culori color, or null. */
 function color(text) {
   const t = text.trim();
+  const lightDark = t.match(/^light-dark\((.*)\)$/s);
+  if (lightDark) {
+    const [light, dark] = splitTop(lightDark[1], ",");
+    return color(currentMode === "dark" ? dark : light);
+  }
   const mix = t.match(/^color-mix\((.*)\)$/s);
   if (mix) {
     const [space, a, b] = splitTop(mix[1], ",");
@@ -388,6 +397,7 @@ const diff = (a, b) =>
 
 const legacyFields = (process.env.T3_LEGACY_FIELDS ?? "").split(",").filter(Boolean);
 for (const mode of ["light", "dark"]) {
+  currentMode = mode;
   const rootScope = makeScope(declarations("root", mode), null);
   const sidebarScope = makeScope(declarations("sidebar", mode), rootScope);
   const root = colorsIn(rootScope, mode);

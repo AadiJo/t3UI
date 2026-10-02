@@ -82,8 +82,12 @@ pub struct Colors {
     pub destructive_foreground: Hsla,
     /// `--diff-addition`
     pub diff_addition: Hsla,
+    /// `--diff-addition-foreground`
+    pub diff_addition_foreground: Hsla,
     /// `--diff-deletion`
     pub diff_deletion: Hsla,
+    /// `--diff-deletion-foreground`
+    pub diff_deletion_foreground: Hsla,
     /// `--error`
     pub error: Hsla,
     /// `--error-foreground`
@@ -794,7 +798,9 @@ pub const LIGHT: Colors = Colors {
     destructive: hex(0xFB2C36FF),
     destructive_foreground: hex(0xC10007FF),
     diff_addition: hex(0x00BC7DFF),
+    diff_addition_foreground: hex(0x009966FF),
     diff_deletion: hex(0xFB2C36FF),
+    diff_deletion_foreground: hex(0xE7000BFF),
     error: hex(0xFB2C36FF),
     error_foreground: hex(0xC10007FF),
     error_surface: hex(0xFB2C3614),
@@ -1169,7 +1175,9 @@ pub const DARK: Colors = Colors {
     destructive: hex(0xFB414AFF),
     destructive_foreground: hex(0xFF6467FF),
     diff_addition: hex(0x00BC7DFF),
+    diff_addition_foreground: hex(0x00D492FF),
     diff_deletion: hex(0xFB414AFF),
+    diff_deletion_foreground: hex(0xFF6467FF),
     error: hex(0xFB414AFF),
     error_foreground: hex(0xFF6467FF),
     error_surface: hex(0xFB414A29),
