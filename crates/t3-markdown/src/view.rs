@@ -1,6 +1,7 @@
 //! [`Markdown`]: the entity a chat row owns for one message's markdown.
 
 use std::{
+    cell::Cell,
     collections::{HashMap, HashSet},
     ops::Range,
     rc::Rc,
@@ -9,8 +10,8 @@ use std::{
 };
 
 use gpui_kit::{
-    AppContext as _, ClipboardItem, Context, EventEmitter, IntoElement, Render, SharedString,
-    Window,
+    AppContext as _, ClipboardItem, Context, Entity, EventEmitter, IntoElement, Pixels, Render,
+    SharedString, Window,
 };
 use t3_highlight::{Highlighted, Language, StreamingHighlighter, Theme};
 
@@ -21,6 +22,7 @@ use crate::{
     parse::parse,
     streaming,
     style::MarkdownStyle,
+    units::{BlockView, Unit, UnitKey, UnitMetrics},
 };
 
 /// How a message's markdown renders. Mirrors `ChatMarkdown`'s props.
@@ -105,6 +107,11 @@ pub struct Markdown {
     pub(crate) details_open: HashMap<usize, bool>,
     /// Code blocks and tables showing the "copied" check.
     pub(crate) copied: HashSet<usize>,
+    /// Cached views for the blocks of stable chunks (see [`crate::units`]).
+    pub(crate) units: HashMap<UnitKey, Unit>,
+    /// The message width laid out last frame; cached blocks are valid only at that width.
+    pub(crate) last_width: Rc<Cell<Option<Pixels>>>,
+    pub(crate) block_caching: bool,
 }
 
 impl EventEmitter<MarkdownEvent> for Markdown {}
@@ -138,6 +145,9 @@ impl Markdown {
             tables_expanded: HashMap::new(),
             details_open: HashMap::new(),
             copied: HashSet::new(),
+            units: HashMap::new(),
+            last_width: Rc::default(),
+            block_caching: true,
         };
         this.reparse(text.into(), false);
         this
@@ -151,6 +161,7 @@ impl Markdown {
 
     pub fn set_style(&mut self, style: Option<MarkdownStyle>, cx: &mut Context<Self>) {
         self.style = style;
+        self.units.clear();
         cx.notify();
     }
 
@@ -221,6 +232,12 @@ impl Markdown {
         }
         self.text = text;
         self.streaming = streaming;
+        // Cached blocks live as long as their chunk's parse.
+        self.units.retain(|(start, _), unit| {
+            chunks
+                .iter()
+                .any(|chunk| chunk.start == *start && Rc::ptr_eq(&chunk.document, &unit.document))
+        });
         self.chunks = chunks;
     }
 
@@ -297,6 +314,7 @@ impl Markdown {
                         {
                             state.pending = None;
                             state.highlighted = Some((len, theme, highlighted));
+                            this.invalidate_block(id);
                             cx.notify();
                         }
                     });
@@ -318,6 +336,7 @@ impl Markdown {
             streaming: None,
         });
         state.wrap = !state.wrap;
+        self.invalidate_block(id);
         cx.notify();
     }
 
@@ -337,6 +356,7 @@ impl Markdown {
     pub(crate) fn toggle_table(&mut self, id: usize, cx: &mut Context<Self>) {
         let expanded = !self.table_expanded(id);
         self.tables_expanded.insert(id, expanded);
+        self.invalidate_block(id);
         cx.notify();
     }
 
@@ -352,6 +372,7 @@ impl Markdown {
             .copied()
             .unwrap_or(initially_open);
         self.details_open.insert(id, open);
+        self.invalidate_block(id);
         cx.notify();
     }
 
@@ -359,6 +380,7 @@ impl Markdown {
     pub(crate) fn copy(&mut self, id: usize, text: String, cx: &mut Context<Self>) {
         cx.write_to_clipboard(ClipboardItem::new_string(text));
         self.copied.insert(id);
+        self.invalidate_block(id);
         cx.notify();
         cx.spawn(async move |this, cx| {
             cx.background_executor()
@@ -366,10 +388,53 @@ impl Markdown {
                 .await;
             let _ = this.update(cx, |this, cx| {
                 this.copied.remove(&id);
+                this.invalidate_block(id);
                 cx.notify();
             });
         })
         .detach();
+    }
+
+    /// Makes the cached block containing stateful block `id` render again (its look changed).
+    pub(crate) fn invalidate_block(&mut self, id: usize) {
+        for unit in self.units.values() {
+            if unit.metrics.block_ids.borrow().contains(&id) {
+                unit.metrics.size.set(None);
+            }
+        }
+    }
+
+    /// The cached view for block `key` of `document`, created on first use.
+    pub(crate) fn unit(
+        &mut self,
+        key: UnitKey,
+        document: &Rc<Document>,
+        cx: &mut Context<Self>,
+    ) -> (Entity<BlockView>, Rc<UnitMetrics>) {
+        if let Some(unit) = self.units.get(&key)
+            && Rc::ptr_eq(&unit.document, document)
+        {
+            return (unit.view.clone(), unit.metrics.clone());
+        }
+        let markdown = cx.entity().downgrade();
+        let view = cx.new(|_| BlockView { markdown, key });
+        let metrics = Rc::new(UnitMetrics::default());
+        self.units.insert(
+            key,
+            Unit {
+                document: document.clone(),
+                view: view.clone(),
+                metrics: metrics.clone(),
+            },
+        );
+        (view, metrics)
+    }
+
+    /// Turns render caching of stable blocks on or off (on by default). For benchmarks.
+    #[doc(hidden)]
+    pub fn set_block_caching(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        self.block_caching = enabled;
+        cx.notify();
     }
 
     pub(crate) fn emit_url(&mut self, href: SharedString, cx: &mut Context<Self>) {

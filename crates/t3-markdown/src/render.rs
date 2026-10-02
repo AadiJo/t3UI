@@ -7,10 +7,10 @@
 use std::{collections::HashMap, rc::Rc};
 
 use gpui_kit::{
-    AnyElement, Context, Div, FontStyle, FontWeight, Hsla, InteractiveElement as _, IntoElement,
-    ParentElement as _, Pixels, SharedString, StatefulInteractiveElement as _, Styled as _,
-    StyledImage as _, TextAlign, Window, div, font, img, prelude::FluentBuilder as _, px, relative,
-    size,
+    AnyElement, App, Context, Div, FontStyle, FontWeight, Hsla, InteractiveElement as _,
+    IntoElement, ParentElement as _, Pixels, SharedString, StatefulInteractiveElement as _,
+    StyleRefinement, Styled as _, StyledImage as _, TextAlign, Window, canvas, div, font, img,
+    prelude::FluentBuilder as _, px, relative, size,
 };
 use t3_highlight::{Highlighted, Theme};
 use t3_ui::{Icon, IconName};
@@ -25,6 +25,7 @@ use crate::{
         AtomSlot, Decorations, InlineText, LinkHandler, LinkSlot, RunStyle, TextContent, TextWrap,
     },
     style::{MarkdownStyle, metrics},
+    units::{LaidMetrics, UnitKey, UnitMetrics, measured},
     view::Markdown,
 };
 
@@ -185,30 +186,39 @@ impl Ctx {
     }
 }
 
-/// Monotonic element ids within one render pass, plus a count of text blocks used to alternate
-/// how half-device-pixel heights round.
-struct Ids(usize, usize);
+/// Per-render bookkeeping: monotonic element ids, the text-block count that alternates how
+/// half-device-pixel heights round, and the stateful blocks rendered (for cache invalidation).
+struct Ids {
+    counter: usize,
+    parity: usize,
+    stateful: Vec<usize>,
+}
 
 impl Ids {
+    /// Starts after `parity` text blocks earlier in the message.
+    fn new(parity: usize) -> Self {
+        Self {
+            counter: 0,
+            parity,
+            stateful: Vec::new(),
+        }
+    }
+
     /// Alternates for consecutive text blocks, so a run of equal blocks whose height ends in half
     /// a device pixel rounds down, up, down... and stays where Chromium's layout puts them.
     fn next_round_up(&mut self) -> bool {
-        self.1 += 1;
-        self.1.is_multiple_of(2)
+        self.parity += 1;
+        self.parity.is_multiple_of(2)
     }
 
     fn next(&mut self, name: &'static str) -> gpui_kit::ElementId {
-        self.0 += 1;
-        gpui_kit::ElementId::NamedInteger(name.into(), self.0 as u64)
+        self.counter += 1;
+        gpui_kit::ElementId::NamedInteger(name.into(), self.counter as u64)
     }
 }
 
-/// Renders a whole message.
-pub(crate) fn render_markdown(
-    this: &mut Markdown,
-    window: &mut Window,
-    cx: &mut Context<Markdown>,
-) -> AnyElement {
+/// The context at the message root.
+fn root_ctx(this: &Markdown, window: &Window, cx: &App) -> Ctx {
     let style = Rc::new(this.resolved_style(cx));
     let colors = &style.colors;
     let color = if this.options().full_foreground {
@@ -216,35 +226,82 @@ pub(crate) fn render_markdown(
     } else {
         colors.foreground.opacity(0.8)
     };
-    let line_height = metrics::BODY_SIZE * metrics::RELAXED;
-    let mut ctx = Ctx {
-        style: style.clone(),
-        color,
-        size: metrics::BODY_SIZE,
-        line_height,
-        base: 0,
-        in_tail: false,
-        ul_depth: 0,
-        ol_depth: 0,
-        suffixes: this.suffixes(),
+    Ctx {
         theme: if colors.is_dark {
             Theme::Dark
         } else {
             Theme::Light
         },
+        style,
+        color,
+        size: metrics::BODY_SIZE,
+        line_height: metrics::BODY_SIZE * metrics::RELAXED,
+        base: 0,
+        in_tail: false,
+        ul_depth: 0,
+        ol_depth: 0,
+        suffixes: this.suffixes(),
         copy_prefix: String::new(),
         copy_indent: String::new(),
         scale: window.scale_factor(),
-    };
-    let mut ids = Ids(0, 0);
+    }
+}
+
+/// Renders a whole message: the live tail inline, every stable block through its cached
+/// [`BlockView`] once its size at this width is known (see [`crate::units`]).
+pub(crate) fn render_markdown(
+    this: &mut Markdown,
+    window: &mut Window,
+    cx: &mut Context<Markdown>,
+) -> AnyElement {
+    let mut ctx = root_ctx(this, window, cx);
+    let width = this.last_width.get();
+    let caching = this.block_caching;
+    let markdown = cx.entity().downgrade();
     let chunks: Vec<_> = this.chunks().to_vec();
     let last = chunks.len().saturating_sub(1);
+    let mut parity = 0;
     let mut blocks = Vec::new();
     for (index, chunk) in chunks.iter().enumerate() {
         ctx.base = chunk.start;
         ctx.in_tail = this.is_streaming() && index == last;
-        for block in &chunk.document.blocks {
-            blocks.push(render_block(this, &ctx, &mut ids, block, window, cx));
+        if ctx.in_tail {
+            let mut ids = Ids::new(parity);
+            for block in &chunk.document.blocks {
+                blocks.push(render_block(this, &ctx, &mut ids, block, window, cx));
+            }
+            parity = ids.parity;
+            continue;
+        }
+        for (block_index, block) in chunk.document.blocks.iter().enumerate() {
+            let key = (chunk.start, block_index);
+            let (view, unit) = this.unit(key, &chunk.document, cx);
+            let cached = caching
+                .then(|| unit.laid.get().zip(unit.size.get()))
+                .flatten()
+                .filter(|(_, size)| Some(size.width) == width && unit.parity.get().0 == parity);
+            if let Some((laid, size)) = cached {
+                parity += unit.parity.get().1;
+                let mut style = StyleRefinement::default().w_full().flex_none();
+                style.size.height = Some(size.height.into());
+                blocks.push(Laid {
+                    element: view.cached(style).into_any_element(),
+                    own: laid.own,
+                    inner: laid.inner,
+                    excess: laid.excess,
+                });
+                continue;
+            }
+            let mut ids = Ids::new(parity);
+            let laid = render_block(this, &ctx, &mut ids, block, window, cx);
+            record_unit(&unit, &laid, parity, &ids);
+            parity = ids.parity;
+            let element = div()
+                .id(("md-unit", ((chunk.start as u64) << 20) | block_index as u64))
+                .w_full()
+                .child(measured(laid.element, unit, markdown.clone()))
+                .into_any_element();
+            blocks.push(Laid { element, ..laid });
         }
     }
     // `.chat-markdown > :first-child { margin-top: 0 }` and `:last-child { margin-bottom: 0 }`.
@@ -260,19 +317,60 @@ pub(crate) fn render_markdown(
         trailing,
         ..
     } = stack(blocks, ctx.scale);
+    let last_width = this.last_width.clone();
     div()
+        .relative()
         .w_full()
         .min_w_0()
         .flex()
         .flex_col()
-        .font_family(style.sans_family.clone())
+        .font_family(ctx.style.sans_family.clone())
         .text_size(metrics::BODY_SIZE)
-        .line_height(line_height)
-        .text_color(color)
+        .line_height(ctx.line_height)
+        .text_color(ctx.color)
         .when(leading > 0., |this| this.pt(px(leading)))
         .when(trailing > 0., |this| this.pb(px(trailing)))
         .children(children)
+        .child(
+            canvas(
+                move |bounds, _, _| last_width.set(Some(bounds.size.width)),
+                |_, _, _, _| {},
+            )
+            .absolute()
+            .size_full(),
+        )
         .into_any_element()
+}
+
+/// Stores what rendering a stable block measured, for later cached frames.
+fn record_unit(unit: &UnitMetrics, laid: &Laid, parity: usize, ids: &Ids) {
+    unit.laid.set(Some(LaidMetrics {
+        own: laid.own,
+        inner: laid.inner,
+        excess: laid.excess,
+    }));
+    unit.parity.set((parity, ids.parity - parity));
+    *unit.block_ids.borrow_mut() = ids.stateful.clone();
+}
+
+/// Renders one stable block for its [`crate::units::BlockView`] (a cached frame that missed).
+pub(crate) fn render_unit(
+    this: &mut Markdown,
+    key: UnitKey,
+    window: &mut Window,
+    cx: &mut Context<Markdown>,
+) -> Option<AnyElement> {
+    let unit = this.units.get(&key)?;
+    let document = unit.document.clone();
+    let metrics = unit.metrics.clone();
+    let block = document.blocks.get(key.1)?;
+    let mut ctx = root_ctx(this, window, cx);
+    ctx.base = key.0;
+    let parity = metrics.parity.get().0;
+    let mut ids = Ids::new(parity);
+    let laid = render_block(this, &ctx, &mut ids, block, window, cx);
+    record_unit(&metrics, &laid, parity, &ids);
+    Some(measured(laid.element, metrics, cx.entity().downgrade()))
 }
 
 fn render_blocks(
@@ -361,18 +459,24 @@ fn render_block(
         }
         Block::List(list) => render_list(this, ctx, ids, list, metrics::LIST_ITEM_GAP, window, cx),
         // GPUI rounds the 12.8px `pre` padding to device pixels...
-        Block::Code(code) => Laid::new(code_block(this, ctx, code, window, cx), (margin, margin))
-            .with_excess(2. * rounding_excess(metrics::CODE_PADDING_Y, ctx.scale)),
+        Block::Code(code) => {
+            ids.stateful.push(ctx.base + code.id);
+            Laid::new(code_block(this, ctx, code, window, cx), (margin, margin))
+                .with_excess(2. * rounding_excess(metrics::CODE_PADDING_Y, ctx.scale))
+        }
         // ...and the 8.8px header and 7.2px body cell paddings.
-        Block::Table(table) => Laid::new(
-            render_table(this, ctx, ids, table, window, cx),
-            (margin, margin),
-        )
-        .with_excess(
-            2. * rounding_excess(metrics::HEAD_PADDING_Y, ctx.scale)
-                + 2. * table.rows.len() as f32
-                    * rounding_excess(metrics::CELL_PADDING_Y, ctx.scale),
-        ),
+        Block::Table(table) => {
+            ids.stateful.push(ctx.base + table.id);
+            Laid::new(
+                render_table(this, ctx, ids, table, window, cx),
+                (margin, margin),
+            )
+            .with_excess(
+                2. * rounding_excess(metrics::HEAD_PADDING_Y, ctx.scale)
+                    + 2. * table.rows.len() as f32
+                        * rounding_excess(metrics::CELL_PADDING_Y, ctx.scale),
+            )
+        }
         Block::Rule => Laid::new(
             div()
                 .flex_none()
@@ -381,10 +485,13 @@ fn render_block(
                 .bg(ctx.style.colors.border),
             (0., 0.),
         ),
-        Block::Details(details) => Laid::new(
-            render_details(this, ctx, ids, details, window, cx),
-            (8., 8.),
-        ),
+        Block::Details(details) => {
+            ids.stateful.push(ctx.base + details.id);
+            Laid::new(
+                render_details(this, ctx, ids, details, window, cx),
+                (8., 8.),
+            )
+        }
         Block::Footnotes(notes) => Laid::new(
             render_footnotes(this, ctx, ids, notes, window, cx),
             (20., 0.),

@@ -19,6 +19,8 @@ mod render;
 #[cfg(feature = "gpui")]
 pub mod style;
 #[cfg(feature = "gpui")]
+mod units;
+#[cfg(feature = "gpui")]
 mod view;
 
 pub use document::Document;

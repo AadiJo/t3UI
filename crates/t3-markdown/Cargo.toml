@@ -21,3 +21,4 @@ unicode-linebreak = { workspace = true, optional = true }
 
 [lints]
 workspace = true
+

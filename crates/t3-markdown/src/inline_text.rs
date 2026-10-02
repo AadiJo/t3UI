@@ -727,6 +727,9 @@ struct InlineTextState {
     selected: Rc<RefCell<Option<SharedString>>>,
     /// Shared with mouse listeners, which run outside paint and cannot touch element state.
     pointer: Rc<RefCell<Pointer>>,
+    /// Repaints the window when the selection changes, so blocks under cached views (which
+    /// replay their last paint) show the new highlight.
+    _refresh: Option<gpui_kit::Subscription>,
 }
 
 #[derive(Default)]
@@ -911,11 +914,11 @@ impl Element for InlineText {
 
         // Selection participant, created once per element.
         let (selection, selected_text, pointer) =
-            window.with_element_state(global_id, |state: Option<InlineTextState>, _| {
+            window.with_element_state(global_id, |state: Option<InlineTextState>, window| {
                 let mut state = state.unwrap_or_default();
-                let selection = state
-                    .selection
-                    .get_or_insert_with(|| {
+                let selection = match &state.selection {
+                    Some(selection) => selection.clone(),
+                    None => {
                         let handle = TextSelectionHandle::new(text.to_string(), cx);
                         let selected = state.selected.clone();
                         handle.copy_with(
@@ -927,9 +930,11 @@ impl Element for InlineText {
                             },
                             cx,
                         );
+                        state._refresh = Some(handle.refresh_window_on_change(window, cx));
+                        state.selection = Some(handle.clone());
                         handle
-                    })
-                    .clone();
+                    }
+                };
                 let result = (selection, state.selected.clone(), state.pointer.clone());
                 (result, state)
             });
