@@ -1,8 +1,7 @@
 # Shell handoff (app state, workspace, sidebar, keybindings)
 
-On main through 89adf8d. Branch `shell` has one unlanded WIP commit: utility routes (`PullRequests`,
-`Usage`, `Welcome`, `Project(key)`), `AppState::navigate_to_main_app`, and a shared sidebar footer.
-It passes macOS clippy. It has not been through preland and has no Escape-to-go-back yet.
+Branch `shell` holds one unlanded WIP commit: utility routes (`PullRequests`, `Usage`, `Welcome`,
+`Project(key)`), `navigate_to_main_app`, a shared footer. macOS clippy passes; no preland run yet.
 
 ## Modules
 
@@ -36,8 +35,7 @@ It passes macOS clippy. It has not been through preland and has no Escape-to-go-
   (`t3-snapshots/src/scenes/workspace.rs:77`).
 - Fixtures pin the clock (`state/mod.rs:342`). `clock_is_live` (`:337`) then stops the pulse
   clock.
-- Test `find()` only sees `.test_support()` elements, so the shell tests drive by keyboard. GPUI
-  has no letter spacing. Use a per-worktree `CARGO_TARGET_DIR`.
+- Test `find()` only sees `.test_support()` elements, so the shell tests drive by keyboard.
 
 ## Known bugs and limitations
 
@@ -45,8 +43,7 @@ It passes macOS clippy. It has not been through preland and has no Escape-to-go-
   `AppEvent::NewThread`.
 - No view sets the `ShortcutScope` flags (terminal/preview open or focus, model picker).
 - Favicons are never refreshed after their URL expires. Fixture environments never fetch.
-- Hover fades are instant. Toasts don't animate. The settings-nav slot in `sidebar/render.rs` is a
-  placeholder.
+- Hover fades are instant, toasts don't animate, and the settings-nav slot is a placeholder.
 
 ## Tests
 
@@ -57,7 +54,7 @@ It passes macOS clippy. It has not been through preland and has no Escape-to-go-
 
 ## Verified against a live server
 
-- Data only: a nightly e2e server's `/api/orchestration/shell` decoded into the fixtures.
-- The GPUI app never ran against a server: there is no Linux GPUI build and no macOS host. Archive,
+- Data only: a nightly e2e server's `/api/orchestration/shell` decoded into the fixtures. The GPUI
+  app never ran against a server: there is no Linux GPUI build and no macOS host. Archive,
   delete, rename, project remove, VCS streams, favicons, and saved-environment boot are
   compile-verified only.
