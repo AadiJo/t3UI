@@ -1,4 +1,5 @@
-//! Where client state files live (`~/Library/Application Support/T3UI/` on macOS).
+//! Where client state files live: `t3_client::store::data_dir()` (`~/Library/Application
+//! Support/T3UI/` on macOS, overridable with `T3UI_DATA_DIR`), next to `environments.json`.
 //!
 //! Reads happen synchronously at startup (small JSON only); writes go to the background executor
 //! and replace the file atomically.
@@ -16,11 +17,9 @@ pub enum Store {
 }
 
 impl Store {
-    /// The per-user data directory, or memory if the platform has none.
+    /// The app's data directory (shared with the environment catalog).
     pub fn user_data() -> Self {
-        directories::BaseDirs::new()
-            .map(|dirs| Self::Disk(dirs.data_dir().join("T3UI")))
-            .unwrap_or(Self::Memory)
+        Self::Disk(t3_client::store::data_dir())
     }
 
     /// Reads `name`, or `None` if it does not exist or is unreadable.

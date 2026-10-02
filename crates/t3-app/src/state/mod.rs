@@ -14,6 +14,7 @@
 //! commands routed to the view that owns them). Writing: `app_state.update(cx, |state, cx|
 //! state.navigate(Route::Index, cx))`.
 
+pub mod boot;
 mod environment;
 pub mod fixtures;
 mod route;

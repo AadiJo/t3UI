@@ -7097,7 +7097,6 @@ name = "t3-app"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "directories",
  "gpui-kit",
  "serde",
  "serde_json",
