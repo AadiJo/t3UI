@@ -82,7 +82,7 @@ impl DraftStore {
             _subscriptions: vec![
                 cx.subscribe(&app_state, |this: &mut Self, _, event: &AppEvent, cx| {
                     if let AppEvent::NewThread(request) = event {
-                        this.open_new_thread(request, cx);
+                        this.open_draft(request, cx);
                     }
                 }),
                 cx.on_app_quit(|this: &mut Self, _| {
@@ -207,8 +207,9 @@ impl DraftStore {
     }
 
     /// Reuses the project's open draft or creates one, applies the request's branch and mode,
-    /// and navigates to it (web `openOrReuseProjectDraftThread`).
-    fn open_new_thread(&mut self, request: &NewThreadRequest, cx: &mut Context<Self>) {
+    /// and navigates to it (web `openOrReuseProjectDraftThread`). Runs on
+    /// `AppEvent::NewThread`; returns the draft's id.
+    pub fn open_draft(&mut self, request: &NewThreadRequest, cx: &mut Context<Self>) -> DraftId {
         let project_key = request.project.key();
         let reusable = self
             .file
@@ -261,8 +262,10 @@ impl DraftStore {
             }
         }
         self.schedule_write(cx);
-        let route = Route::Draft(DraftId(SharedString::from(key)));
+        let id = DraftId(SharedString::from(key));
+        let route = Route::Draft(id.clone());
         AppState::global(cx).update(cx, |state, cx| state.navigate(route, cx));
+        id
     }
 
     fn schedule_write(&mut self, cx: &mut Context<Self>) {

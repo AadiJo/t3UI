@@ -8,7 +8,11 @@
 //! let composer = cx.new(|cx| Composer::new(environment, ComposerTarget::Thread(thread), window, cx));
 //! // whenever the thread detail changes:
 //! composer.update(cx, |composer, cx| composer.set_thread_state(state.clone(), cx));
-//! cx.subscribe(&composer, |this, _, event: &ComposerEvent, cx| match event { .. });
+//! cx.subscribe(&composer, |this, _, event: &ComposerEvent, cx| match event {
+//!     ComposerEvent::Sending { .. } => { /* optimistic message, follow the end */ }
+//!     ComposerEvent::SendFailed(message) | ComposerEvent::Error(message) => { /* error banner */ }
+//!     ..
+//! });
 //! // render it at the bottom of the chat body, full width; it centers itself (max 768px).
 //! ```
 //!
@@ -91,16 +95,20 @@ pub fn init(store: crate::state::Store, cx: &mut App) {
 /// What the composer tells its host.
 #[derive(Clone, Debug, PartialEq)]
 pub enum ComposerEvent {
-    /// A user message was dispatched (`thread.turn.start` accepted). The timeline can show it
-    /// optimistically and follow the end.
-    Sent {
+    /// A user message is being sent (`thread.turn.start` is in flight). Show it optimistically,
+    /// start the working timer, and follow the end (ChatView `begin_local_dispatch`). A
+    /// [`ComposerEvent::SendFailed`] follows if the dispatch fails.
+    Sending {
         thread: ThreadRef,
         message_id: MessageId,
         text: String,
     },
+    /// The send failed; the composer restored the prompt. Show the message in the thread error
+    /// banner and drop the optimistic message (ChatView `end_local_dispatch`).
+    SendFailed(SharedString),
     /// A draft's first turn created this server thread.
     ThreadStarted(ThreadRef),
-    /// Something failed; show it in the thread error banner.
+    /// Something else failed (attachment limits, approval reply); show it in the error banner.
     Error(SharedString),
     /// The footer's Plan/Tasks toggle.
     TogglePlanSidebar,
@@ -1339,6 +1347,11 @@ impl Composer {
         DraftStore::global(cx).update(cx, |drafts, cx| {
             drafts.update_draft(&key, |draft| draft.clear_content(), cx)
         });
+        cx.emit(ComposerEvent::Sending {
+            thread: thread_ref.clone(),
+            message_id,
+            text,
+        });
         cx.notify();
 
         let client = self.environment.read(cx).client().cloned();
@@ -1395,11 +1408,6 @@ impl Composer {
                                 .update(cx, |drafts, cx| drafts.mark_promoted(id, &thread_ref, cx));
                             cx.emit(ComposerEvent::ThreadStarted(thread_ref.clone()));
                         }
-                        cx.emit(ComposerEvent::Sent {
-                            thread: thread_ref,
-                            message_id,
-                            text,
-                        });
                         this.finish_promotion(cx);
                     }
                     Err(error) => {
@@ -1419,7 +1427,7 @@ impl Composer {
                                 this.save_images(cx);
                             }
                         }
-                        cx.emit(ComposerEvent::Error(send::SEND_FAILED.into()));
+                        cx.emit(ComposerEvent::SendFailed(send::SEND_FAILED.into()));
                     }
                 }
                 cx.notify();

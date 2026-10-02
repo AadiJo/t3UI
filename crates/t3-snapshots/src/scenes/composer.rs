@@ -16,7 +16,7 @@ use gpui_kit::{
 };
 use t3_app::{
     composer::{BranchToolbar, Composer, ComposerTarget, DraftStore},
-    state::{AppState, NewThreadRequest, Route, fixtures},
+    state::{AppState, NewThreadRequest, fixtures},
 };
 use t3_client::ThreadState;
 use t3_logic::{ProjectRef, ThreadRef};
@@ -168,30 +168,19 @@ fn thread(
 }
 
 /// A fresh draft in aurora-web, opened the way Ctrl+N does.
-fn new_draft(
-    environment: &EnvironmentId,
-    app_state: &Entity<AppState>,
-    cx: &mut App,
-) -> ComposerTarget {
-    app_state.update(cx, |state, cx| {
-        state.request_new_thread(
-            NewThreadRequest {
-                project: ProjectRef::new(environment.clone(), ProjectId::from("project-aurora")),
-                branch: None,
-                worktree_path: None,
-                env_mode: None,
-                start_from_origin: None,
-            },
-            cx,
-        )
-    });
-    match app_state.read(cx).route() {
-        Route::Draft(id) => ComposerTarget::Draft(id.clone()),
-        other => panic!("new thread should open a draft, got {other:?}"),
-    }
+fn new_draft(environment: &EnvironmentId, _: &Entity<AppState>, cx: &mut App) -> ComposerTarget {
+    let request = NewThreadRequest {
+        project: ProjectRef::new(environment.clone(), ProjectId::from("project-aurora")),
+        branch: None,
+        worktree_path: None,
+        env_mode: None,
+        start_from_origin: None,
+    };
+    let id = DraftStore::global(cx).update(cx, |drafts, cx| drafts.open_draft(&request, cx));
+    ComposerTarget::Draft(id)
 }
 
-/// A 2×2 checkerboard-ish PNG to stand in for a pasted screenshot.
+/// A checkered PNG to stand in for a pasted screenshot.
 fn sample_png(hue: u8) -> Vec<u8> {
     let image = image::RgbaImage::from_fn(96, 96, |x, y| {
         let band = ((x / 24 + y / 24) % 2) as u8;
