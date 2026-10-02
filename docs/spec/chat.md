@@ -482,112 +482,24 @@ resume compaction, usage limits, project clone, feedback, background liveness: a
 
 ## 6. Composer slot, hero state, scroll-to-end pill
 
-### 6.1 Docked overlay (existing threads)
+### 6.1-6.3 Composer overlay, hero state, timeline inset
 
-`ChatView.tsx:10055-10301`, `components/chat/ComposerSurface.tsx:6-37`.
+Specified in [`composer.md`](composer.md): the overlay box tree and `--chat-max-width` (section 1),
+the draft hero state and its headline (1.1), the resting composer (3), and the timeline inset
+`resolveComposerTimelineInset` (1: expanded = overlay height; resting = max(current inset,
+overlay height + 94), reset per thread). What the chat view owns:
 
-```
-div[data-chat-composer-overlay]  pointer-events-none absolute inset-x-0 bottom-0 z-20 pt-2 (8; 6 below 640)
-   inert while a checkpoint revert runs
-└─ div  w-full ps/pe = --workspace-gutter (20px; 12 below 640)          (draft hero transition group)
-   └─ div[data-chat-composer-stack] group/composer-stack pointer-events-auto relative z-10
-         mx-auto w-full max-w-(--chat-max-width)
-      ├─ [hero headline]  only in hero state (6.2)
-      └─ div.relative
-         ├─ ComposerSurface.Shell  (@container/composer-surface, max-w chat width; [`composer.md`](composer.md))
-         │  ├─ ComposerSurface.Host → ChatComposer                      ([`composer.md`](composer.md))
-         │  └─ div.min-h-0 > div.relative.z-0[data-terminal-open]
-         │       └─ [context strip host] min-h 32px (36 below 640) when visible → BranchToolbar
-         └─ div aria-hidden  height 20px (16 below 640) + safe-area bottom   (bottom spacer)
-```
-
-- `--chat-max-width` from setting `chatWidth` (default `"comfortable"`): comfortable 48rem
-  (768px), wide 72rem (1152px), full 100% (`index.css:2116-2127`, `routes/__root.tsx:295-298`,
-  `contracts:settings.ts:295-306`). The same variable bounds every timeline row.
-- The composer's bottom edge (including its context strip) sits 20px above the window bottom.
-- Context strip mounting (`ChatView.tsx:3826-3838`, `BranchToolbar.logic.ts:66-77`): mounted when
-  the thread has a project and (git repo, or environment indicator shown, or a server thread whose
-  resting composer may host controls there); visible (`min-h`) only when it actually has content.
-- Pending approvals, pending user input, the plan follow-up prompt, queued-message steering, the
-  "Loading messages..." status and the composer banner stack all render inside `ChatComposer`
-  (props at `ChatView.tsx:10157-10170`). See [`composer.md`](composer.md).
-
-### 6.2 Hero state (empty draft)
-
-`ChatView.logic.ts:255-276` `resolveDraftHeroState`, `ChatView.tsx:3717-3738,10059-10092`,
-`components/chat/DraftHeroHeadline.tsx:53-385`.
-
-Hero when: no worktree setup card AND (a background submission is pending, OR (local draft AND
-no timeline entries AND not working AND the hero has not been asked to dock)). Sending from the
-hero sets "dock requested" for that thread (`shouldDockDraftHeroForSubmission`,
-`ChatView.logic.ts:213-223`).
-
-Layout in hero state:
-
-- The overlay becomes `pointer-events-none absolute inset-0 z-20 flex items-center`: the composer
-  stack is **vertically centered** in the chat column (header excluded).
-- The headline sits above the composer: `absolute inset-x-0 bottom-full z-0`, inner padding-bottom
-  32px (16px when the stack contains a `[data-composer-shoulder-tab]` element).
-- Timeline: `hideEmptyPlaceholder` → the list area paints plain `bg-background`
-  (`data-timeline-loading`), no "Send a message..." text.
-
-Headline (`DraftHeroHeadline`):
-
-```
-div mx-auto flex w-full max-w-5xl (1024) flex-col items-center
-├─ h1 w-full text-center font-normal text-3xl (30/36; text-2xl below 640) tracking-tight text-foreground
-│    aria-label = full sentence (below)
-└─ [p] mt-2 (8) flex h-6 (24) items-center text-sm      only when a scratch ("no project") root exists
-```
-
-| State | h1 content | second line |
-|---|---|---|
-| scratch draft ("no project") | "What should we work on?" | project picker (label "No project") |
-| resolved project | "What should we build in {picker}?" | "or start without a project" |
-| no project yet, picker has entries | "{picker} to start" (picker label "Choose a project") | "or start without a project" |
-| no projects at all | "Add a project to start" | none |
-
-- **Picker trigger**: `InlineButton tone="picker"` (`ui/button.tsx:105-140`): inline-flex gap 6px,
-  `text-foreground`, underline dotted `foreground/30`, thickness from font, offset 4px; hover and
-  open → solid `foreground` underline. `max-w-64` (256px), `align-baseline`, label truncates.
-  Tooltip (top) = project display name (not for scratch). Label: scratch → "No project", else the
-  logical project display name, else "Choose a project".
-- **Picker menu** (`:252-309`): `MenuPopup align="center"` max-h 320px scrolling. Radio group:
-  "No project" (`MessageSquareDashedIcon` 16px in the gray project-icon color) when a scratch root
-  exists; one row per logical project (favicon 16px, name truncated with tooltip, environment
-  badge when projects span environments); `MenuSeparator`; "Add project" (`FolderPlusIcon`) →
-  command palette `add-project`. Choosing a project retargets the open draft in place
-  (`setLogicalProjectDraftThreadId`) and, unless the user already picked a model, applies the
-  project's default model selection (`:178-208`).
-- No picker entries: a plain button with dotted bottom border `muted-foreground/35`, text
-  `muted-foreground/60` (hover `/60` border, `/80` text) reading the project title or "Add a
-  project"; opens the add-project palette (`:312-318`).
-- "or start without a project": `InlineButton tone="muted"` (muted-foreground, hover foreground +
-  underline offset 2px); tooltip (bottom) = shortcut label of `chat.newWithoutProject` (default
-  mod+alt+N). Starts a scratch draft, then focuses the picker trigger (`:336-358`).
-
-Transition hero → docked (`ChatView.tsx:546-618`, `draftHeroTransition.ts:1-2`): FLIP of the
-transition group from the old composer rect to the new one, `translate3d` over
-`panelAnimationDurationMs` with `cubic-bezier(0.4, 0, 0.2, 1)`. Off by default (duration 0):
-the composer jumps from center to bottom.
-
-### 6.3 Composer inset (how the timeline makes room)
-
-`components/composerFooterLayout.ts:62-90,209-224`, `ChatView.tsx:1791-1801,5966-6058`.
-
-- The composer reports its overlay height (`onComposerOverlayHeightChange`, plus a
-  `ResizeObserver` on the overlay element). ChatView turns it into `composerTimelineInset`:
-  - expanded composer: inset = overlay height (rounded up);
-  - resting (collapsed) composer: inset = `max(currentInset, overlayHeight + 94)` where 94px
-    (`COMPOSER_RESTING_EXPANSION_MIN_PX`) is how much taller the empty expanded composer is.
-    The reservation never shrinks while resting, so re-expanding never covers rows.
-  - On thread switch the inset is rebuilt from this thread's overlay (`:6026-6032`).
-- The timeline uses it as bottom padding: `paddingBottom = inset + 16` (12 below 640), or `16`
-  only while an anchored first-turn end space is active (`MessagesTimeline.tsx:978-979`).
-  LegendList's `maintainScrollAtEnd` ignores footer/inset changes (`footerLayout: false`), so the
-  inset changing never moves visible rows.
+- The overlay floats over the bottom of the messages wrapper; the timeline never changes height.
+  It reserves room with bottom padding: `paddingBottom = inset + 16` (12 below 640), or `16` only
+  while an anchored first-turn end space is active (`MessagesTimeline.tsx:978-979`). LegendList
+  ignores inset changes when pinning (`footerLayout: false`), so the inset changing never moves
+  visible rows.
 - The timeline waits to paint a thread with entries until the composer has measured its final
   layout for it (`timelineWaitingForComposerInset`, `ChatView.tsx:3583-3586`).
+- Hero state (`resolveDraftHeroState`, `ChatView.logic.ts:255-276`): the timeline paints plain
+  `bg-background` (`hideEmptyPlaceholder`), no "Send a message..." text.
+- Pending approvals, user input, the plan follow-up, queued-message steering, the
+  "Loading messages..." status and the composer banner stack render inside the composer.
 
 ### 6.4 Scroll-to-end pill
 
@@ -798,7 +710,7 @@ Client settings that change this view (`contracts:settings.ts:298-513`):
 | `planModeEnabled` | `false` | Restores the composer Build/Plan toggle and `/plan` `/default` ([`composer.md`](composer.md)). Plans still render inline when the server produces them |
 | `accessLevelIndicatorEnabled` | `false` | Restores the composer access-level selector; runtime mode otherwise follows project defaults (`ChatView.tsx:1952-1956`) |
 | `contextWindowMeterEnabled` | `false` | Composer context meter |
-| `composerCollapseOnScroll` | `true` | Scrolling the timeline rests the composer (6.3) |
+| `composerCollapseOnScroll` | `true` | Scrolling the timeline rests the composer (`composer.md` 3) |
 | `wordWrap` | `true` | Initial wrap state of markdown code blocks and expanded tables (`markdown.md`) |
 | `fontSizeCode` | `13` | Code text in markdown (`--font-size-code`) |
 | `browserLinkTarget` | `"system"` | Where markdown links open (`markdown.md`) |
