@@ -37,6 +37,8 @@ pub struct UiState {
     /// Collapsed changed-files sections per thread and turn (only `false` entries are stored).
     pub thread_changed_files_expanded_by_id: BTreeMap<String, BTreeMap<String, bool>>,
     pub default_advertised_endpoint_key: Option<String>,
+    /// Last editor used for "open in editor" (`t3code:last-editor`, an `EditorId` string).
+    pub last_editor: Option<String>,
     /// Sidebar width in px (`chat_thread_sidebar_width`). `None` uses the default width.
     pub sidebar_width: Option<f32>,
     pub theme: ThemePreference,

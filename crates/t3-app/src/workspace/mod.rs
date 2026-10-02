@@ -35,6 +35,7 @@ pub use main_column::{MainViewKey, build_main_view, collapsed_titlebar_inset};
 
 use crate::{
     keybindings::{ShortcutScope, resolve_key_down, shortcut_label},
+    notifications::KeybindingsNotifier,
     sidebar::Sidebar,
     state::AppState,
     toast::ToastLayer,
@@ -71,6 +72,7 @@ pub struct Workspace {
     collapse: Option<Collapse>,
     rail_drag: Option<RailDrag>,
     toasts: Entity<ToastLayer>,
+    keybindings_notifier: KeybindingsNotifier,
     focus: FocusHandle,
     _subscriptions: Vec<Subscription>,
 }
@@ -109,6 +111,7 @@ impl Workspace {
             collapse: None,
             rail_drag: None,
             toasts: ToastLayer::global(cx),
+            keybindings_notifier: KeybindingsNotifier::default(),
             focus: cx.focus_handle(),
             _subscriptions: subscriptions,
         }
@@ -127,12 +130,13 @@ impl Workspace {
             self.main_view = build_main_view(&route, &app_state, window, cx);
             self.main_key = key;
         }
+        self.keybindings_notifier.check(cx);
         let target = if app_state.read(cx).sidebar_open() {
             1.
         } else {
             0.
         };
-        if self.target_progress() != target {
+        if self.open_progress != target {
             self.collapse = Some(Collapse {
                 started: Instant::now(),
                 from: self.open_progress,
@@ -140,10 +144,6 @@ impl Workspace {
             self.open_progress = target;
         }
         cx.notify();
-    }
-
-    fn target_progress(&self) -> f32 {
-        self.open_progress
     }
 
     /// The eased open fraction for this frame; requests another frame while animating.
