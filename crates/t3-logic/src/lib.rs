@@ -5,6 +5,7 @@
 pub mod keybindings;
 pub mod paths;
 pub mod project_scripts;
+pub mod pull_requests;
 pub mod refs;
 pub mod settings;
 pub mod sidebar;
