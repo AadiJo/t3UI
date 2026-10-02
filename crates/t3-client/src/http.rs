@@ -16,6 +16,7 @@ use t3_protocol::{
         TokenExchangeRequest, WebSocketTicket,
     },
     orchestration::{OrchestrationShellSnapshot, OrchestrationThreadDetailSnapshot},
+    pull_requests::{PullRequestDiffInput, PullRequestDiffResult},
 };
 use url::Url;
 
@@ -343,6 +344,27 @@ impl EnvironmentHttp {
             Err(HttpError::Status { status: 404, .. }) => Ok(None),
             Err(error) => Err(error),
         }
+    }
+
+    /// `POST /api/pull-requests/diff`: one slice of a pull request's patch. Large and
+    /// compressible, so it goes over HTTP instead of the socket. Failures carry the RPC's typed
+    /// errors (`PullRequestUnavailableError`, ...) in `HttpError::Status.error`.
+    pub async fn pull_request_diff(
+        &self,
+        input: &PullRequestDiffInput,
+    ) -> Result<PullRequestDiffResult, HttpError> {
+        let body = serde_json::to_vec(input).map_err(|e| HttpError::Decode(e.to_string()))?;
+        self.json(
+            Method::POST,
+            self.resolve("/api/pull-requests/diff"),
+            Body::Bytes {
+                content_type: "application/json".into(),
+                bytes: body,
+            },
+            true,
+            SNAPSHOT_TIMEOUT,
+        )
+        .await
     }
 
     /// Downloads an asset: `relative_url` from `assets.createUrl` (e.g. a project favicon),

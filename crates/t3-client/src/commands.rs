@@ -1,5 +1,7 @@
 //! Builders for `orchestration.dispatchCommand` payloads. Each fills a fresh `commandId` (UUID
-//! v4) and `createdAt` (the server overwrites it with its receipt time). Send the result with
+//! v4) and `createdAt` (the server overwrites it with its receipt time). Gate lifecycle
+//! commands (pin, snooze, settle, reorder) on the matching `ExecutionEnvironmentCapabilities`
+//! flag. Send the result with
 //! [`Environment::dispatch`](crate::Environment::dispatch).
 //!
 //! ```ignore
@@ -273,5 +275,108 @@ pub fn set_interaction_mode(
         thread_id,
         interaction_mode,
         created_at: now(),
+    }
+}
+
+/// Pins a thread to the top of the sidebar (`capabilities.thread_pinning`). `order_key`
+/// places it among other pins; `None` appends.
+pub fn pin_thread(thread_id: ThreadId, order_key: Option<String>) -> ClientCommand {
+    ClientCommand::ThreadPin {
+        command_id: CommandId::random(),
+        thread_id,
+        order_key,
+    }
+}
+
+pub fn unpin_thread(thread_id: ThreadId) -> ClientCommand {
+    ClientCommand::ThreadUnpin {
+        command_id: CommandId::random(),
+        thread_id,
+    }
+}
+
+/// Moves a pinned thread (`capabilities.thread_pin_reorder`).
+pub fn reorder_pinned_thread(thread_id: ThreadId, order_key: impl Into<String>) -> ClientCommand {
+    ClientCommand::ThreadPinReorder {
+        command_id: CommandId::random(),
+        thread_id,
+        order_key: order_key.into(),
+    }
+}
+
+/// Moves an active (unsettled) thread (`capabilities.thread_active_reorder`).
+pub fn reorder_active_thread(thread_id: ThreadId, order_key: impl Into<String>) -> ClientCommand {
+    ClientCommand::ThreadActiveReorder {
+        command_id: CommandId::random(),
+        thread_id,
+        order_key: order_key.into(),
+    }
+}
+
+/// Hides a thread until `snoozed_until` (ISO time; `capabilities.thread_snooze`).
+pub fn snooze_thread(thread_id: ThreadId, snoozed_until: impl Into<String>) -> ClientCommand {
+    ClientCommand::ThreadSnooze {
+        command_id: CommandId::random(),
+        thread_id,
+        snoozed_until: snoozed_until.into(),
+    }
+}
+
+pub fn unsnooze_thread(thread_id: ThreadId) -> ClientCommand {
+    ClientCommand::ThreadUnsnooze {
+        command_id: CommandId::random(),
+        thread_id,
+        reason: UserReason::User,
+    }
+}
+
+/// Opts a thread in or out of automatic settling (`capabilities.thread_auto_settle_opt_out`).
+pub fn set_auto_settle(thread_id: ThreadId, enabled: bool) -> ClientCommand {
+    ClientCommand::ThreadAutoSettleSet {
+        command_id: CommandId::random(),
+        thread_id,
+        enabled,
+    }
+}
+
+/// Stops the thread's provider session. `only_if_settled` skips threads that are working.
+pub fn stop_session(thread_id: ThreadId, only_if_settled: bool) -> ClientCommand {
+    ClientCommand::ThreadSessionStop {
+        command_id: CommandId::random(),
+        thread_id,
+        created_at: now(),
+        only_if_settled: only_if_settled.then_some(true),
+    }
+}
+
+/// Reverts history (and files when `restore_files`) to `turn_count` turns.
+pub fn revert_thread(thread_id: ThreadId, turn_count: u32, restore_files: bool) -> ClientCommand {
+    if restore_files {
+        ClientCommand::ThreadCheckpointRevert {
+            command_id: CommandId::random(),
+            thread_id,
+            turn_count,
+            created_at: now(),
+        }
+    } else {
+        ClientCommand::ThreadConversationRevert {
+            command_id: CommandId::random(),
+            thread_id,
+            turn_count,
+            created_at: now(),
+        }
+    }
+}
+
+/// Edits a project (title, scripts, icon, defaults); see
+/// [`ProjectMetaPatch`](t3_protocol::commands::ProjectMetaPatch).
+pub fn update_project(
+    project_id: ProjectId,
+    patch: t3_protocol::commands::ProjectMetaPatch,
+) -> ClientCommand {
+    ClientCommand::ProjectMetaUpdate {
+        command_id: CommandId::random(),
+        project_id,
+        patch,
     }
 }

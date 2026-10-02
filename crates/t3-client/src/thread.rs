@@ -681,11 +681,15 @@ fn apply_message_sent(
             if p.context.is_some() {
                 message.context = p.context.clone();
             }
+            if p.phase.is_some() {
+                message.phase = p.phase.clone();
+            }
         }
         None => thread.messages.push(Arc::new(OrchestrationMessage {
             id: p.message_id.clone(),
             role: p.role.clone(),
             text: p.text.clone(),
+            phase: p.phase.clone(),
             attachments: p.attachments.clone(),
             context: p.context.clone(),
             turn_id: p.turn_id.clone(),
