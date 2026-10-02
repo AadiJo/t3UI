@@ -509,6 +509,27 @@ pub(super) fn overlays_page(colors: &'static Colors) -> Vec<AnyElement> {
                 .destructive(),
         );
 
+    // The traits picker's compact menu (`TraitsPicker.tsx`, xs trigger).
+    let compact_menu = MenuPopup::new()
+        .compact()
+        .w(px(160.))
+        .child(MenuGroupLabel::new("Reasoning"))
+        .children(
+            ["Light", "Medium (default)", "High", "Extra High"].map(|label| {
+                MenuCheckboxItem::new(format!("c-{label}"), label)
+                    .compact()
+                    .checked(label == "Medium (default)")
+            }),
+        )
+        .child(MenuSeparator)
+        .child(MenuGroupLabel::new("Service Tier"))
+        .child(
+            MenuCheckboxItem::new("c-standard", "Standard (default)")
+                .compact()
+                .checked(true),
+        )
+        .child(MenuCheckboxItem::new("c-fast", "Fast").compact());
+
     let select_popup = div()
         .flex()
         .flex_col()
@@ -660,6 +681,7 @@ pub(super) fn overlays_page(colors: &'static Colors) -> Vec<AnyElement> {
                 .items_start()
                 .gap(px(32.))
                 .child(menu)
+                .child(compact_menu)
                 .child(select_popup),
         ),
         section("Popover / tooltip", colors, popovers),

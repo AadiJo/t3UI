@@ -26,6 +26,7 @@ type ItemsFn = Rc<dyn Fn(&mut Window, &mut App) -> Vec<AnyElement>>;
 /// The menu surface: min width 128, radius 10, `shadow-lg/5`, 4px inner padding.
 #[derive(IntoElement, Default)]
 pub struct MenuPopup {
+    compact: bool,
     children: Vec<AnyElement>,
     style: StyleRefinement,
 }
@@ -33,6 +34,12 @@ pub struct MenuPopup {
 impl MenuPopup {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// `rounded-md` (8px) surface for compact menus opened from `xs` triggers.
+    pub fn compact(mut self) -> Self {
+        self.compact = true;
+        self
     }
 }
 
@@ -50,7 +57,8 @@ impl Styled for MenuPopup {
 
 impl RenderOnce for MenuPopup {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let mut surface = popup_surface(px(10.), cx.colors())
+        let radius = if self.compact { px(8.) } else { px(10.) };
+        let mut surface = popup_surface(radius, cx.colors())
             .min_w(px(128.))
             .flex()
             .flex_col()
@@ -68,18 +76,24 @@ fn item_row(
     id: ElementId,
     disabled: bool,
     highlighted: bool,
+    compact: bool,
     cx: &App,
 ) -> gpui_kit::Stateful<gpui_kit::Div> {
     let colors = cx.colors();
+    let (min_height, padding_y, text, line) = if compact {
+        (px(24.), px(2.), px(12.), px(16.))
+    } else {
+        (px(28.), px(4.), px(14.), px(20.))
+    };
     div()
         .id(id)
         .flex()
         .items_center()
-        .min_h(px(28.))
-        .py(px(4.))
+        .min_h(min_height)
+        .py(padding_y)
         .rounded(px(6.))
-        .text_size(px(14.))
-        .line_height(px(20.))
+        .text_size(text)
+        .line_height(line)
         .text_color(colors.foreground)
         .cursor_default()
         .when(highlighted, |this| {
@@ -113,6 +127,7 @@ pub struct MenuItem {
     shortcut: Option<SharedString>,
     destructive: bool,
     inset: bool,
+    compact: bool,
     disabled: bool,
     on_click: Option<ClickHandler>,
     preview: Interaction,
@@ -127,6 +142,7 @@ impl MenuItem {
             shortcut: None,
             destructive: false,
             inset: false,
+            compact: false,
             disabled: false,
             on_click: None,
             preview: Interaction::Rest,
@@ -157,6 +173,12 @@ impl MenuItem {
         self
     }
 
+    /// The composer's compact row (`min-h-6 text-xs`, 12px icons) for `xs`-triggered menus.
+    pub fn compact(mut self) -> Self {
+        self.compact = true;
+        self
+    }
+
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
@@ -184,17 +206,23 @@ impl RenderOnce for MenuItem {
         let highlighted = self.preview != Interaction::Rest;
         let fg = self.destructive.then_some(colors.destructive_foreground);
         let icon_color = fg.unwrap_or(colors.muted_foreground);
-        item_row(self.id, self.disabled, highlighted, cx)
-            .gap(px(8.))
-            .pl(if self.inset { px(32.) } else { px(8.) })
-            .pr(px(8.))
+        let compact = self.compact;
+        let (gap, start, end, icon_size) = if compact {
+            (px(6.), px(6.), px(8.), px(12.))
+        } else {
+            (px(8.), px(8.), px(8.), px(16.))
+        };
+        item_row(self.id, self.disabled, highlighted, compact, cx)
+            .gap(gap)
+            .pl(if self.inset { px(32.) } else { start })
+            .pr(end)
             .when_some(fg, |this, fg| this.text_color(fg))
             .when_some(self.icon, |this, icon| {
                 this.child(overhang(
                     Icon::new(icon)
                         .color(icon_color)
                         .opacity(crate::tokens::ICON_OPACITY),
-                    px(16.),
+                    icon_size,
                     px(2.),
                     px(2.),
                 ))
@@ -210,13 +238,15 @@ impl RenderOnce for MenuItem {
 }
 
 /// A checkable menu item (`grid-cols-[1rem_1fr]`, check indicator in the first column), or
-/// with `switch()` a label with a trailing small [`Switch`].
+/// with `switch()` a label with a trailing small [`Switch`]. Radio items look the same: use
+/// this with `checked` set on the selected option.
 #[derive(IntoElement)]
 pub struct MenuCheckboxItem {
     id: ElementId,
     label: SharedString,
     checked: bool,
     switch: bool,
+    compact: bool,
     disabled: bool,
     on_change: Option<ChangeHandler<bool>>,
     preview: Interaction,
@@ -229,6 +259,7 @@ impl MenuCheckboxItem {
             label: label.into(),
             checked: false,
             switch: false,
+            compact: false,
             disabled: false,
             on_change: None,
             preview: Interaction::Rest,
@@ -243,6 +274,12 @@ impl MenuCheckboxItem {
     /// `variant="switch"`.
     pub fn switch(mut self) -> Self {
         self.switch = true;
+        self
+    }
+
+    /// The composer's compact row (`min-h-6 text-xs`, 12px check column).
+    pub fn compact(mut self) -> Self {
+        self.compact = true;
         self
     }
 
@@ -268,7 +305,8 @@ impl RenderOnce for MenuCheckboxItem {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let highlighted = self.preview != Interaction::Rest;
         let checked = self.checked;
-        let row = item_row(self.id.clone(), self.disabled, highlighted, cx);
+        let compact = self.compact;
+        let row = item_row(self.id.clone(), self.disabled, highlighted, compact, cx);
         let row = if self.switch {
             row.gap(px(16.))
                 .pl(px(8.))
@@ -280,11 +318,16 @@ impl RenderOnce for MenuCheckboxItem {
                         .checked(checked),
                 )
         } else {
-            row.gap(px(8.))
-                .pl(px(8.))
-                .pr(px(16.))
-                .child(div().size(px(16.)).flex_none().when(checked, |this| {
-                    this.child(Icon::new(IconName::CheckIndicator))
+            let (gap, start, end, check) = if compact {
+                (px(6.), px(6.), px(8.), px(12.))
+            } else {
+                (px(8.), px(8.), px(16.), px(16.))
+            };
+            row.gap(gap)
+                .pl(start)
+                .pr(end)
+                .child(div().size(check).flex_none().when(checked, |this| {
+                    this.child(Icon::new(IconName::CheckIndicator).size(check))
                 }))
                 .child(div().flex_1().min_w_0().child(self.label))
         };
