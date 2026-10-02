@@ -21,6 +21,11 @@ When a spec and the source disagree, the source wins; fix the spec.
 - `t3-client`: tokio networking, environment catalog, auth/pairing, T3 Connect, reducers. No GPUI.
   Exposes executor-agnostic handles (channels/futures) that GPUI tasks can await.
 - `t3-ui`: theme tokens, fonts, icons, styled primitives reproducing the fork's components.
+- `t3-highlight`: syntect highlighting with the fork's Shiki `pierre-dark/light` colors and
+  language resolution. No GPUI. `tests/shiki_parity.rs` measures agreement with Shiki.
+- `t3-markdown`: chat markdown (`Markdown` entity) matching `ChatMarkdown`: parser, streaming
+  chunks, inline layout element, code/table chrome. Parser/chunker build without GPUI
+  (`--no-default-features`).
 - `t3-app`: the window shell and views. `lib.rs` exposes views so headless snapshot rendering can
   mount them; `main.rs` only boots.
 
