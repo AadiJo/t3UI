@@ -2,3 +2,8 @@
 //!
 //! Runs on its own tokio runtime and is GPUI-free. The app talks to it through handles whose
 //! futures and channels are executor-agnostic, so GPUI tasks can await them directly.
+
+pub mod rpc;
+pub mod runtime;
+
+pub use rpc::{CloseReason, ConnectError, RpcConnection, RpcError, Subscription};
