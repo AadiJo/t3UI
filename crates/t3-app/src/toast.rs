@@ -137,6 +137,12 @@ impl Toast {
         self
     }
 
+    /// Closes after `timeout` instead of the default 5s.
+    pub fn timeout(mut self, timeout: Duration) -> Self {
+        self.timeout = Some(timeout);
+        self
+    }
+
     /// Shows only while `thread` is the route thread.
     pub fn for_thread(mut self, thread: ThreadRef) -> Self {
         self.thread = Some(thread);
@@ -204,6 +210,22 @@ impl ToastLayer {
         id
     }
 
+    /// Replaces a shown toast in place (`toastManager.update`) and restarts its timer. No-op
+    /// once it closed.
+    fn replace(&mut self, id: ToastId, toast: Toast, cx: &mut Context<Self>) {
+        let Some(entry) = self.entries.iter_mut().find(|entry| entry.id == id) else {
+            return;
+        };
+        entry._timer = toast.timeout.map(|timeout| {
+            cx.spawn(async move |this, cx| {
+                cx.background_executor().timer(timeout).await;
+                this.update(cx, |this, cx| this.remove(id, cx)).ok();
+            })
+        });
+        entry.toast = toast;
+        cx.notify();
+    }
+
     fn remove(&mut self, id: ToastId, cx: &mut Context<Self>) {
         let before = self.entries.len();
         self.entries.retain(|entry| entry.id != id);
@@ -216,6 +238,11 @@ impl ToastLayer {
 /// Shows a toast.
 pub fn show(toast: Toast, cx: &mut App) -> ToastId {
     ToastLayer::global(cx).update(cx, |layer, cx| layer.push(toast, cx))
+}
+
+/// Replaces a shown toast's content in place, e.g. a progress toast becoming the result.
+pub fn update(id: ToastId, toast: Toast, cx: &mut App) {
+    ToastLayer::global(cx).update(cx, |layer, cx| layer.replace(id, toast, cx));
 }
 
 /// Closes a toast early.

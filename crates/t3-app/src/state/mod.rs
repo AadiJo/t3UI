@@ -266,6 +266,12 @@ impl AppState {
         cx.notify();
     }
 
+    /// Where persisted client state lives, for modules that keep their own file
+    /// (`terminal-state.json`).
+    pub fn store(&self) -> &Store {
+        &self.store
+    }
+
     pub fn ui(&self) -> &UiState {
         &self.ui
     }
