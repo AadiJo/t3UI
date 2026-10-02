@@ -17,12 +17,16 @@ use t3_client::{Environment, RpcError};
 use t3_protocol::{
     ServerError, Stream, Unary,
     methods::*,
+    preview::{DiscoveredLocalServersInput, PreviewListInput},
+    providers::ProviderSetupInput,
     pull_requests::{
         ListState, PullRequestInvalidateInput, PullRequestListInput, PullRequestListStatsInput,
         PullRequestRef, PullRequestRoutingIdentityInput,
     },
     server::SubscribeServerConfigInput,
+    server_ops::ResourceHistoryInput,
     usage::UsageSummaryInput,
+    workspace::WorktreeSetupThreadInput,
 };
 
 fn main() -> Result<()> {
@@ -44,7 +48,29 @@ fn main() -> Result<()> {
         .lock()
         .unwrap()
         .write_jsonl(&out, &harness.redactor(&label))?;
+    keep_only_harness_servers(&out, &harness.base_url)?;
     println!("recorded {}", out.display());
+    Ok(())
+}
+
+/// `subscribeDiscoveredLocalServers` reports every listening port on the machine (other
+/// people's dev servers, daily-driver apps). Keep only the harness's own server.
+fn keep_only_harness_servers(path: &std::path::Path, base_url: &str) -> Result<()> {
+    let port = url::Url::parse(base_url)?.port().unwrap_or(0);
+    let text = std::fs::read_to_string(path)?;
+    let mut lines = Vec::new();
+    for line in text.lines() {
+        let mut entry: serde_json::Value = serde_json::from_str(line)?;
+        if let Some(values) = entry["frame"]["values"].as_array_mut() {
+            for value in values {
+                if let Some(servers) = value.get_mut("servers").and_then(|s| s.as_array_mut()) {
+                    servers.retain(|server| server["port"].as_u64() == Some(u64::from(port)));
+                }
+            }
+        }
+        lines.push(entry.to_string());
+    }
+    std::fs::write(path, lines.join("\n") + "\n")?;
     Ok(())
 }
 
@@ -141,6 +167,50 @@ async fn run(harness: &common::HarnessState) -> Result<String> {
     )
     .await;
     call::<ServerRefreshUsageRates>(&env, &Empty {}).await;
+
+    // Server operations (read-only).
+    call::<ServerDiscoverSourceControl>(&env, &Empty {}).await;
+    call::<ServerGetTraceDiagnostics>(&env, &Empty {}).await;
+    call::<ServerGetProcessDiagnostics>(&env, &Empty {}).await;
+    call::<ServerGetHostResources>(&env, &Empty {}).await;
+    let window = ResourceHistoryInput {
+        window_ms: 60_000,
+        bucket_ms: 10_000,
+    };
+    call::<ServerGetProcessResourceHistory>(&env, &window).await;
+    call::<ServerGetResourceTelemetryHistory>(&env, &window).await;
+    first::<SubscribeResourceTelemetry>(&env, &Empty {}).await;
+    call::<CloudGetRelayClientStatus>(&env, &Empty {}).await;
+
+    // Providers (read-only subscriptions).
+    let codex = ProviderSetupInput {
+        instance_id: "codex".into(),
+    };
+    first::<ProviderAuthSubscribe>(&env, &codex).await;
+    first::<ProviderInstallSubscribe>(&env, &codex).await;
+
+    // Workspaces.
+    call::<AgentSessionsScan>(&env, &Empty {}).await;
+    first::<SubscribeProjectClones>(&env, &Empty {}).await;
+    if let Some(thread) = harness.threads.iter().find(|t| !t.archived) {
+        first::<SubscribeWorktreeSetup>(
+            &env,
+            &WorktreeSetupThreadInput {
+                thread_id: thread.id.clone(),
+            },
+        )
+        .await;
+        call::<PreviewList>(
+            &env,
+            &PreviewListInput {
+                thread_id: thread.id.clone(),
+            },
+        )
+        .await;
+    }
+    first::<SubscribePreviewEvents>(&env, &Empty {}).await;
+    first::<SubscribeDiscoveredLocalServers>(&env, &DiscoveredLocalServersInput::default()).await;
+    first::<SubscribeDeviceState>(&env, &Empty {}).await;
 
     drop(env);
     tokio::time::sleep(Duration::from_millis(200)).await;

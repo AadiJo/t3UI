@@ -7,6 +7,8 @@
 //! 2. A method was recorded but has no typed descriptor here, so its shape is unchecked.
 //! 3. Typed failures lose the fields the UI words its message from (`reason`, `provider`).
 //! 4. Usage limits (rate-limit windows) are dropped or the provider row is lost.
+//! 5. `Schema.Option` fields (`{"_tag":"Some","value":..}`) in diagnostics decode as `None`
+//!    when present, or fail the whole result.
 
 mod support;
 
@@ -105,15 +107,23 @@ registry! {
         PullRequestsList, PullRequestsListStats, PullRequestsSummary, PullRequestsDetail,
         PullRequestsStack, PullRequestsLinkedThreads, PullRequestsRouting,
         PullRequestsRoutingIdentity, PullRequestsInvalidate, ServerGetUsageSummary,
-        ServerRefreshUsageRates,
+        ServerRefreshUsageRates, ServerDiscoverSourceControl, ServerGetTraceDiagnostics,
+        ServerGetProcessDiagnostics, ServerGetHostResources, ServerGetProcessResourceHistory,
+        ServerGetResourceTelemetryHistory, CloudGetRelayClientStatus, AgentSessionsScan,
+        PreviewList,
     ],
-    stream: [SubscribeServerConfig, SubscribeShell, PullRequestsSubscribeRefreshes]
+    stream: [
+        SubscribeServerConfig, SubscribeShell, PullRequestsSubscribeRefreshes,
+        SubscribeResourceTelemetry, ProviderAuthSubscribe, ProviderInstallSubscribe,
+        SubscribeProjectClones, SubscribeWorktreeSetup, SubscribePreviewEvents,
+        SubscribeDiscoveredLocalServers, SubscribeDeviceState,
+    ]
 }
 
 #[test]
 fn every_recorded_response_decodes_into_its_method_type() {
     let all = responses(&Transcript::parse(FIXTURE));
-    assert!(all.len() >= 13, "only {} methods recorded", all.len());
+    assert!(all.len() >= 30, "only {} methods recorded", all.len());
     for (tag, responses) in &all {
         assert!(
             check(tag, responses),
@@ -154,5 +164,45 @@ fn provider_rate_limits_decode_from_the_config_snapshot() {
             .windows
             .iter()
             .all(|w| (0.0..=100.0).contains(&w.used_percent))
+    );
+}
+
+#[test]
+fn effect_option_fields_decode_when_present() {
+    let all = responses(&Transcript::parse(FIXTURE));
+    let discovery: t3_protocol::server_ops::SourceControlDiscoveryResult =
+        serde_json::from_value(all["server.discoverSourceControl"].successes[0].clone()).unwrap();
+    let git = discovery
+        .version_control_systems
+        .iter()
+        .find(|item| item.kind == "git")
+        .expect("git not discovered");
+    // The harness has git, so its version is `Some` on the wire.
+    assert!(
+        git.version.as_deref().is_some_and(|v| !v.is_empty()),
+        "{git:?}"
+    );
+
+    let telemetry: t3_protocol::server_ops::ResourceTelemetrySnapshot =
+        serde_json::from_value(all["subscribeResourceTelemetry"].items[0].clone()).unwrap();
+    assert!(!telemetry.processes.is_empty());
+    // Round trip keeps the Option encoding.
+    let encoded = serde_json::to_value(&discovery).unwrap();
+    let version = &encoded["versionControlSystems"][0]["version"];
+    assert!(
+        version["_tag"] == "Some" || version["_tag"] == "None",
+        "{version}"
+    );
+}
+
+#[test]
+fn provider_setup_errors_keep_their_detail() {
+    let all = responses(&Transcript::parse(FIXTURE));
+    let failure: ServerError =
+        serde_json::from_value(all["provider.install.subscribe"].failures[0].clone()).unwrap();
+    assert_eq!(failure.tag, "ProviderSetupError");
+    assert!(
+        failure.display_message().contains("managed setup"),
+        "{failure}"
     );
 }

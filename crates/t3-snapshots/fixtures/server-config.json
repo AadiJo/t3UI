@@ -1651,15 +1651,20 @@
           "skills": [
             {
               "description": "Draft a changelog entry from recent commits",
+              "displayName": null,
               "enabled": true,
               "name": "changelog",
               "path": "/tmp/t3ui-e2e/run-nightly/userhome/.codex/skills/changelog/SKILL.md",
-              "scope": "user"
+              "scope": "user",
+              "shortDescription": null,
+              "userInvocable": null,
+              "userInvocationOnly": false
             }
           ],
           "slashCommands": [
             {
               "description": "Summarize the conversation and reduce context usage",
+              "input": null,
               "name": "compact"
             },
             {
@@ -1677,15 +1682,20 @@
           "skills": [
             {
               "description": "Draft a changelog entry from recent commits",
+              "displayName": null,
               "enabled": true,
               "name": "changelog",
               "path": "/tmp/t3ui-e2e/run-nightly/userhome/.codex/skills/changelog/SKILL.md",
-              "scope": "user"
+              "scope": "user",
+              "shortDescription": null,
+              "userInvocable": null,
+              "userInvocationOnly": false
             }
           ],
           "slashCommands": [
             {
               "description": "Summarize the conversation and reduce context usage",
+              "input": null,
               "name": "compact"
             },
             {
@@ -1703,15 +1713,20 @@
           "skills": [
             {
               "description": "Draft a changelog entry from recent commits",
+              "displayName": null,
               "enabled": true,
               "name": "changelog",
               "path": "/tmp/t3ui-e2e/run-nightly/userhome/.codex/skills/changelog/SKILL.md",
-              "scope": "user"
+              "scope": "user",
+              "shortDescription": null,
+              "userInvocable": null,
+              "userInvocationOnly": false
             }
           ],
           "slashCommands": [
             {
               "description": "Summarize the conversation and reduce context usage",
+              "input": null,
               "name": "compact"
             },
             {

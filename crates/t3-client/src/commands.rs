@@ -19,7 +19,9 @@ use t3_protocol::{
         BootstrapCreateThread, ClientCommand, ThreadMetaPatch, TurnAttachment, TurnStart,
         TurnStartBootstrap, TurnStartMessage, UserReason, UserRole,
     },
-    orchestration::{ApprovalDecision, InteractionMode, ModelSelection, RuntimeMode},
+    orchestration::{
+        ApprovalDecision, ChatAttachment, InteractionMode, ModelSelection, RuntimeMode,
+    },
 };
 
 /// The current time as ISO-8601 with milliseconds, like JS `toISOString()`.
@@ -176,18 +178,21 @@ pub fn respond_to_approval(
     }
 }
 
-/// Answers a user-input request. `answers` is keyed by question id.
+/// Answers a user-input request. `answers` is keyed by question id (the chosen option label,
+/// a list of labels for multi-select, or free text). `attachments_by_question_id` carries
+/// files attached to individual answers (`capabilities.question_attachments`).
 pub fn respond_to_user_input(
     thread_id: ThreadId,
     request_id: ApprovalRequestId,
     answers: BTreeMap<String, Value>,
+    attachments_by_question_id: Option<BTreeMap<String, Vec<ChatAttachment>>>,
 ) -> ClientCommand {
     ClientCommand::ThreadUserInputRespond {
         command_id: CommandId::random(),
         thread_id,
         request_id,
         answers,
-        attachments_by_question_id: None,
+        attachments_by_question_id,
         created_at: now(),
     }
 }

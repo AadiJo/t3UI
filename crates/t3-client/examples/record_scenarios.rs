@@ -250,6 +250,7 @@ async fn record(
                     thread_id.clone(),
                     input.request_id.clone(),
                     answers,
+                    None,
                 ))
                 .await?;
                 answered.push(input.request_id.clone());
