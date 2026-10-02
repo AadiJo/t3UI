@@ -332,6 +332,19 @@ impl Environment {
         self.request::<DispatchCommand>(&command).await
     }
 
+    /// Downloads an asset from `assets.createUrl` (favicons, images, files) using this
+    /// environment's HTTP base and TLS setup: `relative_url` is the result's `relative_url`.
+    /// Returns the bytes and `Content-Type`. Needs a live session (for the base URL).
+    pub async fn fetch_asset(
+        &self,
+        relative_url: &str,
+    ) -> Result<(Vec<u8>, Option<String>), HttpError> {
+        let session = self
+            .session()
+            .ok_or_else(|| HttpError::Network("not connected".into()))?;
+        session.http.fetch_asset(relative_url).await
+    }
+
     /// Uploads a file for a new message: `attachments.createUploadUrl`, then the raw bytes over
     /// HTTP. Put the result in `TurnStartMessage.attachments`. Needs
     /// `capabilities.attachment_uploads`; images can be sent inline (`data_url`) instead.

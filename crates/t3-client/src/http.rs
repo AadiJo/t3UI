@@ -38,6 +38,7 @@ const DESCRIPTOR_TIMEOUT: Duration = Duration::from_secs(10);
 const AUTH_TIMEOUT: Duration = Duration::from_secs(15);
 const SNAPSHOT_TIMEOUT: Duration = Duration::from_secs(20);
 const UPLOAD_TIMEOUT: Duration = Duration::from_secs(300);
+const ASSET_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// Adds credentials to requests. Implemented by [`BearerAuth`] here and by the DPoP auth of
 /// T3 Connect environments.
@@ -168,6 +169,12 @@ impl std::fmt::Debug for EnvironmentHttp {
             .field("authenticated", &self.auth.is_some())
             .finish()
     }
+}
+
+/// A successful response.
+struct Response {
+    body: Vec<u8>,
+    content_type: Option<String>,
 }
 
 enum Body {
@@ -330,6 +337,26 @@ impl EnvironmentHttp {
         }
     }
 
+    /// Downloads an asset: `relative_url` from `assets.createUrl` (e.g. a project favicon),
+    /// resolved against this environment's base. Asset URLs are capabilities, so the request
+    /// carries no credentials. Returns the body and its `Content-Type`. An expired or unknown
+    /// token is a 404 (`HttpError::Status`); a project without a favicon gets a URL that 404s.
+    pub async fn fetch_asset(
+        &self,
+        relative_url: &str,
+    ) -> Result<(Vec<u8>, Option<String>), HttpError> {
+        let response = self
+            .send(
+                Method::GET,
+                self.resolve(relative_url),
+                Body::Empty,
+                false,
+                ASSET_TIMEOUT,
+            )
+            .await?;
+        Ok((response.body, response.content_type))
+    }
+
     /// Uploads attachment bytes to the `relative_url` from `attachments.createUploadUrl`.
     pub async fn upload_attachment(
         &self,
@@ -359,11 +386,11 @@ impl EnvironmentHttp {
         authenticated: bool,
         timeout: Duration,
     ) -> Result<T, HttpError> {
-        let bytes = self.send(method, url, body, authenticated, timeout).await?;
-        serde_json::from_slice(&bytes).map_err(|e| HttpError::Decode(e.to_string()))
+        let response = self.send(method, url, body, authenticated, timeout).await?;
+        serde_json::from_slice(&response.body).map_err(|e| HttpError::Decode(e.to_string()))
     }
 
-    /// Runs one request on the networking runtime and returns the body of a 2xx response.
+    /// Runs one request on the networking runtime and returns a 2xx response.
     async fn send(
         &self,
         method: Method,
@@ -371,7 +398,7 @@ impl EnvironmentHttp {
         body: Body,
         authenticated: bool,
         timeout: Duration,
-    ) -> Result<Vec<u8>, HttpError> {
+    ) -> Result<Response, HttpError> {
         let auth = if authenticated {
             self.auth.clone()
         } else {
@@ -404,12 +431,20 @@ impl EnvironmentHttp {
             };
             let response = request.send().await.map_err(map_reqwest_error)?;
             let status = response.status();
+            let content_type = response
+                .headers()
+                .get(reqwest::header::CONTENT_TYPE)
+                .and_then(|value| value.to_str().ok())
+                .map(str::to_owned);
             let bytes = response.bytes().await.map_err(map_reqwest_error)?;
             if let Some(tap) = RESPONSE_TAP.get() {
                 tap(&method, &url, status.as_u16(), &bytes);
             }
             if status.is_success() {
-                Ok(bytes.to_vec())
+                Ok(Response {
+                    body: bytes.to_vec(),
+                    content_type,
+                })
             } else {
                 Err(HttpError::Status {
                     status: status.as_u16(),
