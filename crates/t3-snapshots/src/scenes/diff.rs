@@ -42,6 +42,20 @@ pub fn scenes() -> Vec<Scene> {
                 ],
             )
         }),
+        // Collapsed files keep only their header, with a right chevron.
+        Scene::new("diff-collapsed-dark", ThemeMode::Dark, |_, cx| {
+            diff_scene(
+                cx,
+                MULTI,
+                &[Panel {
+                    collapsed: &[
+                        "apps/server/src/legacy/checkpointPaths.ts",
+                        "apps/web/src/components/ChatView.tsx",
+                    ],
+                    ..STACKED
+                }],
+            )
+        }),
         Scene::new("diff-rename-binary-dark", ThemeMode::Dark, |_, cx| {
             diff_scene(cx, RENAME, &[STACKED, SPLIT])
         }),
@@ -109,6 +123,8 @@ struct Panel {
     wrap: bool,
     /// Pixels to scroll after the first frame has measured the rows.
     scroll: f32,
+    /// Files collapsed to their header.
+    collapsed: &'static [&'static str],
 }
 
 const STACKED: Panel = Panel {
@@ -116,12 +132,14 @@ const STACKED: Panel = Panel {
     style: DiffStyle::Unified,
     wrap: false,
     scroll: 0.,
+    collapsed: &[],
 };
 const SPLIT: Panel = Panel {
     width: 900.,
     style: DiffStyle::Split,
     wrap: false,
     scroll: 0.,
+    collapsed: &[],
 };
 
 /// Diff panels side by side on the app background.
@@ -161,6 +179,9 @@ fn diff_scene(cx: &mut App, patch: &str, panels: &[Panel]) -> AnyView {
                 view.set_style(panel.style, cx);
                 view.set_wrap(panel.wrap, cx);
                 view.set_patch(patch, cx);
+                for path in panel.collapsed {
+                    view.set_collapsed(path, true, cx);
+                }
                 view
             });
             (view, panel.width, panel.scroll)

@@ -207,8 +207,16 @@ impl DiffView {
         self.collapsed.contains(path)
     }
 
-    /// Collapses or expands a file's body.
-    pub fn toggle_collapsed(&mut self, file: usize, cx: &mut Context<Self>) {
+    /// Collapses or expands `path`'s body, like its header chevron.
+    pub fn set_collapsed(&mut self, path: &str, collapsed: bool, cx: &mut Context<Self>) {
+        if let Some(file) = self.files.iter().position(|file| file.path == path)
+            && self.is_collapsed(path) != collapsed
+        {
+            self.toggle_collapsed(file, cx);
+        }
+    }
+
+    fn toggle_collapsed(&mut self, file: usize, cx: &mut Context<Self>) {
         let Some(path) = self.files.get(file).map(|file| file.path.clone()) else {
             return;
         };
