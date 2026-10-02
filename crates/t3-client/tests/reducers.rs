@@ -19,6 +19,10 @@
 //! 9. Shell: an upsert appends a duplicate row, or replaces unchanged rows (breaking `Arc`
 //!    sharing that views rely on); removing an unknown id panics.
 //! 10. Streaming a delta clones every message instead of only the streaming one.
+//! 11. Pending requests: a resolution that arrives before its request leaves it open; internal
+//!     approval types (`tool_user_input`) show as approvals; a stale-request failure keeps it
+//!     open, or any other failure closes it; legacy `requestType` maps to the wrong kind;
+//!     questions without usable options show up.
 
 use std::sync::Arc;
 
@@ -515,4 +519,105 @@ fn thread_snapshot_item_replaces_merged_history() {
     assert!(state.thread.as_ref().unwrap().messages.is_empty());
     assert_eq!(state.history_epoch, epoch + 1);
     assert!(state.page.is_none());
+}
+
+fn request_activity(
+    id: &str,
+    kind: &str,
+    payload: Value,
+) -> Arc<t3_protocol::orchestration::OrchestrationThreadActivity> {
+    Arc::new(
+        serde_json::from_value(json!({
+            "id": id, "tone": "approval", "kind": kind, "summary": kind, "payload": payload,
+            "turnId": "turn-1", "sequence": null, "createdAt": T,
+        }))
+        .unwrap(),
+    )
+}
+
+#[test]
+fn pending_requests_follow_upstream_rules() {
+    let activities = vec![
+        // Resolved before it was requested: stays closed.
+        request_activity("a", "approval.resolved", json!({"requestId": "r1"})),
+        request_activity(
+            "b",
+            "approval.requested",
+            json!({"requestId": "r1", "requestKind": "command"}),
+        ),
+        // Internal approval types never show.
+        request_activity(
+            "c",
+            "approval.requested",
+            json!({"requestId": "r2", "requestType": "tool_user_input"}),
+        ),
+        // Legacy request type, then a retryable failure: stays open.
+        request_activity(
+            "d",
+            "approval.requested",
+            json!({"requestId": "r3", "requestType": "apply_patch_approval", "detail": "edit src/a.rs"}),
+        ),
+        request_activity(
+            "e",
+            "provider.approval.respond.failed",
+            json!({"requestId": "r3", "detail": "network hiccup"}),
+        ),
+        // A stale failure closes.
+        request_activity("f", "approval.requested", json!({"requestId": "r4"})),
+        request_activity(
+            "g",
+            "provider.approval.respond.failed",
+            json!({"requestId": "r4", "detail": "Stale pending approval request: r4"}),
+        ),
+        // Questions: one usable, one without options and no custom answers.
+        request_activity(
+            "h",
+            "user-input.requested",
+            json!({"requestId": "q1", "responseMode": "message", "questions": [
+                {"id": "db", "header": "DB", "question": "Which?", "options": [{"label": "SQLite", "description": "file"}, {"bad": true}]},
+            ]}),
+        ),
+        request_activity(
+            "i",
+            "user-input.requested",
+            json!({"requestId": "q2", "questions": [
+                {"id": "x", "header": "X", "question": "?", "options": [], "allowCustomAnswer": false},
+            ]}),
+        ),
+    ];
+    let pending = t3_client::pending_requests(&activities);
+    let approvals: Vec<_> = pending
+        .approvals
+        .iter()
+        .map(|a| {
+            (
+                a.request_id.as_str(),
+                a.request_kind.as_str(),
+                a.detail.as_deref(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        approvals,
+        vec![("r3", "file-change", Some("edit src/a.rs"))]
+    );
+    let [input] = pending.user_inputs.as_slice() else {
+        panic!("expected one question, got {:?}", pending.user_inputs);
+    };
+    assert_eq!(input.request_id.as_str(), "q1");
+    assert!(input.dismissible);
+    assert_eq!(input.questions[0].options.len(), 1);
+
+    let mut answered = activities.clone();
+    answered.push(request_activity(
+        "j",
+        "user-input.resolved",
+        json!({"requestId": "q1"}),
+    ));
+    answered.push(request_activity(
+        "k",
+        "approval.resolved",
+        json!({"requestId": "r3"}),
+    ));
+    assert!(t3_client::pending_requests(&answered).is_empty());
 }

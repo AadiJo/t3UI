@@ -75,6 +75,14 @@ impl ThreadState {
         }
     }
 
+    /// Open approvals and questions (empty without data).
+    pub fn pending_requests(&self) -> crate::PendingRequests {
+        self.thread
+            .as_ref()
+            .map(|thread| crate::pending_requests(&thread.activities))
+            .unwrap_or_default()
+    }
+
     /// The `afterSequence` to resubscribe with. Only when there is data to resume.
     pub fn resume_cursor(&self) -> Option<u64> {
         self.thread.as_ref().map(|_| self.last_sequence)
