@@ -44,6 +44,7 @@ cargo check --workspace
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 cargo run                     # opens the app (Linux needs the GPUI system deps)
+script/check-macos.sh -p t3-app   # type-check for macOS from Linux (patched gpui-pre-apple, check only)
 ```
 
 CI (`.github/workflows/ci.yml`) builds and bundles the macOS app, runs a launch smoke test, and
