@@ -36,8 +36,13 @@ device and pull-request surfaces. The other surfaces and tools live in sibling f
 - Tooltips: Base UI 1.5.0, open delay 600ms, close immediately, default side top, `sideOffset` 4px,
   `text-xs`, `max-w-80` (320px), `px-2 py-1`, `rounded-md`, `bg-popover` + border
   (`components/ui/tooltip.tsx:13-60`, `nm:@base-ui/react@1.5.0 esm/tooltip/utils/constants.js:1`).
-- Context menus marked "native" go through `readLocalApi().contextMenu.show(items, {x, y})`, which is
-  an Electron native menu. In T3UI use the macOS `NativeMenu` path the sidebar already uses.
+- Context menus go through `readLocalApi().contextMenu.show(items, {x, y})`. In fe7d3092c this is
+  not an OS menu: on desktop too it renders the in-app DOM menu `showContextMenuFallback`
+  (`localApi.ts:44-56`, `contextMenuFallback.ts`), styled like the app's popovers (overlays spec).
+  Confirmations (`localApi.dialogs.confirm`) are likewise the in-app `ConfirmDialogHost` alert dialog
+  (`components/ConfirmDialogHost.tsx`): the line ending in `?` is the title, the remaining lines the
+  description (`whitespace-pre-line`), buttons `Cancel` (outline) and `Confirm` (`destructive`
+  variant when requested). Do not use NSMenu / NSAlert for these.
 - Panel animations: `panelAnimationDurationMs` client setting, 0-400ms, default 0
   (`contracts:settings.ts:110-119`). `usePanelAnimationSettings` reports `active` only when the duration
   is > 0, `prefers-reduced-motion` is off and the route is not in its first painted frame
@@ -189,7 +194,7 @@ The panel toggle itself is enabled only when the thread has a project (`rightPan
 - Activating a tab (`:5088-5103`): `activateSurface`; preview -> also make it the active preview tab;
   terminal -> bump the terminal focus request; diff when not already showing -> `onDiffPanelOpen`.
 - Closing a tab (`closeRightPanelSurface`, `:5192-5222`):
-  - preview: if the tab is agent-controlled, a native destructive confirm first
+  - preview: if the tab is agent-controlled, an in-app destructive confirm first
     (`agentControlledBrowserCloseConfirmation`, `:5145-5162`).
   - terminal: `confirmTerminalClose([activeLabel, ...otherLabels])` first (panels-terminal.md).
   - then `cleanupRightPanelSurfaces` (`:5118-5144`): preview -> RPC `preview.close`; terminal -> for each
@@ -455,7 +460,7 @@ There is no bottom border on the tab bar; surfaces start directly under it (see 
        don't propagate.
   4. Close button (6.4).
 - Middle click (button 1) closes the tab; its mousedown default is prevented (no autoscroll).
-- Right click opens the native context menu (6.5).
+- Right click opens the in-app context menu (6.5).
 - When the strip overflows and the active tab changes, the active tab scrolls into view
   (`block/inline: nearest`, `:1057-1061`).
 
@@ -496,7 +501,7 @@ draft (open + isDraft) `GitPullRequestDraft` `text-zinc-500 dark:text-zinc-400/8
   inactive tab the fade is the inactive-hover color (the tab itself is filled on hover anyway).
 - `aria-label`: `Close <title>`. No tooltip. Click closes via `onCloseSurface` (section 2.3 flow).
 
-### 6.5 Tab context menu (native, `:948-1042`)
+### 6.5 Tab context menu (in-app `contextMenu.show`, `:948-1042`)
 
 Items in order (no separators):
 
@@ -920,7 +925,7 @@ This spec covers only how they appear as tabs; see appendix C and the open quest
 | `panels/context.rs`, `panels/thread_detail.rs` (branch `diff`) | Fit as-is (request helper, `subscribeThread` follower). |
 | `panels/view.rs` (branch `diff`) | July-era visuals: replace. Keep the inline/sheet split and presence plumbing as a starting point. |
 | `panels/plan/*` (branch `diff`) | Not a panel any more (no plan surface). Move whatever is reusable to the transcript plan card (chat). |
-| `t3-app` sidebar `NativeMenu` usage (`sidebar/menus.rs`) | Reuse for the tab context menu (native). |
+| `t3-app` sidebar menus (`sidebar/menus.rs`) | The sidebar's July code uses `NativeMenu`; fe7d3092c context menus are in-app DOM menus everywhere. Build one shared in-app context menu (overlays spec) and use it for tabs. |
 | `t3-ui` Toggle/Button/Menu/Tooltip/Kbd | Reuse; check sizes against the primitives table. The tools handoff notes `TooltipExt` only places tooltips on top: the layout toggles need side bottom (`base::Positioner`). |
 | Agents panel | Nothing exists. Port `crt:state/subagentRuntime.ts` fold + derive as pure Rust in `t3-logic` (GPUI-free, testable on recorded activities), then the view. |
 | Icons | `PanelBottom`, `PanelBottomClose`, `PanelRight`, `PanelRightClose`, `Maximize2`, `Minimize2`, `FileDiff`, `Files`, `Globe2`, `TerminalSquare`, `Bot`, `Smartphone`, `Plus`, `ChevronLeft/Right/Down`, `Volume2`, `VolumeOff`, `X`, `Braces`, `Check`, `GitPullRequestArrow`, `GitPullRequestDraft`, `GitPullRequestClosed`, `GitMerge`, `Link2` (lucide) plus Apple/Android logos: check `t3-ui` assets; the panels handoff lists `PanelBottom`, `PanelRight` as missing. |
