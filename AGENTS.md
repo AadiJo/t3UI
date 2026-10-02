@@ -37,6 +37,18 @@ When a spec and the source disagree, the source wins; fix the spec.
 - Comments: a short doc comment on types/functions explaining how they are used. Keep in sync.
 - Commits: lowercase conventional commits (`feat(chat): render work log rows`). No co-author trailers.
 
+## Build directories (important)
+
+Never share a `CARGO_TARGET_DIR` between worktrees. Cargo hashes workspace crates by their path
+relative to the workspace root, so `t3-client` in two worktrees maps to the same artifact and
+fingerprint: a build can silently link another checkout's code and report it fresh. Each
+worktree uses its own dir:
+
+```sh
+export PATH=$HOME/.cargo/bin:$PATH CARGO_TARGET_DIR=$HOME/L-Projects/t3UI-targets/<worktree-name> \
+  CARGO_BUILD_JOBS=4 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0
+```
+
 ## Landing on main
 
 Run `script/preland.sh` before every push to main and only push if it prints `preland: ok`.
