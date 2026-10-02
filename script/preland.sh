@@ -9,7 +9,7 @@ cd "$(dirname "$0")/.."
 cargo fmt --all --check
 
 GPUI_FREE=()
-for crate in t3-protocol t3-client t3-highlight; do
+for crate in t3-protocol t3-client t3-highlight t3-logic; do
   [ -d "crates/$crate" ] && GPUI_FREE+=(-p "$crate")
 done
 cargo clippy "${GPUI_FREE[@]}" --all-targets -- -D warnings
