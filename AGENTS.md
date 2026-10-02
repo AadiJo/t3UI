@@ -55,8 +55,12 @@ worktree uses its own dir:
 
 ```sh
 export PATH=$HOME/.cargo/bin:$PATH CARGO_TARGET_DIR=$HOME/L-Projects/t3UI-targets/<worktree-name> \
-  CARGO_BUILD_JOBS=4 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0
+  CARGO_BUILD_JOBS=3 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0
 ```
+
+Incremental compilation is off: per-agent incremental caches grew to 3-6 GB each and filled the
+disk. Before any build, check `free -g` (wait if available < 4 GB) and `df -h ~` (stop and report if
+under 8 GB free).
 
 ## Landing on main
 
