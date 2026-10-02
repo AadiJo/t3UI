@@ -39,6 +39,13 @@ chrono = { version = "0.4", features = ["serde"] }
 base64 = "0.23"
 directories = "6"
 parking_lot = "0.12"
+rust-embed = { version = "8.7", features = ["interpolate-folder-path"] }
+
+# macOS native window glass (versions match what GPUI already links)
+objc2 = "0.6"
+objc2-foundation = "0.3"
+objc2-app-kit = "0.3"
+raw-window-handle = "0.6"
 
 # Markdown + syntax highlighting. Pure-Rust regex (fancy) so macOS cross-checks need no C toolchain.
 syntect = { version = "5.3", default-features = false, features = ["parsing", "regex-fancy", "plist-load", "yaml-load"] }
