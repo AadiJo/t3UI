@@ -1,0 +1,84 @@
+diff --git a/apps/web/src/components/ChatView.tsx b/apps/web/src/components/ChatView.tsx
+index 9a0b1c2..d3e4f5a 100644
+--- a/apps/web/src/components/ChatView.tsx
++++ b/apps/web/src/components/ChatView.tsx
+@@ -12,7 +12,8 @@ import { useStore } from "../store";
+ import { ThreadHeader } from "./ThreadHeader";
+ import { Timeline } from "./timeline/Timeline";
+ import { Composer } from "./composer/Composer";
+-import { DiffPanel } from "./DiffPanel";
++import { DiffPanel, DiffWorkerPoolProvider } from "./DiffPanel";
++import { useRightPanelStore } from "../rightPanelStore";
+ import { cn } from "~/lib/utils";
+ 
+ export interface ChatViewProps {
+@@ -140,9 +141,7 @@ export function ChatView({ threadId }: ChatViewProps) {
+   const thread = useThread(threadId);
+   const panel = useRightPanelStore((state) => state.byThread[threadId]);
+ 
+-  const isDiffOpen = panel?.activeSurfaceId === "diff";
+-  const isPlanOpen = panel?.activeSurfaceId === "plan";
+-  const isFilesOpen = panel?.activeSurfaceId === "files";
++  const activeSurface = panel?.isOpen ? panel.activeSurfaceId : null;
+ 
+   if (!thread) {
+     return <EmptyThreadState />;
+@@ -201,5 +197,10 @@ export function ChatView({ threadId }: ChatViewProps) {
+       <Timeline thread={thread} />
+       <Composer threadId={threadId} />
+     </div>
++    {activeSurface === "diff" ? (
++      <DiffWorkerPoolProvider>
++        <DiffPanel mode="embedded" composerDraftTarget={{ environmentId: thread.environmentId, threadId: thread.id }} />
++      </DiffWorkerPoolProvider>
++    ) : null}
+   );
+ }
+diff --git a/apps/web/src/lib/diffStats.ts b/apps/web/src/lib/diffStats.ts
+new file mode 100644
+index 0000000..8b1c2de
+--- /dev/null
++++ b/apps/web/src/lib/diffStats.ts
+@@ -0,0 +1,14 @@
++export interface DiffStat {
++  additions: number;
++  deletions: number;
++}
++
++export function sumDiffStats(stats: ReadonlyArray<DiffStat>): DiffStat {
++  return stats.reduce(
++    (total, stat) => ({
++      additions: total.additions + stat.additions,
++      deletions: total.deletions + stat.deletions,
++    }),
++    { additions: 0, deletions: 0 },
++  );
++}
+\ No newline at end of file
+diff --git a/apps/server/src/legacy/checkpointPaths.ts b/apps/server/src/legacy/checkpointPaths.ts
+deleted file mode 100644
+index 4e5f6a7..0000000
+--- a/apps/server/src/legacy/checkpointPaths.ts
++++ /dev/null
+@@ -1,7 +0,0 @@
+-import path from "node:path";
+-
+-export function checkpointDir(root: string, threadId: string): string {
+-  return path.join(root, ".t3", "checkpoints", threadId);
+-}
+-
+-export const CHECKPOINT_REF_PREFIX = "refs/t3/checkpoints";
+diff --git a/README.md b/README.md
+index 1a2b3c4..5d6e7f8 100644
+--- a/README.md
++++ b/README.md
+@@ -1,5 +1,5 @@
+ # T3 Code
+ 
+-T3 Code is a minimal web GUI for coding agents.
++T3 Code is a minimal desktop and web GUI for coding agents like Codex and Claude.
+ 
+ ## Getting started
+diff --git a/scripts/release.sh b/scripts/release.sh
+old mode 100644
+new mode 100755

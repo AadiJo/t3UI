@@ -7131,6 +7131,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "t3-diff"
+version = "0.1.0"
+dependencies = [
+ "gpui-kit",
+]
+
+[[package]]
 name = "t3-highlight"
 version = "0.1.0"
 dependencies = [

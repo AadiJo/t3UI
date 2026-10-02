@@ -1,0 +1,11 @@
+diff --git a/src/server.ts b/src/server.ts
+index 1111111..2222222 100644
+--- a/src/server.ts
++++ b/src/server.ts
+@@ -10,8 +10,9 @@ export function start() {
+   const app = createApp();
+-  app.listen(3000);
++  const port = Number(process.env.PORT ?? 3000);
++  app.listen(port);
+
+[truncated]

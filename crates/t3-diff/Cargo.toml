@@ -1,0 +1,20 @@
+[package]
+name = "t3-diff"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Unified git patch parsing and the GPUI diff viewer + changed-files tree."
+
+# The parser, row model, tree builder and colors are GPUI-free. The views sit behind the
+# default `gpui` feature so `cargo test -p t3-diff --no-default-features` runs on hosts
+# without GPUI's system libraries.
+[features]
+default = ["gpui"]
+gpui = ["dep:gpui-kit"]
+
+[dependencies]
+gpui-kit = { workspace = true, optional = true }
+
+[lints]
+workspace = true
