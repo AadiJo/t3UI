@@ -449,11 +449,11 @@ impl ChatView {
     /// Re-derives the timeline rows from the current thread and UI state.
     fn refresh_rows(&mut self, cx: &mut Context<Self>) {
         let is_working = self.is_working();
-        let thread = self.thread.clone();
-        let Some(thread) = thread.as_ref().and_then(|state| state.thread.as_ref()) else {
+        let Some(state) = self.thread.clone().filter(|state| state.thread.is_some()) else {
             cx.notify();
             return;
         };
+        let thread = state.thread.as_ref().expect("filtered above");
         let started_at = active_work_started_at(
             thread.latest_turn.as_ref(),
             thread.session.as_ref(),
@@ -466,7 +466,7 @@ impl ChatView {
             .collect();
         let scope = self.thread_key();
         self.timeline.sync(
-            thread,
+            state.clone(),
             &scope,
             &optimistic,
             is_working,

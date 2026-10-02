@@ -448,6 +448,7 @@ impl ChatView {
         };
         let group = SharedString::from(format!("tool-stack:{row_id}"));
         let toggle_group = group_id.to_owned();
+        let anchor_row = row_id.to_owned();
         let count = entries.len();
         div()
             .group(group.clone())
@@ -501,8 +502,8 @@ impl ChatView {
                             Icon::new(IconName::ChevronDown).size(px(14.)),
                             expanded,
                         ))
-                        .on_click(cx.listener(move |this, _, _, cx| {
-                            this.toggle_work_group(&toggle_group, cx)
+                        .on_click(cx.listener(move |this, _, window, cx| {
+                            this.toggle_work_group(&toggle_group, &anchor_row, window, cx)
                         })),
                 )
             })
@@ -535,6 +536,7 @@ impl ChatView {
             format!("+{hidden_count} previous {}", noun.1)
         };
         let group_id = group_id.to_owned();
+        let anchor_row = row_id.to_owned();
         div()
             .id(SharedString::from(row_id.to_owned()))
             .flex()
@@ -568,7 +570,9 @@ impl ChatView {
                     .text_color(colors.foreground.opacity(0.82))
                     .child(label),
             )
-            .on_click(cx.listener(move |this, _, _, cx| this.toggle_work_group(&group_id, cx)))
+            .on_click(cx.listener(move |this, _, window, cx| {
+                this.toggle_work_group(&group_id, &anchor_row, window, cx)
+            }))
             .into_any_element()
     }
 
@@ -610,7 +614,9 @@ impl ChatView {
                         })
                         .size(px(14.)),
                     )
-                    .on_click(cx.listener(move |this, _, _, cx| this.toggle_turn_fold(&turn, cx))),
+                    .on_click(cx.listener(move |this, _, window, cx| {
+                        this.toggle_turn_fold(&turn, window, cx)
+                    })),
             )
             .into_any_element()
     }

@@ -208,22 +208,51 @@ impl ChatView {
             )
     }
 
-    pub(super) fn toggle_turn_fold(&mut self, turn: &TurnId, cx: &mut Context<Self>) {
-        self.timeline.anchor_disclosure();
+    /// Opens or closes a "Worked for" fold, keeping its row where it is on screen.
+    pub(super) fn toggle_turn_fold(
+        &mut self,
+        turn: &TurnId,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.timeline
+            .anchor_disclosure(&format!("turn-fold:{turn}"));
         if !self.timeline.expanded_turns.remove(turn) {
             self.timeline.expanded_turns.insert(turn.clone());
         }
         self.timeline.rederive();
-        cx.notify();
+        self.settle_disclosure(window, cx);
     }
 
-    pub(super) fn toggle_work_group(&mut self, group_id: &str, cx: &mut Context<Self>) {
-        self.timeline.anchor_disclosure();
+    /// Opens or closes a work group or tool stack; `anchor_row` (the clicked row) stays put.
+    pub(super) fn toggle_work_group(
+        &mut self,
+        group_id: &str,
+        anchor_row: &str,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.timeline.anchor_disclosure(anchor_row);
         if !self.timeline.expanded_groups.remove(group_id) {
             self.timeline.expanded_groups.insert(group_id.to_owned());
         }
         self.timeline.rederive();
+        self.settle_disclosure(window, cx);
+    }
+
+    /// Runs [`Timeline::settle_anchor`] once per frame until the anchor holds still.
+    fn settle_disclosure(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         cx.notify();
+        let view = cx.entity();
+        window.on_next_frame(move |window, cx| {
+            view.update(cx, |this, cx| {
+                if this.timeline.settle_anchor() {
+                    this.settle_disclosure(window, cx);
+                } else {
+                    cx.notify();
+                }
+            })
+        });
     }
 
     pub(super) fn toggle_entry(&mut self, key: &str, cx: &mut Context<Self>) {

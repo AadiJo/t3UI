@@ -14,7 +14,10 @@ use std::{
     sync::Arc,
 };
 
-use gpui_kit::{App, AppContext as _, Context, Entity, FollowMode, ListAlignment, ListState, px};
+use gpui_kit::{
+    App, AppContext as _, Context, Entity, FollowMode, ListAlignment, ListState, Pixels, px,
+};
+use t3_client::ThreadState;
 use t3_diff::{
     ChangedFilesTree,
     tree::{ChangedFile, DiffStat},
@@ -22,13 +25,24 @@ use t3_diff::{
 use t3_logic::timeline::{RowKind, TimelineInput, TimelineModel, TimelineRow};
 use t3_protocol::{
     TurnId,
-    orchestration::{OrchestrationCheckpointSummary, OrchestrationMessage, OrchestrationThread},
+    orchestration::{OrchestrationCheckpointSummary, OrchestrationMessage},
 };
 
 use super::{ChatView, markdown::MarkdownCache};
 
 /// Rows rendered beyond the viewport so short scrolls never show blank space.
 const OVERDRAW: f32 = 600.;
+/// Frames an anchored disclosure may spend settling (`DISCLOSURE_ANCHOR_MAX_FRAMES`).
+const DISCLOSURE_ANCHOR_MAX_FRAMES: u32 = 60;
+
+/// A disclosure toggle in progress: the row whose bottom edge stays put.
+struct DisclosureAnchor {
+    row_id: String,
+    bottom: Pixels,
+    frames: u32,
+    stable: u32,
+    adjusted: bool,
+}
 
 /// The list state, rows, and per-row UI state of one thread's timeline.
 pub(super) struct Timeline {
@@ -61,12 +75,14 @@ pub(super) struct Timeline {
     /// The user scrolled (wheel or scrollbar) since the list last followed the end. Programmatic
     /// moves and content growth never show the scroll-to-end pill (`free-scrolling` mode).
     pub manual_navigation: bool,
+    /// The disclosure toggle being settled.
+    anchor: Option<DisclosureAnchor>,
     /// Inputs of the last derivation, kept so local toggles can re-derive.
     last: Option<LastInput>,
 }
 
 struct LastInput {
-    thread: OrchestrationThread,
+    state: Arc<ThreadState>,
     scope: String,
     optimistic: Vec<Arc<OrchestrationMessage>>,
     is_working: bool,
@@ -103,6 +119,7 @@ impl Timeline {
             markdown: MarkdownCache::default(),
             copied: None,
             manual_navigation: false,
+            anchor: None,
             last: None,
         }
     }
@@ -121,16 +138,17 @@ impl Timeline {
     }
 
     /// Derives rows for a new thread state and applies the change to the list.
+    /// `state` must hold a thread (callers skip states without one).
     pub fn sync(
         &mut self,
-        thread: &OrchestrationThread,
+        state: Arc<ThreadState>,
         scope: &str,
         optimistic: &[Arc<OrchestrationMessage>],
         is_working: bool,
         started_at: Option<&str>,
     ) {
         self.last = Some(LastInput {
-            thread: thread.clone(),
+            state,
             scope: scope.to_owned(),
             optimistic: optimistic.to_vec(),
             is_working,
@@ -142,8 +160,12 @@ impl Timeline {
     /// Re-derives with the last thread after a local toggle (fold, group).
     pub fn rederive(&mut self) {
         let Some(last) = &self.last else { return };
+        let Some(thread) = last.state.thread.as_ref() else {
+            return;
+        };
+        let previous = self.model.rows().to_vec();
         let diff = self.model.update(TimelineInput {
-            thread: &last.thread,
+            thread,
             scope: &last.scope,
             optimistic: &last.optimistic,
             expanded_turns: &self.expanded_turns,
@@ -152,10 +174,21 @@ impl Timeline {
             active_turn_started_at: last.started_at.as_deref(),
         });
         let Some(diff) = diff else { return };
-        if diff.same_keys {
-            self.list.remeasure_items(diff.new);
-        } else {
-            self.list.splice(diff.old, diff.new.len());
+        // Rows that kept their key only change height: remeasuring keeps the scroll anchor
+        // inside them, where a splice would reset it to the row's top.
+        let rows = self.model.rows();
+        let kept = previous[diff.old.clone()]
+            .iter()
+            .zip(&rows[diff.new.clone()])
+            .take_while(|(old, new)| old.id == new.id)
+            .count();
+        if kept > 0 {
+            self.list
+                .remeasure_items(diff.new.start..diff.new.start + kept);
+        }
+        if !diff.same_keys {
+            self.list
+                .splice(diff.old.start + kept..diff.old.end, diff.new.len() - kept);
         }
         // Forget views and trees of rows that are gone (a revert, a new thread state).
         let mut alive: HashSet<String> = HashSet::new();
@@ -204,10 +237,60 @@ impl Timeline {
         self.trees.get(turn).map(|(_, tree)| tree.clone())
     }
 
-    /// Keeps the clicked row in place for a disclosure toggle: stop auto-following the end
-    /// before the content below it changes.
-    pub fn anchor_disclosure(&self) {
+    /// Starts an anchored disclosure toggle (`applyAnchoredDisclosureToggle`): stop following
+    /// the end and remember where the bottom of row `row_id` is, so [`Self::settle_anchor`]
+    /// can hold it there while rows above or below it open or close.
+    pub fn anchor_disclosure(&mut self, row_id: &str) {
         self.list.pause_following_tail();
+        self.anchor = self.row_bottom(row_id).map(|bottom| DisclosureAnchor {
+            row_id: row_id.to_owned(),
+            bottom,
+            frames: 0,
+            stable: 0,
+            adjusted: false,
+        });
+    }
+
+    /// One frame of the anchored disclosure: scrolls by however far the anchor row's bottom
+    /// moved. Returns whether to run again next frame. Like the web, it stops after two stable
+    /// frames once it adjusted, when the anchor row is gone, or after 60 frames.
+    pub fn settle_anchor(&mut self) -> bool {
+        let Some(anchor) = self.anchor.as_mut() else {
+            return false;
+        };
+        anchor.frames += 1;
+        let row_id = anchor.row_id.clone();
+        let Some(bottom) = self.row_bottom(&row_id) else {
+            self.anchor = None;
+            return false;
+        };
+        let anchor = self.anchor.as_mut().expect("anchor checked above");
+        let delta = bottom - anchor.bottom;
+        if delta.abs() >= px(0.5) {
+            self.list.scroll_by(delta);
+            anchor.adjusted = true;
+            anchor.stable = 0;
+        } else {
+            anchor.stable += 1;
+        }
+        // The first frame after a toggle runs before the new rows are laid out, so an
+        // unadjusted anchor needs a few stable frames before it counts as settled.
+        let settled = if anchor.adjusted {
+            anchor.stable >= 2
+        } else {
+            anchor.stable >= 3
+        };
+        if settled || anchor.frames >= DISCLOSURE_ANCHOR_MAX_FRAMES {
+            self.anchor = None;
+            return false;
+        }
+        true
+    }
+
+    /// The window-space bottom of row `row_id`, if it is laid out on screen.
+    fn row_bottom(&self, row_id: &str) -> Option<Pixels> {
+        let index = self.rows().iter().position(|row| row.id == row_id)?;
+        Some(self.list.bounds_for_item(index)?.bottom())
     }
 
     /// Follows the end again (send, the scroll-to-end pill).
