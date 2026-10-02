@@ -5,6 +5,7 @@
 //! rebuilds it when any input changes and renders straight from the result, so rendering does no
 //! sorting or status work.
 
+mod pull_request;
 mod selection;
 mod sort;
 mod status;
@@ -19,6 +20,7 @@ use t3_protocol::{
     orchestration::{OrchestrationProjectShell, OrchestrationThreadShell},
 };
 
+pub use pull_request::{PullRequestBadge, change_request_short_name, pull_request_badge};
 pub use selection::ThreadSelection;
 pub use sort::{compare_threads, locale_compare, order_by_preferred, thread_sort_timestamp};
 pub use status::{

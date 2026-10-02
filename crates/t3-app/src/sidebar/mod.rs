@@ -24,7 +24,10 @@ use t3_protocol::orchestration::ThreadEnvMode;
 
 pub use pulse::{PulseClock, pulse_opacity};
 
-use crate::state::{AppState, Environment, EnvironmentKind, NewThreadRequest, Route};
+use crate::state::{
+    AppState, Environment, EnvironmentKind, NewThreadRequest, Route,
+    vcs::{VcsKey, VcsStatusStore},
+};
 
 /// Jump-hint pills appear after the modifier is held this long (`THREAD_JUMP_HINT_SHOW_DELAY_MS`).
 const JUMP_HINT_DELAY: Duration = Duration::from_millis(100);
@@ -45,12 +48,17 @@ pub struct Sidebar {
     pulse: PulseClock,
     scroll: ScrollHandle,
     focus: FocusHandle,
-    _app_state: Subscription,
+    vcs: Entity<VcsStatusStore>,
+    _subscriptions: [Subscription; 2],
 }
 
 impl Sidebar {
     pub fn new(app_state: Entity<AppState>, _window: &mut Window, cx: &mut Context<Self>) -> Self {
-        let subscription = cx.observe(&app_state, |this, _, cx| this.rebuild(cx));
+        let vcs = VcsStatusStore::global(cx);
+        let subscriptions = [
+            cx.observe(&app_state, |this, _, cx| this.rebuild(cx)),
+            cx.observe(&vcs, |_, _, cx| cx.notify()),
+        ];
         let mut sidebar = Self {
             app_state,
             model: SidebarModel::default(),
@@ -63,7 +71,8 @@ impl Sidebar {
             pulse: PulseClock::default(),
             scroll: ScrollHandle::new(),
             focus: cx.focus_handle(),
-            _app_state: subscription,
+            vcs,
+            _subscriptions: subscriptions,
         };
         sidebar.rebuild(cx);
         sidebar
@@ -103,7 +112,34 @@ impl Sidebar {
         });
         let animate = app_state.clock_is_live() && self.has_visible_pulse(cx);
         self.pulse.set_active(animate, cx);
+        let interest = self.vcs_interest();
+        self.vcs
+            .update(cx, |store, cx| store.set_interest("sidebar", interest, cx));
         cx.notify();
+    }
+
+    /// The working copy whose VCS status decides a row's PR badge: the thread's worktree, else
+    /// its project root. Only threads on a branch have a badge.
+    fn vcs_key(row: &t3_logic::sidebar::SidebarThread) -> Option<VcsKey> {
+        row.thread.branch.as_ref()?;
+        let cwd = row
+            .thread
+            .worktree_path
+            .clone()
+            .or_else(|| row.project_root.clone())?;
+        Some(VcsKey {
+            environment_id: row.thread_ref.environment_id.clone(),
+            cwd,
+        })
+    }
+
+    fn vcs_interest(&self) -> HashSet<VcsKey> {
+        self.model
+            .projects
+            .iter()
+            .flat_map(|project| &project.rendered_threads)
+            .filter_map(Self::vcs_key)
+            .collect()
     }
 
     /// Whether a pulsing dot is on screen: a Working row, a collapsed project's Working dot, or a

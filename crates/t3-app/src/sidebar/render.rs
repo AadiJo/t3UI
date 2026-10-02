@@ -9,9 +9,12 @@ use gpui_kit::{
 use t3_logic::{
     keybindings::Command,
     paths::display_basename,
-    sidebar::{EnvironmentPresence, SidebarProject, SidebarThread, ThreadStatus},
+    sidebar::{
+        EnvironmentPresence, SidebarProject, SidebarThread, ThreadStatus, pull_request_badge,
+    },
     time::format_relative_time,
 };
+use t3_protocol::orchestration::PullRequestState;
 use t3_ui::{
     ActiveColors as _, Colors, Icon, IconName,
     tokens::{StatusColor, layout, radius, text},
@@ -677,6 +680,14 @@ impl Sidebar {
             .filter(|rename| rename.thread == row.thread_ref)
             .map(|rename| rename.input.clone());
         let is_renaming = renaming.is_some();
+        let pull_request = Self::vcs_key(row).and_then(|key| {
+            let status = self.vcs.read(cx).status(&key)?;
+            pull_request_badge(
+                thread.branch.as_deref(),
+                status.local.as_ref(),
+                status.remote.as_ref(),
+            )
+        });
         let confirm_archive = self.app_state.read(cx).settings().confirm_thread_archive;
         let confirming = !running && self.confirming_archive.as_ref() == Some(&row.thread_ref);
 
@@ -743,6 +754,33 @@ impl Sidebar {
                             .gap(px(6.))
                             .flex()
                             .items_center()
+                            .when_some(pull_request, |this, badge| {
+                                let color = match badge.state {
+                                    PullRequestState::Merged => colors.status.pr_merged.text,
+                                    PullRequestState::Closed => colors.status.pr_closed.text,
+                                    _ => colors.status.completed.text,
+                                };
+                                let url = badge.url.clone();
+                                this.child(
+                                    div()
+                                        .id(SharedString::from(format!("thread-pr-{id_suffix}")))
+                                        .flex()
+                                        .items_center()
+                                        .justify_center()
+                                        .rounded(radius::SM)
+                                        .cursor_pointer()
+                                        .text_color(color)
+                                        .tooltip(text_tooltip(badge.tooltip.clone()))
+                                        .on_mouse_down(MouseButton::Left, |_, _, cx| {
+                                            cx.stop_propagation()
+                                        })
+                                        .on_click(move |_, _, cx| {
+                                            cx.stop_propagation();
+                                            cx.open_url(&url);
+                                        })
+                                        .child(Icon::new(IconName::GitPullRequest).size(px(12.))),
+                                )
+                            })
                             .when_some(row.status, |this, status| {
                                 let color = status_color(colors, status);
                                 this.child(

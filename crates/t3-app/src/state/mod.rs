@@ -19,6 +19,7 @@ mod environment;
 pub mod fixtures;
 mod route;
 mod store;
+pub mod vcs;
 
 use std::{collections::HashSet, ops::Deref, sync::Arc, time::Duration};
 

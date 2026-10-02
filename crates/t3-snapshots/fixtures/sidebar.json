@@ -463,7 +463,7 @@
       },
       "runtimeMode": "full-access",
       "interactionMode": "default",
-      "branch": null,
+      "branch": "drafts-persist",
       "worktreePath": null,
       "pullRequests": [],
       "latestTurn": {
@@ -681,5 +681,75 @@
    "env-local:t-route": "2026-10-01T09:56:00.000Z",
    "env-local:t-toasts": "2026-10-01T11:48:00.000Z"
   }
- }
+ },
+ "vcs": [
+  {
+   "environmentId": "env-local",
+   "cwd": "/Users/aadi/.t3/worktrees/t3UI/route-history",
+   "local": {
+    "isRepo": true,
+    "sourceControlProvider": {
+     "kind": "github",
+     "name": "GitHub",
+     "baseUrl": "https://github.com"
+    },
+    "hasPrimaryRemote": true,
+    "isDefaultRef": false,
+    "refName": "route-history",
+    "hasWorkingTreeChanges": false,
+    "workingTree": {
+     "files": [],
+     "insertions": 0,
+     "deletions": 0
+    }
+   },
+   "remote": {
+    "hasUpstream": true,
+    "aheadCount": 0,
+    "behindCount": 0,
+    "pr": {
+     "number": 42,
+     "title": "Route history and settings back",
+     "url": "https://github.com/aadijo/t3ui/pull/42",
+     "baseRef": "main",
+     "headRef": "route-history",
+     "state": "open"
+    }
+   }
+  },
+  {
+   "environmentId": "env-local",
+   "cwd": "/Users/aadi/code/t3code",
+   "local": {
+    "isRepo": true,
+    "sourceControlProvider": {
+     "kind": "github",
+     "name": "GitHub",
+     "baseUrl": "https://github.com"
+    },
+    "hasPrimaryRemote": true,
+    "isDefaultRef": false,
+    "refName": "drafts-persist",
+    "hasWorkingTreeChanges": false,
+    "workingTree": {
+     "files": [],
+     "insertions": 0,
+     "deletions": 0
+    }
+   },
+   "remote": {
+    "hasUpstream": true,
+    "aheadCount": 0,
+    "behindCount": 0,
+    "pr": {
+     "number": 1187,
+     "title": "Composer drafts survive reloads",
+     "url": "https://github.com/aadijo/t3ui/pull/1187",
+     "baseRef": "main",
+     "headRef": "drafts-persist",
+     "state": "merged"
+    }
+   }
+  }
+ ]
 }

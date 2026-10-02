@@ -22,9 +22,16 @@ use gpui_kit::{App, AppContext as _, Entity};
 use serde::Deserialize;
 use t3_client::ShellState;
 use t3_logic::{ThreadRef, settings::ClientSettings, time::parse_timestamp, ui_state::UiState};
-use t3_protocol::{EnvironmentId, orchestration::OrchestrationShellSnapshot};
+use t3_protocol::{
+    EnvironmentId,
+    orchestration::OrchestrationShellSnapshot,
+    vcs::{VcsStatusLocal, VcsStatusRemote},
+};
 
-use super::{AppState, ConnectionStatus, Environment, EnvironmentKind, Route, SettingsPage, Store};
+use super::{
+    AppState, ConnectionStatus, Environment, EnvironmentKind, Route, SettingsPage, Store,
+    vcs::{VcsKey, VcsStatus, VcsStatusStore},
+};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -38,6 +45,18 @@ struct Fixture {
     settings: ClientSettings,
     #[serde(default)]
     ui: UiState,
+    #[serde(default)]
+    vcs: Vec<FixtureVcs>,
+}
+
+/// A recorded `subscribeVcsStatus` state for one working copy.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct FixtureVcs {
+    environment_id: EnvironmentId,
+    cwd: String,
+    local: Option<VcsStatusLocal>,
+    remote: Option<VcsStatusRemote>,
 }
 
 #[derive(Deserialize)]
@@ -107,6 +126,20 @@ pub fn load(json: &str, cx: &mut App) -> anyhow::Result<Entity<AppState>> {
         FixtureRoute::Settings => Route::Settings(SettingsPage::General),
     };
     let now = fixture.now.as_deref().and_then(parse_timestamp);
+    let vcs = VcsStatusStore::global(cx);
+    vcs.update(cx, |store, cx| {
+        for entry in fixture.vcs {
+            let key = VcsKey {
+                environment_id: entry.environment_id,
+                cwd: entry.cwd,
+            };
+            let status = VcsStatus {
+                local: entry.local,
+                remote: entry.remote,
+            };
+            store.set_status(key, status, cx);
+        }
+    });
     state.update(cx, |state, cx| {
         for environment in environments {
             state.add_environment(environment, cx);
