@@ -1,5 +1,5 @@
 //! Bundled fonts: DM Sans (opsz 14 static instances, 400/500/600/700) and JetBrains Mono
-//! (400/500), built by `crates/t3-ui/tools/build_fonts.py`.
+//! (400/500/700, italic 400/700), built by `crates/t3-ui/tools/build_fonts.py`.
 //!
 //! Mono font decision (spec risk 4): the web stack starts with "SF Mono", which only matches
 //! when the user installed it as a regular font; macOS doesn't expose the system copy by that
@@ -17,6 +17,9 @@ const FONT_FILES: &[&str] = &[
     "fonts/DMSans-Bold.ttf",
     "fonts/JetBrainsMono-Regular.ttf",
     "fonts/JetBrainsMono-Medium.ttf",
+    "fonts/JetBrainsMono-Bold.ttf",
+    "fonts/JetBrainsMono-Italic.ttf",
+    "fonts/JetBrainsMono-BoldItalic.ttf",
 ];
 
 /// Registers the bundled fonts with the app's text system. Called by [`crate::init`].

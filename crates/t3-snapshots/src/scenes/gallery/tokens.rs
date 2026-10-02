@@ -47,12 +47,27 @@ pub(super) fn tokens_page(colors: &'static Colors, cx: &App) -> Vec<AnyElement> 
                 .items_center()
                 .gap(px(24.))
                 .child(type_label("font-mono", px(12.), px(16.), colors))
-                .child(
-                    div()
-                        .font_family(t3_ui::Theme::global(cx).mono_family().clone())
-                        .text_size(px(12.))
-                        .line_height(px(16.))
-                        .child("fn main() { println!(\"{}\", 0x1F_u8); } // il1| O0"),
+                .children(
+                    [
+                        (
+                            FontWeight::NORMAL,
+                            false,
+                            "fn main() { println!(\"{}\", 0x1F_u8); } // il1| O0",
+                        ),
+                        (FontWeight::MEDIUM, false, "medium 500"),
+                        (FontWeight::BOLD, false, "bold 700"),
+                        (FontWeight::NORMAL, true, "italic 400"),
+                        (FontWeight::BOLD, true, "bold italic 700"),
+                    ]
+                    .map(|(weight, italic, text)| {
+                        let sample = div()
+                            .font_family(t3_ui::Theme::global(cx).mono_family().clone())
+                            .text_size(px(12.))
+                            .line_height(px(16.))
+                            .font_weight(weight)
+                            .child(text);
+                        if italic { sample.italic() } else { sample }
+                    }),
                 ),
         );
 

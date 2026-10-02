@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Build the bundled fonts in assets/fonts from their upstream sources.
 
-The web UI loads DM Sans Variable (wght axis, opsz pinned at 14) and JetBrains Mono 400/500.
+The web UI loads DM Sans Variable (wght axis, opsz pinned at 14) and JetBrains Mono 400/500;
+the terminal and code blocks also need JetBrains Mono bold and italics.
 GPUI needs static TTFs, so this cuts static DM Sans instances at opsz=14 and renames them to
 one family, "DM Sans", which `t3_ui::fonts` registers.
 
@@ -72,7 +73,8 @@ def main() -> None:
         static.save(path)
         print(f"wrote {path.relative_to(ROOT)} (opsz {OPTICAL_SIZE}, wght {weight})")
 
-    for style in ("Regular", "Medium"):
+    # Code and the terminal need bold and italics too (400, 500, 700, 400i, 700i).
+    for style in ("Regular", "Medium", "Bold", "Italic", "BoldItalic"):
         source = jetbrains / f"JetBrainsMono-{style}.ttf"
         shutil.copy(source, OUT / source.name)
         print(f"copied {source.name}")
