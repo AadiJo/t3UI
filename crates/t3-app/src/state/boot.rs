@@ -44,7 +44,8 @@ pub fn start_saved_environments(app_state: &Entity<AppState>, cx: &mut App) {
     }
 }
 
-fn kind_of(endpoint: &dyn Endpoint) -> EnvironmentKind {
+/// Loopback servers are this machine's (local); everything else is remote.
+pub(crate) fn kind_of(endpoint: &dyn Endpoint) -> EnvironmentKind {
     let loopback = endpoint.display_url().is_some_and(|url| {
         matches!(
             url.host_str(),

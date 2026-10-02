@@ -13,6 +13,7 @@ pub mod dialogs;
 pub mod keybindings;
 pub mod notifications;
 pub mod pairing;
+pub mod settings;
 pub mod sidebar;
 pub mod state;
 pub mod toast;
