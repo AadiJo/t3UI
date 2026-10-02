@@ -46,7 +46,7 @@ pub(super) fn tokens_page(colors: &'static Colors, cx: &App) -> Vec<AnyElement> 
                 .flex()
                 .items_center()
                 .gap(px(24.))
-                .child(type_label("italic (synthetic)", px(14.), px(20.), colors))
+                .child(type_label("italic", px(14.), px(20.), colors))
                 .children(weights.map(|weight| {
                     div()
                         .w(px(300.))
@@ -62,7 +62,12 @@ pub(super) fn tokens_page(colors: &'static Colors, cx: &App) -> Vec<AnyElement> 
                 .flex()
                 .items_center()
                 .gap(px(24.))
-                .child(type_label("font-mono", px(12.), px(16.), colors))
+                .child(type_label(
+                    t3_ui::Theme::global(cx).mono_family(),
+                    px(12.),
+                    px(16.),
+                    colors,
+                ))
                 .children(
                     [
                         (
