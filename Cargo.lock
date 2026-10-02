@@ -7345,6 +7345,7 @@ name = "t3-logic"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "regex",
  "serde",
  "serde_json",
  "t3-protocol",

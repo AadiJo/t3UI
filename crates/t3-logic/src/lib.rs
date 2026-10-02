@@ -4,9 +4,12 @@
 
 pub mod keybindings;
 pub mod paths;
+pub mod project_scripts;
 pub mod refs;
 pub mod settings;
 pub mod sidebar;
+pub mod source_control;
+pub mod terminal_layout;
 pub mod time;
 pub mod timeline;
 pub mod ui_state;
