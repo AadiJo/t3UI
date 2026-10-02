@@ -17,7 +17,7 @@ pub mod window;
 #[cfg(test)]
 mod tests;
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, de::DeserializeOwned};
 use t3_protocol::usage::UsageProvider;
 
 /// What the page shows (`METRIC_OPTIONS`, `usageShortcuts.ts:5-10`). Persisted.
@@ -124,6 +124,16 @@ pub struct UsagePreferences {
     pub metric: Metric,
     #[serde(rename = "windowDays")]
     pub period: Period,
+}
+
+/// Decodes a persisted field, or its default when the value has the wrong shape.
+pub(crate) fn lenient<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+where
+    D: Deserializer<'de>,
+    T: DeserializeOwned + Default,
+{
+    let value = serde_json::Value::deserialize(deserializer)?;
+    Ok(serde_json::from_value(value).unwrap_or_default())
 }
 
 /// A provider the usage contract knows, in the page's reading order (`PROVIDER_PRESENTATION`,

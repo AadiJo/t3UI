@@ -9,7 +9,10 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::time::{format_timestamp, parse_timestamp};
+use crate::{
+    time::{format_timestamp, parse_timestamp},
+    usage::UsagePreferences,
+};
 
 /// Fallback key the web migrated old "all collapsed" state into. Read, never written.
 const LEGACY_EXPANSION_DEFAULT_KEY: &str = "legacy-project-expansion-default";
@@ -42,6 +45,10 @@ pub struct UiState {
     /// Sidebar width in px (`chat_thread_sidebar_width`). `None` uses the default width.
     pub sidebar_width: Option<f32>,
     pub theme: ThemePreference,
+    /// Usage page metric and window (`t3code:usage-page-preferences:v1`). A malformed value
+    /// falls back to the defaults instead of discarding the whole file.
+    #[serde(deserialize_with = "crate::usage::lenient")]
+    pub usage: UsagePreferences,
 }
 
 impl UiState {

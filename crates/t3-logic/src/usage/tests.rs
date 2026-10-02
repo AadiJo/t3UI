@@ -42,6 +42,7 @@
 //!     not rounded, columns lose an account that lacks a window.
 //! 26. Notices: unsupported accounts produce a notice; the environment is named with only one
 //!     environment connected.
+//! 27. A malformed persisted preference wipes the rest of `ui-state.json`.
 
 use chrono::{FixedOffset, TimeZone as _, Utc};
 use t3_protocol::usage::{
@@ -228,6 +229,19 @@ fn preferences_round_trip_and_default_to_limits() {
     assert_eq!(json, r#"{"metric":"tokens","windowDays":1}"#);
     let bad: Result<UsagePreferences, _> = serde_json::from_str(r#"{"windowDays":5}"#);
     assert!(bad.is_err());
+}
+
+#[test]
+fn malformed_preferences_keep_the_rest_of_ui_state() {
+    let ui = crate::ui_state::UiState::from_json(
+        r#"{"sidebarWidth": 300, "usage": {"metric": "cost", "windowDays": 5}}"#,
+    );
+    assert_eq!(ui.sidebar_width, Some(300.));
+    assert_eq!(ui.usage, UsagePreferences::default());
+    let ui =
+        crate::ui_state::UiState::from_json(r#"{"usage": {"metric": "cost", "windowDays": 7}}"#);
+    assert_eq!(ui.usage.metric, Metric::Cost);
+    assert_eq!(ui.usage.period, Period::Week);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -764,4 +778,75 @@ fn notices_skip_unsupported_and_name_environments_only_when_several() {
     );
     // Accounts with a notice never become bars.
     assert!(collect_limit_accounts(&[a]).is_empty());
+}
+
+// ---------------------------------------------------------------------------------------------
+// Recorded server answers (`e2e/usage-fixture.mjs` against t3 nightly)
+
+#[test]
+fn recorded_summaries_decode_and_merge() {
+    let monthly: UsageSummary = serde_json::from_str(include_str!(
+        "../../../t3-snapshots/fixtures/usage/summary-30d.json"
+    ))
+    .expect("recorded 30 day summary decodes");
+    let merged = merge_usage(&[EnvironmentUsage {
+        environment_id: "local".into(),
+        label: "fixture-host".into(),
+        summary: monthly.clone(),
+    }]);
+    assert_eq!(
+        merged.active_providers(),
+        [ProviderKind::Codex, ProviderKind::Claude]
+    );
+    assert!(merged.total_tokens > 0 && merged.cost_usd > 0.);
+    assert!(merged.sessions > 0);
+    // claude-opus-4-1 has no rate in the table: tokens counted, cost unknown.
+    assert!(
+        merged
+            .models
+            .iter()
+            .any(|model| model.model == "claude-opus-4-1" && model.is_cost_unknown())
+    );
+    let days = enumerate_days(&monthly.since_day, &monthly.until_day);
+    assert_eq!(days.len(), 30);
+    assert!(merged.daily.iter().all(|day| days.contains(&day.day)));
+
+    let hourly: UsageSummary = serde_json::from_str(include_str!(
+        "../../../t3-snapshots/fixtures/usage/summary-24h.json"
+    ))
+    .expect("recorded 24 hour summary decodes");
+    let merged = merge_usage(&[EnvironmentUsage {
+        environment_id: "local".into(),
+        label: "fixture-host".into(),
+        summary: hourly,
+    }]);
+    assert!(!merged.hourly.is_empty());
+    assert!(merged.hourly.iter().all(|hour| hour.start_millis.is_some()));
+}
+
+#[test]
+fn recorded_config_pools_codex_limits() {
+    let config: t3_protocol::server::ServerConfig = serde_json::from_str(include_str!(
+        "../../../t3-snapshots/fixtures/usage/server-config.json"
+    ))
+    .expect("recorded server config decodes");
+    let environment = LimitsEnvironment {
+        environment_id: "local".into(),
+        label: "fixture-host".into(),
+        providers: config
+            .providers
+            .iter()
+            .filter_map(LimitProvider::from_server)
+            .collect(),
+        sources: Vec::new(),
+    };
+    // Only the enabled, installed Codex instance reports limits.
+    assert_eq!(environment.providers.len(), 1);
+    let accounts = collect_limit_accounts(std::slice::from_ref(&environment));
+    let pools = collect_limit_pools(&accounts, NOW);
+    assert_eq!(pools.len(), 1);
+    assert_eq!(pools[0].driver, "codex");
+    let kinds: Vec<_> = pools[0].windows.iter().map(|w| w.kind.clone()).collect();
+    assert_eq!(kinds, [UsageWindowKind::Session, UsageWindowKind::Weekly]);
+    assert!(collect_limit_notices(&[environment]).is_empty());
 }
