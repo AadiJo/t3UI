@@ -28,7 +28,7 @@ use t3_logic::{
     ProjectRef, ThreadRef,
     keybindings::{Command, ResolvedKeybindingRule, default_keybindings},
     settings::ClientSettings,
-    ui_state::UiState,
+    ui_state::{ThemePreference, UiState},
 };
 use t3_protocol::{EnvironmentId, orchestration::ThreadEnvMode, server::ServerConfig};
 
@@ -295,6 +295,19 @@ impl AppState {
         {
             self.store.write_now(UI_STATE_FILE, &json);
         }
+    }
+
+    /// Changes and persists the theme preference (light, dark, or follow the system).
+    pub fn set_theme(&mut self, theme: ThemePreference, cx: &mut Context<Self>) {
+        self.update_ui(
+            |ui| {
+                let changed = ui.theme != theme;
+                ui.theme = theme;
+                changed
+            },
+            cx,
+        );
+        t3_ui::theme::set_mode(crate::theme_mode(theme), cx);
     }
 
     /// Records that the user saw `thread`'s completion at `completed_at` (clears "Completed").

@@ -21,7 +21,7 @@ use gpui_kit::{
 };
 use t3_logic::ThreadRef;
 use t3_ui::{
-    ActiveColors as _, Colors, Icon, IconName,
+    ActiveColors as _, Button, ButtonSize, ButtonVariant, Colors, Icon, IconName,
     tokens::{motion, radius, shadow, text},
 };
 
@@ -231,60 +231,6 @@ fn icon_for(kind: ToastKind, colors: &Colors) -> Icon {
     Icon::new(name).size(px(16.)).color(color)
 }
 
-/// xs button (`buttonVariants({size: "xs"})`): h 24, px 7, rounded-md, 12px medium.
-fn action_button(
-    id: SharedString,
-    action: &ToastAction,
-    colors: &Colors,
-) -> gpui_kit::Stateful<gpui_kit::Div> {
-    let (background, hover, foreground, border) = match action.style {
-        ToastActionStyle::Default => (
-            colors.primary,
-            colors.primary_90,
-            colors.primary_foreground,
-            colors.primary,
-        ),
-        ToastActionStyle::Destructive => (
-            colors.destructive,
-            colors.destructive_90,
-            gpui_kit::white(),
-            colors.destructive,
-        ),
-        ToastActionStyle::Outline => (
-            if colors.is_dark {
-                colors.input_32
-            } else {
-                colors.popover
-            },
-            if colors.is_dark {
-                colors.input_64
-            } else {
-                colors.accent_50
-            },
-            colors.foreground,
-            colors.input,
-        ),
-    };
-    div()
-        .id(id)
-        .h_6()
-        .px(px(7.))
-        .flex()
-        .items_center()
-        .justify_center()
-        .flex_shrink_0()
-        .rounded(radius::MD)
-        .border_1()
-        .border_color(border)
-        .bg(background)
-        .text_color(foreground)
-        .type_scale(text::XS)
-        .font_weight(FontWeight::MEDIUM)
-        .cursor_pointer()
-        .hover(move |style| style.bg(hover))
-        .child(action.label.clone())
-}
-
 impl ToastLayer {
     /// One toast card. Cards behind the front one (`index > 0`) fill their slab and hide their
     /// content, like the collapsed Base UI stack.
@@ -344,17 +290,23 @@ impl ToastLayer {
                     .rev()
                     .map(|(position, action)| {
                         let handler = action.handler.clone();
-                        action_button(
-                            SharedString::from(format!("toast-{}-action-{position}", id.0)),
-                            action,
-                            colors,
-                        )
-                        .on_click(cx.listener(
-                            move |this, _, window, cx| {
-                                handler(window, cx);
-                                this.remove(id, cx);
-                            },
-                        ))
+                        let layer = cx.entity().downgrade();
+                        let variant = match action.style {
+                            ToastActionStyle::Default => ButtonVariant::Default,
+                            ToastActionStyle::Outline => ButtonVariant::Outline,
+                            ToastActionStyle::Destructive => ButtonVariant::Destructive,
+                        };
+                        Button::new(SharedString::from(format!(
+                            "toast-{}-action-{position}",
+                            id.0
+                        )))
+                        .size(ButtonSize::Xs)
+                        .variant(variant)
+                        .label(action.label.clone())
+                        .on_click(move |_, window, cx| {
+                            handler(window, cx);
+                            layer.update(cx, |this, cx| this.remove(id, cx)).ok();
+                        })
                     }),
             );
         let content = div()
