@@ -217,7 +217,8 @@ impl RenderOnce for SelectTrigger {
             .cursor_pointer()
             .when(!ghost, |this| this.w_full().min_w(px(144.)))
             .when(!ghost && !quiet, |this| {
-                this.shadow(shadow::XS_5.to_vec())
+                // Dark fills are `input/32`, too transparent for a drop shadow.
+                this.when(!colors.is_dark, |this| this.shadow(shadow::XS_5.to_vec()))
                     .child(bevel(radius, colors.bevel, colors))
             })
             .when(ghost && !disabled && !pressed, |this| {

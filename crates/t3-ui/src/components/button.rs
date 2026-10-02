@@ -12,7 +12,8 @@ use gpui_kit::{
 use std::rc::Rc;
 
 use super::{
-    ClickHandler, GROUP, Interaction, TooltipExt as _, bevel, focus_ring, inset_line, overhang,
+    ClickHandler, GROUP, Interaction, TooltipExt as _, bevel, focus_ring, inset_line, outer_shadow,
+    overhang,
 };
 use crate::{
     ActiveColors as _, Colors, Icon, IconName,
@@ -199,7 +200,7 @@ impl ButtonVariant {
                 },
             }
         };
-        match self {
+        let looks = match self {
             Self::Default => solid(c.primary, c.primary_90, c.primary_foreground, c.primary_24),
             Self::Destructive => solid(
                 c.destructive,
@@ -242,6 +243,16 @@ impl ButtonVariant {
                     ..plain(none, none)
                 },
             },
+        };
+        let settle = |mut look: Look| {
+            look.shadow = outer_shadow(look.bg, &look.shadow);
+            look
+        };
+        Looks {
+            rest: settle(looks.rest),
+            hover: settle(looks.hover),
+            pressed: settle(looks.pressed),
+            ..looks
         }
     }
 }

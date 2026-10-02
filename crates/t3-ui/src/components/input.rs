@@ -194,7 +194,8 @@ impl RenderOnce for Input {
             .text_color(colors.foreground)
             .text_size(px(14.))
             .when(!quiet, |this| {
-                this.shadow(shadow::XS_5.to_vec())
+                // Dark fills are `input/32`, too transparent for a drop shadow.
+                this.when(!colors.is_dark, |this| this.shadow(shadow::XS_5.to_vec()))
                     .child(bevel(radius, colors.bevel, colors))
             })
             .when(focused, |this| {

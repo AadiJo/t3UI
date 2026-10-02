@@ -138,7 +138,8 @@ impl RenderOnce for Checkbox {
                 colors.background
             })
             .when(!quiet, |this| {
-                this.shadow(shadow::XS_5.to_vec())
+                // Dark fills are `input/32`, too transparent for a drop shadow.
+                this.when(!colors.is_dark, |this| this.shadow(shadow::XS_5.to_vec()))
                     .child(bevel(radius, colors.bevel, colors))
             });
         box_el = match state {

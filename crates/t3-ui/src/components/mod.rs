@@ -38,7 +38,7 @@ pub use popover::{Align, Popover, PopoverDescription, PopoverPopup, PopoverTitle
 pub use scroll_area::ScrollArea;
 pub use select::{Select, SelectItem, SelectPopup, SelectSize, SelectTrigger, SelectVariant};
 pub use switch::Switch;
-pub use toast::{Toast, ToastKind, Toaster};
+pub use toast::{Toast, ToastKind};
 pub use tooltip::{TooltipExt, TooltipPopup};
 
 use std::rc::Rc;
@@ -80,6 +80,17 @@ pub(crate) fn overhang(icon: Icon, size: Pixels, left: Pixels, right: Pixels) ->
         .w(size - left - right)
         .h(size)
         .child(icon.size(size).absolute().top_0().left(-left))
+}
+
+/// Outer shadows for a control whose fill is `fill`. GPUI paints drop shadows under the
+/// element instead of clipping them to its outside like CSS, so a mostly transparent fill
+/// would show the shadow as a gray tint; such controls lose the (barely visible) shadow.
+pub(crate) fn outer_shadow(fill: Hsla, shadows: &[BoxShadow]) -> Vec<BoxShadow> {
+    if fill.a < 0.5 {
+        Vec::new()
+    } else {
+        shadows.to_vec()
+    }
 }
 
 /// GPUI group name shared by interactive primitives, so their bevel and inset children can
