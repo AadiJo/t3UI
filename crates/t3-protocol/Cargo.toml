@@ -6,8 +6,10 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
-serde.workspace = true
+# `rc` lets read-model rows be `Arc`s, so published state snapshots share unchanged rows.
+serde = { workspace = true, features = ["rc"] }
 serde_json.workspace = true
+uuid.workspace = true
 
 [lints]
 workspace = true
