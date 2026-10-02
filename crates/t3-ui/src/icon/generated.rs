@@ -30,6 +30,8 @@ pub enum IconName {
     Bug,
     /// lucide `camera` (`Camera`)
     Camera,
+    /// lucide `chart-no-axes-column` ()
+    ChartNoAxesColumn,
     /// lucide `check` (`CheckIcon`)
     Check,
     /// lucide `chevron-down` (`ChevronDownIcon`)
@@ -50,6 +52,8 @@ pub enum IconName {
     CircleArrowUp,
     /// lucide `circle-check` (`CircleCheckIcon`)
     CircleCheck,
+    /// lucide `circle-dashed` ()
+    CircleDashed,
     /// lucide `circle-x` (`CircleXIcon`)
     CircleX,
     /// lucide `clipboard-list` (`ClipboardList`)
@@ -108,6 +112,8 @@ pub enum IconName {
     Folder,
     /// lucide `frame` (`Frame`)
     Frame,
+    /// lucide `gauge` ()
+    Gauge,
     /// lucide `git-branch-plus` (`GitBranchPlusIcon`)
     GitBranchPlus,
     /// lucide `git-branch` (`GitBranchIcon`)
@@ -144,6 +150,8 @@ pub enum IconName {
     Maximize2,
     /// lucide `message-circle` (`MessageCircle`, `MessageCircleIcon`)
     MessageCircle,
+    /// lucide `message-square-dashed` ()
+    MessageSquareDashed,
     /// lucide `message-square` (`MessageSquareIcon`)
     MessageSquare,
     /// lucide `minimize-2` (`Minimize2Icon`)
@@ -198,6 +206,8 @@ pub enum IconName {
     Settings2,
     /// lucide `settings` (`SettingsIcon`)
     Settings,
+    /// lucide `sliders-horizontal` ()
+    SlidersHorizontal,
     /// lucide `smartphone` (`SmartphoneIcon`)
     Smartphone,
     /// lucide `sparkles` (`SparklesIcon`)
@@ -216,8 +226,14 @@ pub enum IconName {
     Terminal,
     /// lucide `text-wrap` (`TextWrapIcon`, `WrapTextIcon`)
     TextWrap,
+    /// lucide `ticket` ()
+    Ticket,
     /// lucide `trash-2` (`Trash2`, `Trash2Icon`)
     Trash2,
+    /// lucide `trending-down` ()
+    TrendingDown,
+    /// lucide `trending-up` ()
+    TrendingUp,
     /// lucide `triangle-alert` (`AlertTriangleIcon`, `TriangleAlertIcon`)
     TriangleAlert,
     /// lucide `undo-2` (`Undo2Icon`)
@@ -253,6 +269,7 @@ impl IconName {
         Self::Bot,
         Self::Bug,
         Self::Camera,
+        Self::ChartNoAxesColumn,
         Self::Check,
         Self::ChevronDown,
         Self::ChevronLeft,
@@ -263,6 +280,7 @@ impl IconName {
         Self::CircleAlert,
         Self::CircleArrowUp,
         Self::CircleCheck,
+        Self::CircleDashed,
         Self::CircleX,
         Self::ClipboardList,
         Self::CloudUpload,
@@ -292,6 +310,7 @@ impl IconName {
         Self::FolderTree,
         Self::Folder,
         Self::Frame,
+        Self::Gauge,
         Self::GitBranchPlus,
         Self::GitBranch,
         Self::GitCommitHorizontal,
@@ -310,6 +329,7 @@ impl IconName {
         Self::LogIn,
         Self::Maximize2,
         Self::MessageCircle,
+        Self::MessageSquareDashed,
         Self::MessageSquare,
         Self::Minimize2,
         Self::Minus,
@@ -337,6 +357,7 @@ impl IconName {
         Self::Search,
         Self::Settings2,
         Self::Settings,
+        Self::SlidersHorizontal,
         Self::Smartphone,
         Self::Sparkles,
         Self::SquarePen,
@@ -346,7 +367,10 @@ impl IconName {
         Self::Star,
         Self::Terminal,
         Self::TextWrap,
+        Self::Ticket,
         Self::Trash2,
+        Self::TrendingDown,
+        Self::TrendingUp,
         Self::TriangleAlert,
         Self::Undo2,
         Self::WifiOff,
@@ -372,6 +396,7 @@ impl IconName {
             Self::Bot => "icons/lucide/bot.svg",
             Self::Bug => "icons/lucide/bug.svg",
             Self::Camera => "icons/lucide/camera.svg",
+            Self::ChartNoAxesColumn => "icons/lucide/chart-no-axes-column.svg",
             Self::Check => "icons/lucide/check.svg",
             Self::ChevronDown => "icons/lucide/chevron-down.svg",
             Self::ChevronLeft => "icons/lucide/chevron-left.svg",
@@ -382,6 +407,7 @@ impl IconName {
             Self::CircleAlert => "icons/lucide/circle-alert.svg",
             Self::CircleArrowUp => "icons/lucide/circle-arrow-up.svg",
             Self::CircleCheck => "icons/lucide/circle-check.svg",
+            Self::CircleDashed => "icons/lucide/circle-dashed.svg",
             Self::CircleX => "icons/lucide/circle-x.svg",
             Self::ClipboardList => "icons/lucide/clipboard-list.svg",
             Self::CloudUpload => "icons/lucide/cloud-upload.svg",
@@ -411,6 +437,7 @@ impl IconName {
             Self::FolderTree => "icons/lucide/folder-tree.svg",
             Self::Folder => "icons/lucide/folder.svg",
             Self::Frame => "icons/lucide/frame.svg",
+            Self::Gauge => "icons/lucide/gauge.svg",
             Self::GitBranchPlus => "icons/lucide/git-branch-plus.svg",
             Self::GitBranch => "icons/lucide/git-branch.svg",
             Self::GitCommitHorizontal => "icons/lucide/git-commit-horizontal.svg",
@@ -429,6 +456,7 @@ impl IconName {
             Self::LogIn => "icons/lucide/log-in.svg",
             Self::Maximize2 => "icons/lucide/maximize-2.svg",
             Self::MessageCircle => "icons/lucide/message-circle.svg",
+            Self::MessageSquareDashed => "icons/lucide/message-square-dashed.svg",
             Self::MessageSquare => "icons/lucide/message-square.svg",
             Self::Minimize2 => "icons/lucide/minimize-2.svg",
             Self::Minus => "icons/lucide/minus.svg",
@@ -456,6 +484,7 @@ impl IconName {
             Self::Search => "icons/lucide/search.svg",
             Self::Settings2 => "icons/lucide/settings-2.svg",
             Self::Settings => "icons/lucide/settings.svg",
+            Self::SlidersHorizontal => "icons/lucide/sliders-horizontal.svg",
             Self::Smartphone => "icons/lucide/smartphone.svg",
             Self::Sparkles => "icons/lucide/sparkles.svg",
             Self::SquarePen => "icons/lucide/square-pen.svg",
@@ -465,7 +494,10 @@ impl IconName {
             Self::Star => "icons/lucide/star.svg",
             Self::Terminal => "icons/lucide/terminal.svg",
             Self::TextWrap => "icons/lucide/text-wrap.svg",
+            Self::Ticket => "icons/lucide/ticket.svg",
             Self::Trash2 => "icons/lucide/trash-2.svg",
+            Self::TrendingDown => "icons/lucide/trending-down.svg",
+            Self::TrendingUp => "icons/lucide/trending-up.svg",
             Self::TriangleAlert => "icons/lucide/triangle-alert.svg",
             Self::Undo2 => "icons/lucide/undo-2.svg",
             Self::WifiOff => "icons/lucide/wifi-off.svg",

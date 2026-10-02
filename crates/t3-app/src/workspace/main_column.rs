@@ -32,6 +32,9 @@ pub enum MainViewKey {
     Draft(DraftId),
     /// All settings pages share one view.
     Settings,
+    PullRequests,
+    Usage,
+    Welcome,
     Pair,
 }
 
@@ -41,7 +44,11 @@ impl MainViewKey {
             Route::Index => Self::Index,
             Route::Thread(thread) => Self::Thread(thread.clone()),
             Route::Draft(draft) => Self::Draft(draft.clone()),
-            Route::Settings(_) => Self::Settings,
+            // Project links redirect to the settings Projects page before they become the route.
+            Route::Settings(_) | Route::Project(_) => Self::Settings,
+            Route::PullRequests => Self::PullRequests,
+            Route::Usage => Self::Usage,
+            Route::Welcome => Self::Welcome,
             Route::Pair => Self::Pair,
         }
     }
@@ -71,9 +78,22 @@ pub fn build_main_view(
             cx.new(|cx| ChatView::new(target, app_state.clone(), window, cx))
                 .into()
         }
-        // settings/: SettingsView (reads the page from the route).
-        Route::Settings(_) => cx
+        // settings/: SettingsView (reads the page from the route). `Route::Project` never gets
+        // here: `AppState::navigate` redirects it to `Settings(Projects)`.
+        Route::Settings(_) | Route::Project(_) => cx
             .new(|cx| Placeholder::new("Settings", app_state.clone(), cx))
+            .into(),
+        // pull_requests/: PullRequestsView::new(app_state, window, cx).
+        Route::PullRequests => cx
+            .new(|cx| Placeholder::new("Pull Requests", app_state.clone(), cx))
+            .into(),
+        // usage/: UsageView::new(app_state, window, cx).
+        Route::Usage => cx
+            .new(|cx| Placeholder::new("Usage", app_state.clone(), cx))
+            .into(),
+        // pages: the welcome wizard over the no-projects hero.
+        Route::Welcome => cx
+            .new(|cx| Placeholder::new("Welcome", app_state.clone(), cx))
             .into(),
         // connections: the pairing flow.
         Route::Pair => cx

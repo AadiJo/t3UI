@@ -7,6 +7,7 @@
 //! lists, and jump-hint visibility.
 
 mod drag;
+mod footer;
 mod menus;
 mod project_dialogs;
 mod pulse;

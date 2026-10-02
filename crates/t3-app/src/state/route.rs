@@ -22,6 +22,9 @@ pub enum SettingsPage {
     Archived,
     /// Reached from General > About; no nav item.
     Diagnostics,
+    /// `/settings/projects`: one project's name, icon, checkouts and actions. `/projects/$key`
+    /// links land here scoped to that project ([`super::AppState::settings_project`]).
+    Projects,
 }
 
 impl SettingsPage {
@@ -35,6 +38,7 @@ impl SettingsPage {
             Self::Connections => "Connections",
             Self::Archived => "Archive",
             Self::Diagnostics => "Diagnostics",
+            Self::Projects => "Project",
         }
     }
 }
@@ -51,6 +55,17 @@ pub enum Route {
     Draft(DraftId),
     /// `/settings/<page>`.
     Settings(SettingsPage),
+    /// `/pull-requests`: the pull request inbox (`pull_requests/`). The view keeps its own
+    /// filters; the web's search params never leave that page.
+    PullRequests,
+    /// `/usage`: token and cost usage (`usage/`).
+    Usage,
+    /// `/welcome`: first-run setup over the workspace (pages agent). `FirstRunGate` sends a
+    /// fresh install here.
+    Welcome,
+    /// `/projects/$projectKey`: project links. Never the current route: navigating here
+    /// redirects to `Settings(Projects)` scoped to the project, like the web's `beforeLoad`.
+    Project(SharedString),
     /// `/pair`: connect to an environment.
     Pair,
 }
@@ -75,5 +90,15 @@ impl Route {
     /// True on any settings page; the sidebar then shows the settings nav.
     pub fn is_settings(&self) -> bool {
         matches!(self, Self::Settings(_))
+    }
+
+    /// Settings, project links, Usage, and Pull Requests (`isSidebarUtilityPage`). The
+    /// sidebar footer shows "Back" instead of the utility buttons there, and these routes are
+    /// never remembered as the place "Back" returns to.
+    pub fn is_utility_page(&self) -> bool {
+        matches!(
+            self,
+            Self::Settings(_) | Self::Project(_) | Self::Usage | Self::PullRequests
+        )
     }
 }
