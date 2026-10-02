@@ -7,13 +7,17 @@ is **visually and interactively identical** to the reference UI, but faster.
 
 | What | Where | Notes |
 | --- | --- | --- |
-| Visuals + behavior | `~/L-Projects/t3code-again` (fork, `apps/web`, `apps/desktop`) | Read-only. Match it exactly. |
+| Visuals + behavior | `~/L-Projects/t3UI-refs/t3code-fork` = github.com/AadiJo/t3code-again `main` @ `fe7d3092c` (`apps/web`, `apps/desktop`) | Read-only. Match it exactly. **Not** `~/L-Projects/t3code-again` (a stale July checkout, 4,601 commits behind). |
 | Wire protocol | `~/L-Projects/t3UI-refs/t3code-upstream` (upstream main) | Read-only. Users run `npx t3@nightly`, so the client must speak upstream's protocol. |
 | GPUI / gpui-kit | `~/L-Projects/t3UI-refs/gpui-kit`, skill in `.claude/skills/gpui-kit` | Never invent an API: grep the source for real signatures. |
 | Specs | `docs/spec/*.md` | Distilled from the sources above, with `path:line` pointers. |
 | Reference screenshots | `docs/reference/*.png` | The fork's UI captured at 1440x900 @2x. |
 
 When a spec and the source disagree, the source wins; fix the spec.
+
+The fork's `main` is upstream t3code `b33eda13` plus the user's UI polish, so the fork source and
+the upstream protocol source agree. UI specs written before 2026-10-02 described the stale July
+checkout; each has a "Refreshed against fe7d3092c" note once updated. Until then, trust the source.
 
 ## Crates
 

@@ -1,5 +1,10 @@
 # Panels spec: everything outside the sidebar and the chat column
 
+> **Stale UI warning (2026-10-02):** this spec was written against a July checkout of the fork
+> (`ddeeb09`), 4,601 commits behind the real target (`fe7d3092c`, see AGENTS.md). UI details may be
+> wrong until a "Refreshed against fe7d3092c" note appears here. Protocol facts are unaffected.
+
+
 Build spec for the Rust/GPUI port. Covers the right panel system, diff panel, terminal drawer, plan sidebar, files surface, project scripts, Open-in picker, Git actions, PR checkout dialog, and the browser preview.
 
 ## 0. Conventions

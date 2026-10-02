@@ -1,5 +1,10 @@
 # T3 Code design system: GPUI port spec
 
+> **Stale UI warning (2026-10-02):** this spec was written against a July checkout of the fork
+> (`ddeeb09`), 4,601 commits behind the real target (`fe7d3092c`, see AGENTS.md). UI details may be
+> wrong until a "Refreshed against fe7d3092c" note appears here. Protocol facts are unaffected.
+
+
 Source of truth: `~/L-Projects/t3code-again` (fork of T3 Code). All `path:line` pointers are relative to that repo unless they start with `t3UI/`. Machine-readable values live in `t3UI/docs/spec/tokens.json`.
 
 ## 0. Conventions

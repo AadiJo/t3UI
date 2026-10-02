@@ -1,5 +1,10 @@
 # Chat surface build spec
 
+> **Stale UI warning (2026-10-02):** this spec was written against a July checkout of the fork
+> (`ddeeb09`), 4,601 commits behind the real target (`fe7d3092c`, see AGENTS.md). UI details may be
+> wrong until a "Refreshed against fe7d3092c" note appears here. Protocol facts are unaffected.
+
+
 Build spec for porting the fork's chat surface (ChatView, timeline, markdown, composer, pickers, branch toolbar) to GPUI + gpui-component 0.7. Read it alongside the TSX. Token values live in the tokens doc; this file only names tokens.
 
 ## 0. Conventions

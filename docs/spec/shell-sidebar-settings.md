@@ -1,5 +1,10 @@
 # Shell, sidebar, settings, command palette, toasts, keybindings: build spec
 
+> **Stale UI warning (2026-10-02):** this spec was written against a July checkout of the fork
+> (`ddeeb09`), 4,601 commits behind the real target (`fe7d3092c`, see AGENTS.md). UI details may be
+> wrong until a "Refreshed against fe7d3092c" note appears here. Protocol facts are unaffected.
+
+
 Sources: fork `~/L-Projects/t3code-again` @ `ddeeb09d`, upstream `~/L-Projects/t3UI-refs/t3code-upstream` @ `b33eda13`.
 
 Path prefixes: `web/` = fork `apps/web/src/`, `desk/` = fork `apps/desktop/src/`, `pkg/` = fork `packages/`, `up:` = upstream repo root.

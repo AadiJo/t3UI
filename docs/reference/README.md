@@ -1,3 +1,6 @@
+> **STALE (2026-10-02):** these captures come from the July checkout of the fork, not the real target
+> (`fe7d3092c`). They are being recaptured.
+
 # Reference screenshots: fork web UI
 
 The visual target for the native GPUI port: the fork's web UI (`t3@0.0.28`

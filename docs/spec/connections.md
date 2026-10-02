@@ -1,5 +1,10 @@
 # Connections: environments, pairing, and T3 Connect
 
+> **Stale UI warning (2026-10-02):** this spec was written against a July checkout of the fork
+> (`ddeeb09`), 4,601 commits behind the real target (`fe7d3092c`, see AGENTS.md). UI details may be
+> wrong until a "Refreshed against fe7d3092c" note appears here. Protocol facts are unaffected.
+
+
 Reference for implementing environment management, pairing/auth and T3 Connect in `t3-client`
 (networking, catalog, auth) and `t3-app` (Connections settings UI). Native macOS app: no Electron,
 no embedded browser engine; we can open the system browser, use `ASWebAuthenticationSession`, and
