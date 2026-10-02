@@ -4,6 +4,8 @@ Refreshed against fe7d3092c. Conventions and path prefixes are in [`overlays.md`
 
 Scope: everything mounted at the app root or in the sidebar chrome that is not owned by one page (`web/routes/__root.tsx:233-275`, `web/AppRoot.tsx:14-23`, `web/components/sidebar/SidebarChrome.tsx:102-189`). Owned elsewhere: Link PR dialog (PR spec), T3 Connect onboarding and relay client install dialogs (connections spec), theme editor (settings spec), composer banners for server updates and clone progress (chat spec), `/welcome` (pages spec).
 
+Overlap: `shell.md` §5-§6 (toast primitive, glass, context menus, confirm) and `sidebar.md` §7.6, §9 (undo notice, footer, provider pill, update button) describe some of the same surfaces from the shell/sidebar side; the facts agree. This file adds the full copy catalog, data/RPC behind each notice, and the palette-adjacent flows. Where `shell.md` is more detailed (context menu keyboard and edge cases, confirm button metrics), it is canonical.
+
 ## 1. Toast system
 
 `web/components/ui/toast.tsx`, `toast.logic.ts`, `toastHelpers.ts`; Base UI toast 1.5.0. Two managers: the main stack (`toastManager`) and element-anchored toasts (`anchoredToastManager`) (`toast.tsx:79-80`). Both providers wrap the whole app (`__root.tsx:234-235`).
@@ -212,7 +214,7 @@ popup      row 2, w 100%, max-w 512 (`max-w-lg`), max-h 100%, flex col, rounded 
   footer   flex row, justify-end, gap 8, px 24, py 16, border-top, bg --muted/72, bottom corners 17   dialog.tsx:119-136
 ```
 
-AlertDialog: same popup (max-w 512), header p 24 left-aligned, footer identical; no close button; Escape and backdrop click count as cancel (`alert-dialog.tsx:40-99`).
+AlertDialog: same popup (max-w 512), header p 24 left-aligned, footer identical; no close button; Escape cancels; backdrop clicks do nothing (Base UI forces `disablePointerDismissal` for alert dialogs, `bui/dialog/root/useRenderDialogRoot.js:30-33`); initial focus is the first focusable control (`alert-dialog.tsx:40-99`). A plain Dialog closes on Escape and on backdrop press.
 
 ### 3.2 Confirm dialog (replaces the native message box)
 
@@ -220,7 +222,7 @@ AlertDialog: same popup (max-w 512), header p 24 left-aligned, footer identical;
 
 - Queue: one dialog at a time; later requests wait until the previous close animation finishes (`confirmDialog.ts:80-124`). Unmounting the last host resolves everything `false`.
 - Copy split (`ConfirmDialogHost.tsx:26-52`): trim the message; the first line ending with "?" is the title and the remaining lines (joined with "\n", trimmed) the description; else, if a "?" occurs, title = text through the first "?", description = the rest; else title "Confirm action", description = the message or "This action requires your confirmation.". Description keeps line breaks (`whitespace-pre-line`).
-- Footer: outline "Cancel" (closes → false) and "Confirm" (variant `default` or `destructive` per option → true). Escape / backdrop → false.
+- Footer: outline "Cancel" (closes → false) and "Confirm" (variant `default` or `destructive` per option → true). Escape → false; backdrop clicks do nothing. Initial focus is "Cancel", so Enter cancels unless the user tabs to Confirm. Same spec, with button metrics: `shell.md` §6.3.
 - Callers include thread archive/delete/multi-delete, project remove, worktree delete, terminal close, restore defaults, desktop app install (§5.5), server desktop-app update (§2.7), provider setup, diagnostics process kill (`grep dialogs.confirm`). Destructive variant: `ChatView.tsx:5161`, `LegacySidebar.tsx:1670`.
 
 ### 3.3 SSH password prompt
@@ -340,7 +342,7 @@ Release notes popover (nightly channel with notes and an update to show) (`Sideb
 
 ## 7. Context menus
 
-`web/contextMenuFallback.ts`. `LocalApi.contextMenu.show(items, {x, y})` renders this DOM menu on every platform, desktop included; only text-editing menus stay native (`web/localApi.ts:43-56`). Item: `{id, label, icon?, destructive?, disabled?, checked?, header?, separatorBefore?, children?}` (`ContextMenuItem`, `contracts/ipc.ts`).
+Canonical spec: `shell.md` §6.2 (keyboard, edge cases, icon paths). Summary: `web/contextMenuFallback.ts`. `LocalApi.contextMenu.show(items, {x, y})` renders this DOM menu on every platform, desktop included; only text-editing menus stay native (`web/localApi.ts:43-56`). No open/close animation; keyboard is Escape plus Tab between rows (no arrow keys). Item: `{id, label, icon?, destructive?, disabled?, checked?, header?, separatorBefore?, children?}` (`ContextMenuItem`, `contracts/ipc.ts`).
 
 - Menu (`:296-310`): fixed at the pointer, clamped 4px inside the window, z 10000, min-w 128, max-w 384, `rounded-lg`, `dropdown-glass`, overflow hidden; inner p 4, max-h min(384, 70vh), scrolls.
 - Separator (before an item with `separatorBefore`, not first): 1px --border, mx 8, my 4. Header item: px 8, py 6, text-xs medium --muted-foreground.
@@ -413,7 +415,7 @@ Recovery screens (`:200-238`): full window, bg --background, centered column max
 ## 12. Open questions / risks
 
 - GPUI has no backdrop blur: glass toasts, dialogs, popovers, and menus need the fork's opaque fallbacks (`--popover`, `--background/60`) or a design decision.
-- The fork renders confirms and context menus in-app on desktop now. The shell handoff's native `Window::prompt` and `NativeMenu` choices are stale; confirm with the shell owner before replacing them (sidebar menus depend on it).
+- The fork renders confirms and context menus in-app on desktop now (also recorded in `shell.md` §6.2-§6.3). The current `t3-app/src/dialogs.rs` native `Window::prompt` and the sidebar's `NativeMenu` are stale; the shell owner replaces them.
 - Toast hover expansion depends on measuring every toast's height (Base UI measures with `height: auto`); in GPUI, measure after layout and animate with the same 150ms height / 500ms transform timings.
 - Several surfaces need native backends that do not exist yet: the app updater (§5.4), notification inbox model (§5.5), SSH transport (§3.3), quit-hold key interception (§6, needs key-repeat and key-up observation in GPUI on macOS, where ⌘ suppresses letter key-up).
 - Spinners (loading toasts, provider pill, update check, content search) animate continuously; pause them offscreen and while the window is hidden, as `visible-animate-spin` does.

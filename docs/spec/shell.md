@@ -631,7 +631,7 @@ panel maximized, queued messages.
   count, and syncs with the renderer (`DesktopNotificationCoordinator`, `web/desktopNotifications.ts`,
   `desk/notifications/`). It also feeds the sidebar Done badges (sidebar.md 4.5) and the bell.
 - Without the bridge: `ThreadCompletionNotificationCoordinator` posts a browser notification
-  (title = app name, body = thread title) for newly completed, non-settled threads while the
+  (title "Thread completed", body = thread title, `web/threadCompletionNotifications.ts:113-116`) for newly completed, non-settled threads while the
   window is unfocused, skipping threads with an auto-send queued message
   (`web/routes/__root.tsx:506-542`, `web/threadCompletionNotifications.ts`).
 - `notificationMode` setting (`off` default) controls in-app sounds/notifications
