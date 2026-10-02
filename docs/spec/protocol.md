@@ -257,7 +257,7 @@ The wire form of every payload, success, stream item, and error is `Schema.toCod
 | `Schema.optionalKey(X)` | key absent, or `X`. `null` is rejected on decode. | `#[serde(default, skip_serializing_if = "Option::is_none")] Option<X>`. Never send `null`. |
 | `Schema.optional(X)` (= optionalKey of `X \| undefined`) | key absent or `X`. Decode accepts `null` as absent. Encoding an explicit `undefined` writes `null`. | Same as optionalKey. Accept `null` on read. |
 | `Schema.UndefinedOr(X)` as a required key | `null` when undefined (decode requires the key) | Rare. |
-| `Schema.Option(X)` | `{"_tag":"Some","value":X}` / `{"_tag":"None"}` | Not used in the core contracts. `OptionFromNullOr` is `X \| null`. |
+| `Schema.Option(X)` | `{"_tag":"Some","value":X}` / `{"_tag":"None"}` | Not in the orchestration contracts, but used by diagnostics, telemetry, source control discovery, and process signals. Rust: `#[serde(default, with = "t3_protocol::schema::effect_option")]`. `OptionFromNullOr` is `X \| null`. |
 | `Schema.Literal("a")`, `Schema.Literals([...])` | `"a"` | String enums. Add an `Unknown(String)` catch-all where the set grows (statuses, kinds). |
 | `Schema.Struct({...})` | object. Unknown keys are ignored on decode. | Do not use `deny_unknown_fields`. |
 | `Schema.Class` | plain object, no tag | |

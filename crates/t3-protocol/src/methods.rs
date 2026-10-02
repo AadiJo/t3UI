@@ -12,11 +12,23 @@ use serde::{Serialize, de::IgnoredAny};
 
 use crate::{
     commands::ClientCommand,
+    device::{
+        DeviceActionInput, DeviceCloseInput, DeviceConfigureInput, DeviceDetail, DeviceHostSummary,
+        DeviceListInput, DeviceOpenInput, DeviceRef, DeviceServiceState, DeviceSession,
+        DeviceShutdownInput, SshDeviceHostConfig,
+    },
     errors::ServerError,
     orchestration::{
         DispatchResult, GetFullThreadDiffInput, GetTurnDiffInput, OrchestrationShellSnapshot,
         SearchThreadsInput, SearchThreadsResult, ShellStreamItem, SubscribeShellInput,
         SubscribeThreadInput, ThreadStreamItem, ThreadTurnDiff,
+    },
+    preview::{
+        DiscoveredLocalServerList, DiscoveredLocalServersInput, PreviewAutomationHost,
+        PreviewAutomationHostFocus, PreviewAutomationResponse, PreviewAutomationStreamEvent,
+        PreviewCloseInput, PreviewEvent, PreviewListInput, PreviewListResult, PreviewNavigateInput,
+        PreviewOpenInput, PreviewReportStatusInput, PreviewResizeInput, PreviewSessionSnapshot,
+        PreviewTabRef,
     },
     projects::{
         AssetCreateUrlInput, AssetCreateUrlResult, AttachmentCreateUploadUrlInput,
@@ -25,6 +37,14 @@ use crate::{
         ProjectReadFileInput, ProjectReadFileResult, ProjectSearchContentsInput,
         ProjectSearchContentsResult, ProjectSearchEntriesInput, ProjectWriteFileInput,
         ProjectWriteFileResult,
+    },
+    providers::{
+        ChatGptHandoffInput, ChatGptHandoffState, ChatGptImportProfileInput,
+        ChatGptReconnectProfileInput, CodexAuthCallbackInput, CodexAuthCallbackState,
+        ProviderAuthCancelInput, ProviderAuthCompleteInput, ProviderAuthRespondInput,
+        ProviderAuthStartInput, ProviderAuthState, ProviderInstallCancelInput,
+        ProviderInstallState, ProviderSetupInput, ProviderUploadFeedbackInput,
+        ProviderUploadFeedbackResult,
     },
     pull_requests::{
         PullRequestActionInput, PullRequestActivity, PullRequestCommentInput,
@@ -46,6 +66,14 @@ use crate::{
         ServerSettings, SubscribeServerConfigInput, UpdateProviderInput, UpdateSettingsInput,
         UpsertKeybindingInput,
     },
+    server_ops::{
+        ClientActivityReportInput, DesktopUpdateCommitInput, HostResourcesSnapshot,
+        RelayClientInstallProgress, RelayClientStatus, ResourceHistoryInput,
+        ResourceTelemetryHistory, ResourceTelemetryRetryResult, ResourceTelemetrySnapshot,
+        ServerProcessDiagnostics, ServerProcessResourceHistory, ServerSelfUpdateInput,
+        ServerSelfUpdateProgressEvent, ServerSelfUpdateResult, ServerSignalProcessInput,
+        ServerSignalProcessResult, ServerTraceDiagnostics, SourceControlDiscoveryResult,
+    },
     stream,
     terminal::{
         TerminalAttachInput, TerminalCloseInput, TerminalEvent, TerminalMetadataEvent,
@@ -65,6 +93,17 @@ use crate::{
         VcsCwdInput, VcsInitInput, VcsListRefsInput, VcsListRefsResult, VcsPullResult,
         VcsRemoveWorktreeInput, VcsStatusResult, VcsStatusStreamEvent, VcsSwitchRefInput,
         VcsSwitchRefResult,
+    },
+    workspace::{
+        AgentSessionImportInput, AgentSessionImportResult, AgentSessionScanResult,
+        FileContentsPair, GetWorkflowScriptInput, ProjectCloneActionInput,
+        ProjectCloneActionResult, ProjectCloneSnapshot, ProjectCloneStartInput,
+        ProjectCloneStartResult, ProjectCreateNewInput, ProjectCreateNewResult,
+        ProjectEnsureScratchResult, ReviewDiffFileContentsInput, SourceControlCloneRepositoryInput,
+        SourceControlCloneRepositoryResult, SourceControlPublishRepositoryInput,
+        SourceControlPublishRepositoryResult, SourceControlRepositoryInfo,
+        SourceControlRepositoryLookupInput, WorkflowScript, WorktreeSetupCancelResult,
+        WorktreeSetupSnapshot, WorktreeSetupThreadInput,
     },
 };
 
@@ -186,3 +225,88 @@ unary!(PullRequestsSetLabels, "pullRequests.setLabels", PullRequestLabelChangeIn
 unary!(ServerGetUsageSummary, "server.getUsageSummary", UsageSummaryInput => UsageSummary, ServerError);
 unary!(ServerRefreshUsageRates, "server.refreshUsageRates", Empty => UsagePricing, ServerError);
 unary!(ProviderConsumeResetCredit, "provider.consumeResetCredit", ConsumeResetCreditInput => ConsumeResetCreditResult, ServerError);
+
+// Provider setup (Settings > Providers, onboarding)
+unary!(ProviderAuthStart, "provider.auth.start", ProviderAuthStartInput => ProviderAuthState, ServerError);
+unary!(ProviderAuthComplete, "provider.auth.complete", ProviderAuthCompleteInput => ProviderAuthState, ServerError);
+unary!(ProviderAuthRespond, "provider.auth.respond", ProviderAuthRespondInput => ProviderAuthState, ServerError);
+unary!(ProviderAuthCancel, "provider.auth.cancel", ProviderAuthCancelInput => ProviderAuthState, ServerError);
+unary!(ProviderAuthLogout, "provider.auth.logout", ProviderSetupInput => ProviderAuthState, ServerError);
+stream!(ProviderAuthSubscribe, "provider.auth.subscribe", ProviderSetupInput => ProviderAuthState, ServerError);
+unary!(ChatGptReconnectProfile, "provider.chatgpt.reconnect-profile", ChatGptReconnectProfileInput => Option<crate::providers::ChatGptReconnectProfile>, ServerError);
+unary!(ChatGptImportProfile, "provider.chatgpt.import-profile", ChatGptImportProfileInput => ProviderAuthState, ServerError);
+stream!(ChatGptHandoffSubscribe, "provider.chatgpt.handoff.subscribe", ChatGptHandoffInput => ChatGptHandoffState, ServerError);
+stream!(CodexAuthCallbackSubscribe, "provider.codex.auth-callback.subscribe", CodexAuthCallbackInput => CodexAuthCallbackState, ServerError);
+unary!(ProviderInstallStart, "provider.install.start", ProviderSetupInput => ProviderInstallState, ServerError);
+unary!(ProviderInstallCancel, "provider.install.cancel", ProviderInstallCancelInput => ProviderInstallState, ServerError);
+unary!(ProviderInstallRemove, "provider.install.remove", ProviderSetupInput => ProviderInstallState, ServerError);
+stream!(ProviderInstallSubscribe, "provider.install.subscribe", ProviderSetupInput => ProviderInstallState, ServerError);
+unary!(ProviderUploadFeedback, "provider.uploadFeedback", ProviderUploadFeedbackInput => ProviderUploadFeedbackResult, ServerError);
+
+// Server operations (Settings > Diagnostics, About)
+unary!(ServerUpdateServer, "server.updateServer", ServerSelfUpdateInput => ServerSelfUpdateResult, ServerError);
+stream!(ServerUpdateServerWithProgress, "server.updateServerWithProgress", ServerSelfUpdateInput => ServerSelfUpdateProgressEvent, ServerError);
+unary!(ServerCommitDesktopUpdate, "server.commitDesktopUpdate", DesktopUpdateCommitInput => ServerSelfUpdateResult, ServerError);
+unary!(ServerDiscoverSourceControl, "server.discoverSourceControl", Empty => SourceControlDiscoveryResult, ServerError);
+unary!(ServerGetTraceDiagnostics, "server.getTraceDiagnostics", Empty => ServerTraceDiagnostics, ServerError);
+unary!(ServerGetProcessDiagnostics, "server.getProcessDiagnostics", Empty => ServerProcessDiagnostics, ServerError);
+unary!(ServerGetHostResources, "server.getHostResources", Empty => HostResourcesSnapshot, ServerError);
+unary!(ServerGetProcessResourceHistory, "server.getProcessResourceHistory", ResourceHistoryInput => ServerProcessResourceHistory, ServerError);
+unary!(ServerGetResourceTelemetryHistory, "server.getResourceTelemetryHistory", ResourceHistoryInput => ResourceTelemetryHistory, ServerError);
+unary!(ServerRetryResourceTelemetry, "server.retryResourceTelemetry", Empty => ResourceTelemetryRetryResult, ServerError);
+stream!(SubscribeResourceTelemetry, "subscribeResourceTelemetry", Empty => ResourceTelemetrySnapshot, ServerError);
+unary!(ServerSignalProcess, "server.signalProcess", ServerSignalProcessInput => ServerSignalProcessResult, ServerError);
+unary!(
+    /// Keeps the server's background work (git fetch, provider health) alive for this client.
+    ServerReportClientActivity, "server.reportClientActivity", ClientActivityReportInput => (), ServerError
+);
+unary!(CloudGetRelayClientStatus, "cloud.getRelayClientStatus", Empty => RelayClientStatus, ServerError);
+stream!(CloudInstallRelayClient, "cloud.installRelayClient", Empty => RelayClientInstallProgress, ServerError);
+
+// Workspaces: source control, clones, new projects, session import, worktree setup
+unary!(SourceControlLookupRepository, "sourceControl.lookupRepository", SourceControlRepositoryLookupInput => SourceControlRepositoryInfo, ServerError);
+unary!(SourceControlCloneRepository, "sourceControl.cloneRepository", SourceControlCloneRepositoryInput => SourceControlCloneRepositoryResult, ServerError);
+unary!(SourceControlPublishRepository, "sourceControl.publishRepository", SourceControlPublishRepositoryInput => SourceControlPublishRepositoryResult, ServerError);
+unary!(ProjectCloneStart, "projectClone.start", ProjectCloneStartInput => ProjectCloneStartResult, ServerError);
+unary!(ProjectCloneCancel, "projectClone.cancel", ProjectCloneActionInput => ProjectCloneActionResult, ServerError);
+unary!(ProjectCloneRetry, "projectClone.retry", ProjectCloneActionInput => ProjectCloneActionResult, ServerError);
+stream!(
+    /// The full list of tracked clones on every change.
+    SubscribeProjectClones, "subscribeProjectClones", Empty => Vec<ProjectCloneSnapshot>, ServerError
+);
+unary!(ProjectsEnsureScratch, "projects.ensureScratch", Empty => ProjectEnsureScratchResult, ServerError);
+unary!(ProjectsCreateNew, "projects.createNew", ProjectCreateNewInput => ProjectCreateNewResult, ServerError);
+unary!(AgentSessionsScan, "agentSessions.scan", Empty => AgentSessionScanResult, ServerError);
+unary!(AgentSessionsImport, "agentSessions.import", AgentSessionImportInput => AgentSessionImportResult, ServerError);
+stream!(
+    /// `None` items mean no setup runs for the thread.
+    SubscribeWorktreeSetup, "subscribeWorktreeSetup", WorktreeSetupThreadInput => Option<WorktreeSetupSnapshot>, ServerError
+);
+unary!(WorktreeSetupCancel, "worktreeSetup.cancel", WorktreeSetupThreadInput => WorktreeSetupCancelResult, ServerError);
+unary!(ReviewGetDiffFileContents, "review.getDiffFileContents", ReviewDiffFileContentsInput => FileContentsPair, ServerError);
+unary!(GetWorkflowScript, "orchestration.getWorkflowScript", GetWorkflowScriptInput => WorkflowScript, ServerError);
+
+// In-app browser preview
+unary!(PreviewOpen, "preview.open", PreviewOpenInput => PreviewSessionSnapshot, ServerError);
+unary!(PreviewNavigate, "preview.navigate", PreviewNavigateInput => PreviewSessionSnapshot, ServerError);
+unary!(PreviewResize, "preview.resize", PreviewResizeInput => PreviewSessionSnapshot, ServerError);
+unary!(PreviewRefresh, "preview.refresh", PreviewTabRef => (), ServerError);
+unary!(PreviewClose, "preview.close", PreviewCloseInput => (), ServerError);
+unary!(PreviewList, "preview.list", PreviewListInput => PreviewListResult, ServerError);
+unary!(PreviewReportStatus, "preview.reportStatus", PreviewReportStatusInput => (), ServerError);
+stream!(SubscribePreviewEvents, "subscribePreviewEvents", Empty => PreviewEvent, ServerError);
+stream!(PreviewAutomationConnect, "previewAutomation.connect", PreviewAutomationHost => PreviewAutomationStreamEvent, ServerError);
+unary!(PreviewAutomationRespond, "previewAutomation.respond", PreviewAutomationResponse => (), ServerError);
+unary!(PreviewAutomationFocusHost, "previewAutomation.focusHost", PreviewAutomationHostFocus => (), ServerError);
+stream!(SubscribeDiscoveredLocalServers, "subscribeDiscoveredLocalServers", DiscoveredLocalServersInput => DiscoveredLocalServerList, ServerError);
+
+// Devices (simulators and emulators)
+unary!(DeviceConfigure, "device.configure", DeviceConfigureInput => DeviceServiceState, ServerError);
+unary!(DeviceList, "device.list", DeviceListInput => DeviceServiceState, ServerError);
+unary!(DeviceTestHost, "device.testHost", SshDeviceHostConfig => DeviceHostSummary, ServerError);
+unary!(DeviceOpen, "device.open", DeviceOpenInput => DeviceSession, ServerError);
+unary!(DeviceClose, "device.close", DeviceCloseInput => (), ServerError);
+unary!(DeviceShutdown, "device.shutdown", DeviceShutdownInput => (), ServerError);
+unary!(DeviceGetDetail, "device.detail", DeviceRef => DeviceDetail, ServerError);
+unary!(DeviceRunAction, "device.action", DeviceActionInput => DeviceDetail, ServerError);
+stream!(SubscribeDeviceState, "subscribeDeviceState", Empty => DeviceServiceState, ServerError);

@@ -219,3 +219,41 @@ where
 {
     Ok(Option::<Vec<T>>::deserialize(deserializer)?.unwrap_or_default())
 }
+
+/// `Schema.Option(X)`: `{"_tag":"Some","value":X}` / `{"_tag":"None"}` on the wire, `Option<X>`
+/// in Rust. Use `#[serde(default, with = "crate::schema::effect_option")]`. Anything else
+/// (including a `Some` whose value does not decode) reads as `None`.
+pub mod effect_option {
+    use serde::{Deserialize, Deserializer, Serialize, Serializer, de::DeserializeOwned};
+    use serde_json::Value;
+
+    pub fn deserialize<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+    where
+        D: Deserializer<'de>,
+        T: DeserializeOwned,
+    {
+        let value = Option::<Value>::deserialize(deserializer)?;
+        Ok(value.and_then(|value| {
+            (value.get("_tag")?.as_str()? == "Some")
+                .then(|| serde_json::from_value(value.get("value")?.clone()).ok())
+                .flatten()
+        }))
+    }
+
+    pub fn serialize<S, T>(value: &Option<T>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        T: Serialize,
+    {
+        #[derive(Serialize)]
+        #[serde(tag = "_tag")]
+        enum Wire<'a, T> {
+            Some { value: &'a T },
+            None,
+        }
+        match value {
+            Some(value) => Wire::Some { value }.serialize(serializer),
+            None => Wire::<T>::None.serialize(serializer),
+        }
+    }
+}

@@ -261,12 +261,71 @@ pub struct ServerProvider {
     pub slash_commands: Vec<ProviderSlashCommand>,
     #[serde(default, deserialize_with = "forward_compatible")]
     pub skills: Vec<ProviderSkill>,
-    pub workspace_snapshots: Option<Value>,
+    /// Per-workspace skills and slash commands, after `server.refreshProviders { cwd }`.
+    #[serde(default, deserialize_with = "crate::schema::forward_compatible_option")]
+    pub workspace_snapshots: Option<Vec<ProviderWorkspaceSnapshot>>,
     #[serde(default, deserialize_with = "crate::schema::lenient")]
     pub usage_limits: Option<ServerProviderUsageLimits>,
-    pub version_advisory: Option<Value>,
-    pub compatibility_advisory: Option<Value>,
-    pub update_state: Option<Value>,
+    #[serde(default, deserialize_with = "crate::schema::lenient")]
+    pub version_advisory: Option<ProviderVersionAdvisory>,
+    #[serde(default, deserialize_with = "crate::schema::lenient")]
+    pub compatibility_advisory: Option<ProviderCompatibilityAdvisory>,
+    #[serde(default, deserialize_with = "crate::schema::lenient")]
+    pub update_state: Option<ProviderUpdateState>,
+}
+
+/// Whether the provider CLI is behind its latest release (Settings > Providers banner).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProviderVersionAdvisory {
+    /// `unknown`, `current`, or `behind_latest`.
+    pub status: String,
+    pub current_version: Option<String>,
+    pub latest_version: Option<String>,
+    pub update_command: Option<String>,
+    #[serde(default)]
+    pub can_update: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub can_install_version: Option<bool>,
+    pub checked_at: Option<String>,
+    pub message: Option<String>,
+}
+
+/// Whether the installed CLI version works with this server.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProviderCompatibilityAdvisory {
+    /// `unknown`, `supported`, `graceful`, `unsupported`, or `broken`.
+    pub status: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub latest_version_status: Option<String>,
+    pub message: Option<String>,
+    pub recommended_version: Option<String>,
+    pub recommended_range: Option<String>,
+}
+
+/// Progress of `server.updateProvider`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProviderUpdateState {
+    /// `idle`, `queued`, `running`, `succeeded`, `failed`, or `unchanged`.
+    pub status: String,
+    pub started_at: Option<String>,
+    pub finished_at: Option<String>,
+    pub message: Option<String>,
+    pub output: Option<String>,
+}
+
+/// Skills and slash commands discovered in one workspace (`cwd`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProviderWorkspaceSnapshot {
+    pub cwd: String,
+    pub checked_at: String,
+    #[serde(default, deserialize_with = "forward_compatible")]
+    pub slash_commands: Vec<ProviderSlashCommand>,
+    #[serde(default, deserialize_with = "forward_compatible")]
+    pub skills: Vec<ProviderSkill>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
