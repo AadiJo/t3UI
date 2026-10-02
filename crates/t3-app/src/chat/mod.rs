@@ -214,7 +214,12 @@ impl ChatView {
             ChatTarget::Draft { project, .. } => project.as_ref().map(|p| &p.environment_id),
         };
         let environment = environment_id.and_then(|id| app_state.read(cx).environment(id, cx));
-        let mut subscriptions = vec![cx.observe(&app_state, |_, _, cx| cx.notify())];
+        let mut subscriptions = vec![
+            cx.observe(&app_state, |_, _, cx| cx.notify()),
+            cx.observe_window_activation(window, |this, window, cx| {
+                this.acknowledge_completion(window, cx)
+            }),
+        ];
         if let Some(environment) = &environment {
             subscriptions.push(cx.observe(environment, |_, _, cx| cx.notify()));
         }
@@ -229,15 +234,16 @@ impl ChatView {
                 Some(handle) => {
                     let mut receiver = handle.state();
                     thread = Some(receiver.borrow_and_update().clone());
-                    tasks.push(cx.spawn(async move |this, cx| {
+                    tasks.push(cx.spawn_in(window, async move |this, cx| {
                         // Keeps the subscription open for the view's lifetime.
                         let _handle = handle;
                         while receiver.changed().await.is_ok() {
                             let state = receiver.borrow_and_update().clone();
-                            if this
-                                .update(cx, |this, cx| this.set_thread(state, cx))
-                                .is_err()
-                            {
+                            let updated = this.update_in(cx, |this, window, cx| {
+                                this.set_thread(state, cx);
+                                this.acknowledge_completion(window, cx);
+                            });
+                            if updated.is_err() {
                                 break;
                             }
                         }
@@ -291,6 +297,7 @@ impl ChatView {
         };
         if let Some(state) = thread {
             this.set_thread(state, cx);
+            this.acknowledge_completion(window, cx);
         }
         this
     }
@@ -378,6 +385,34 @@ impl ChatView {
         }
         self.thread = Some(state);
         self.refresh_rows(cx);
+    }
+
+    /// Clears the sidebar's "Completed" pill for this thread once the user can see the
+    /// finished turn: the window is active and the latest turn has completed
+    /// (`ChatView.tsx` completion acknowledgement).
+    fn acknowledge_completion(&mut self, window: &Window, cx: &mut Context<Self>) {
+        let ChatTarget::Thread(thread_ref) = &self.target else {
+            return;
+        };
+        if !window.is_window_active() {
+            return;
+        }
+        let Some(completed_at) = self
+            .orchestration_thread()
+            .and_then(|thread| thread.latest_turn.as_ref())
+            .and_then(|turn| turn.completed_at.clone())
+        else {
+            return;
+        };
+        let key = thread_ref.key();
+        let seen =
+            self.app_state.read(cx).ui().last_visited_at(&key) == Some(completed_at.as_str());
+        if !seen {
+            let thread_ref = thread_ref.clone();
+            self.app_state.update(cx, |state, cx| {
+                state.mark_thread_visited(&thread_ref, &completed_at, cx)
+            });
+        }
     }
 
     /// The thread being shown, if loaded.
