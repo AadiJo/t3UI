@@ -1,18 +1,13 @@
 //! coss `Toast` (`ui/toast.tsx`): the toast card with its status icon, title, description,
-//! `xs` actions and the corner close orb, and [`Toaster`], the top-right stack (limit 3,
-//! 5s timeout, collapsed with 12px peeks, expanded with 12px gaps on hover).
-//!
-//! Approximations: GPUI has no transforms, so collapsed toasts behind the front one are
-//! drawn as narrower, shorter cards instead of scaled ones; enter/exit is a 500ms fade
-//! with a horizontal slide on enter only; swipe-to-dismiss is not implemented.
+//! `xs` action and the corner close orb. Visual primitive only: stacking, timing and
+//! scoping belong to the app shell (`t3_app::toast`).
 
 use std::rc::Rc;
 
 use gpui_kit::{
-    Animation, AnimationExt as _, AnyElement, App, ClickEvent, Context, ElementId, FontWeight,
-    Hsla, InteractiveElement as _, IntoElement, ParentElement as _, Pixels, Render, RenderOnce,
-    SharedString, StatefulInteractiveElement as _, Styled as _, Task, Window, deferred, div,
-    prelude::FluentBuilder as _, px,
+    App, ClickEvent, ElementId, FontWeight, Hsla, InteractiveElement as _, IntoElement,
+    ParentElement as _, RenderOnce, SharedString, StatefulInteractiveElement as _, Styled as _,
+    Window, div, prelude::FluentBuilder as _, px,
 };
 
 use super::{
@@ -22,7 +17,7 @@ use super::{
 };
 use crate::{
     ActiveColors as _, Colors, Icon, IconName,
-    tokens::{ICON_OPACITY, layout, motion, shadow},
+    tokens::{ICON_OPACITY, shadow},
 };
 
 /// Toast type: selects the leading icon and its color.
@@ -40,7 +35,8 @@ pub enum ToastKind {
 
 use super::ClickHandler as Handler;
 
-/// One toast. Show it with [`Toaster::push`], or render it directly for previews.
+/// One toast card (radius 10, `shadow-lg/5`, content padding 14 / 12 / 40). The shell's toast
+/// stack positions it; `on_close` wires the close orb.
 #[derive(Clone, IntoElement)]
 pub struct Toast {
     id: ElementId,
@@ -83,7 +79,7 @@ impl Toast {
         self
     }
 
-    /// Called by the close orb. [`Toaster`] sets this to dismiss the toast.
+    /// Called by the close orb.
     pub fn on_close(
         mut self,
         handler: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static,
@@ -224,153 +220,4 @@ fn close_orb(
         .when_some(on_close, |this, on_close| {
             this.on_click(move |event, window, cx| on_close(event, window, cx))
         })
-}
-
-const LIMIT: usize = 3;
-const GAP: f32 = 12.;
-/// Collapsed height used for the cards behind the front toast before it is measured.
-const COLLAPSED_HEIGHT: f32 = 46.;
-
-struct Entry {
-    key: u64,
-    toast: Toast,
-    _timeout: Option<Task<()>>,
-}
-
-/// The window's toast stack, top-right below the 52px topbar.
-///
-/// Create one per window, render it as the last child of the root view, and push toasts:
-///
-/// ```ignore
-/// let toaster = cx.new(|_| Toaster::new());
-/// toaster.update(cx, |t, cx| t.push(Toast::new("Copied").kind(ToastKind::Success), window, cx));
-/// ```
-pub struct Toaster {
-    entries: Vec<Entry>,
-    next_key: u64,
-    expanded: bool,
-}
-
-impl Default for Toaster {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Toaster {
-    pub fn new() -> Self {
-        Self {
-            entries: Vec::new(),
-            next_key: 0,
-            expanded: false,
-        }
-    }
-
-    /// Shows `toast` at the front of the stack. Non-loading toasts close after 5s; the oldest
-    /// is dropped beyond 3.
-    pub fn push(&mut self, toast: Toast, window: &mut Window, cx: &mut Context<Self>) {
-        let key = self.next_key;
-        self.next_key += 1;
-        let timeout = (toast.kind != ToastKind::Loading).then(|| {
-            cx.spawn_in(window, async move |this, cx| {
-                cx.background_executor().timer(motion::TOAST_TIMEOUT).await;
-                this.update(cx, |this, cx| this.dismiss(key, cx)).ok();
-            })
-        });
-        let entity = cx.entity().downgrade();
-        let toast = toast
-            .id(ElementId::from(("toast", key)))
-            .on_close(move |_, _, cx| {
-                entity.update(cx, |this, cx| this.dismiss(key, cx)).ok();
-            });
-        self.entries.insert(
-            0,
-            Entry {
-                key,
-                toast,
-                _timeout: timeout,
-            },
-        );
-        self.entries.truncate(LIMIT);
-        cx.notify();
-    }
-
-    fn dismiss(&mut self, key: u64, cx: &mut Context<Self>) {
-        self.entries.retain(|entry| entry.key != key);
-        if self.entries.is_empty() {
-            self.expanded = false;
-        }
-        cx.notify();
-    }
-}
-
-impl Render for Toaster {
-    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        if self.entries.is_empty() {
-            return div().into_any_element();
-        }
-        let colors = cx.colors();
-        let viewport = window.viewport_size().width;
-        let width = (viewport - px(64.)).min(px(360.));
-        let expanded = self.expanded;
-        let enter = |key: u64| {
-            (
-                ElementId::from(("toast-enter", key)),
-                Animation::new(motion::TOAST).with_easing(motion::ease_toast),
-            )
-        };
-        let mut stack = div()
-            .id("toaster")
-            .absolute()
-            .top(px(32.) + layout::TOPBAR_HEIGHT)
-            .right(px(32.))
-            .w(width)
-            .flex()
-            .flex_col()
-            .gap(px(GAP))
-            .on_hover(cx.listener(|this, hovered: &bool, _, cx| {
-                this.expanded = *hovered;
-                cx.notify();
-            }));
-        if expanded {
-            stack = stack.children(self.entries.iter().map(|entry| {
-                let (id, animation) = enter(entry.key);
-                div()
-                    .child(entry.toast.clone())
-                    .with_animation(id, animation, |this, t| this.opacity(t))
-            }));
-        } else {
-            // Cards behind the front toast first, so the front one paints over them.
-            stack = stack.children(
-                self.entries
-                    .iter()
-                    .enumerate()
-                    .skip(1)
-                    .rev()
-                    .map(|(ix, _)| collapsed_card(ix, width, colors)),
-            );
-            let front = &self.entries[0];
-            let (id, animation) = enter(front.key);
-            stack = stack.child(div().relative().child(front.toast.clone()).with_animation(
-                id,
-                animation,
-                move |this, t| this.opacity(t).left((width + px(32.)) * (1. - t)),
-            ));
-        }
-        deferred(stack).with_priority(200).into_any_element()
-    }
-}
-
-/// A collapsed toast behind the front one: `scale(1 - 0.1 * ix)` drawn as a smaller card
-/// whose bottom edge peeks 12px per index below the front toast.
-fn collapsed_card(ix: usize, width: Pixels, colors: &'static Colors) -> AnyElement {
-    let scale = 1. - 0.1 * ix as f32;
-    let height = px(COLLAPSED_HEIGHT);
-    popup_surface(px(10.) * scale, colors)
-        .absolute()
-        .top(height + px(GAP) * ix as f32 - height * scale)
-        .left(width * (1. - scale) / 2.)
-        .w(width * scale)
-        .h(height * scale)
-        .into_any_element()
 }
