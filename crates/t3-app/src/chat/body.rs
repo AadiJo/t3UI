@@ -4,8 +4,8 @@
 
 use gpui_kit::{
     AnyElement, Bounds, Context, InteractiveElement as _, IntoElement, ParentElement as _, Pixels,
-    PromptLevel, StatefulInteractiveElement as _, Styled as _, Window, div, list,
-    prelude::FluentBuilder as _, px,
+    PromptLevel, StatefulInteractiveElement as _, Styled as _, Window,
+    component::scroll::ScrollableElement as _, div, list, prelude::FluentBuilder as _, px,
 };
 use t3_protocol::TurnId;
 use t3_ui::{ActiveColors as _, Icon, IconName};
@@ -60,6 +60,9 @@ impl ChatView {
                     .pt(px(LIST_SPACER))
                     .pb(px(LIST_SPACER) + overlay.content_inset_end),
                 )
+                // The 6px overlay scrollbar; dragging it stops following the end.
+                .id("timeline-viewport")
+                .vertical_scrollbar(&self.timeline.list)
                 .into_any_element()
         };
         let show_pill = !empty && self.timeline.show_scroll_to_end();
