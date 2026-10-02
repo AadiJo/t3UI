@@ -19,7 +19,7 @@ const RECORDED_CONFIG: &str = include_str!("../../fixtures/server-config.json");
 const RECORDED_MANIFEST: &str = include_str!("../../fixtures/manifest.json");
 
 /// The recorded e2e environment as a workspace fixture.
-fn recorded_fixture() -> String {
+pub(super) fn recorded_fixture() -> String {
     let parse = |json: &str| -> serde_json::Value {
         serde_json::from_str(json).expect("recorded fixture is JSON")
     };
@@ -59,7 +59,7 @@ fn workspace(
 
 /// Headless captures have no native window material behind the translucent glass, so paint the
 /// opaque `background` the web reference renders on (`--app-chrome-background`).
-struct Backdrop(AnyView);
+pub(super) struct Backdrop(pub(super) AnyView);
 
 impl Render for Backdrop {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
