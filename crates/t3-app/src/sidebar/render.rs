@@ -90,15 +90,16 @@ impl Render for Sidebar {
             )
             .map(|this| {
                 if on_settings {
-                    // Settings nav (spec 3.2) belongs to the settings view; it mounts here.
+                    // MOUNT POINT: on /settings the settings nav (spec 3.2, owned by
+                    // settings/) replaces the projects content, separator, and footer.
                     this.child(div().flex_1().min_h_0())
                 } else {
                     this.child(self.render_content(window, cx))
+                        // SidebarSeparator: an invisible 1px spacer (spec section 0).
+                        .child(div().h(px(1.)).mx_2().flex_shrink_0())
+                        .child(self.render_footer(cx))
                 }
             })
-            // SidebarSeparator: an invisible 1px spacer (spec section 0).
-            .child(div().h(px(1.)).mx_2().flex_shrink_0())
-            .child(self.render_footer(cx))
             .children(self.render_project_dialog(cx))
     }
 }
