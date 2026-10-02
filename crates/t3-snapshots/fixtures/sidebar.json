@@ -1,0 +1,685 @@
+{
+ "now": "2026-10-01T12:00:00.000Z",
+ "environments": [
+  {
+   "id": "env-local",
+   "label": "HOME-PC",
+   "kind": "local",
+   "shell": {
+    "snapshotSequence": 4812,
+    "projects": [
+     {
+      "id": "p-t3ui",
+      "title": "t3UI",
+      "workspaceRoot": "/Users/aadi/code/t3UI",
+      "defaultModelSelection": null,
+      "scripts": [],
+      "createdAt": "2026-09-01T12:00:00.000Z",
+      "updatedAt": "2026-10-01T11:55:00.000Z",
+      "repositoryIdentity": {
+       "canonicalKey": "github.com/aadijo/t3ui",
+       "locator": {
+        "source": "git-remote",
+        "remoteName": "origin",
+        "remoteUrl": "https://github.com/aadijo/t3ui.git"
+       },
+       "rootPath": "/Users/aadi/code/t3UI",
+       "displayName": "AadiJo/t3UI",
+       "name": "t3UI"
+      }
+     },
+     {
+      "id": "p-web",
+      "title": "t3code",
+      "workspaceRoot": "/Users/aadi/code/t3code",
+      "defaultModelSelection": null,
+      "scripts": [],
+      "createdAt": "2026-09-01T12:00:00.000Z",
+      "updatedAt": "2026-10-01T08:40:00.000Z",
+      "repositoryIdentity": {
+       "canonicalKey": "github.com/pingdotgg/t3code",
+       "locator": {
+        "source": "git-remote",
+        "remoteName": "origin",
+        "remoteUrl": "https://github.com/pingdotgg/t3code.git"
+       },
+       "rootPath": "/Users/aadi/code/t3code",
+       "displayName": "pingdotgg/t3code",
+       "name": "t3code"
+      }
+     },
+     {
+      "id": "p-notes",
+      "title": "field-notes",
+      "workspaceRoot": "/Users/aadi/notes",
+      "defaultModelSelection": null,
+      "scripts": [],
+      "createdAt": "2026-09-01T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+     },
+     {
+      "id": "p-infra",
+      "title": "infra",
+      "workspaceRoot": "/Users/aadi/code/infra",
+      "defaultModelSelection": null,
+      "scripts": [],
+      "createdAt": "2026-09-01T12:00:00.000Z",
+      "updatedAt": "2026-09-19T12:00:00.000Z",
+      "repositoryIdentity": {
+       "canonicalKey": "github.com/aadijo/infra",
+       "locator": {
+        "source": "git-remote",
+        "remoteName": "origin",
+        "remoteUrl": "https://github.com/aadijo/infra.git"
+       },
+       "rootPath": "/Users/aadi/code/infra",
+       "displayName": "AadiJo/infra",
+       "name": "infra"
+      }
+     }
+    ],
+    "threads": [
+     {
+      "id": "t-sidebar",
+      "projectId": "p-t3ui",
+      "title": "Port the sidebar thread rows",
+      "modelSelection": {
+       "instanceId": "codex",
+       "model": "gpt-5.5"
+      },
+      "runtimeMode": "full-access",
+      "interactionMode": "default",
+      "branch": null,
+      "worktreePath": null,
+      "pullRequests": [],
+      "latestTurn": {
+       "turnId": "turn-1",
+       "state": "running",
+       "requestedAt": "2026-10-01T11:30:00.000Z",
+       "startedAt": "2026-10-01T11:30:00.000Z",
+       "completedAt": null,
+       "assistantMessageId": null
+      },
+      "createdAt": "2026-10-01T10:00:00.000Z",
+      "updatedAt": "2026-10-01T12:00:00.000Z",
+      "archivedAt": null,
+      "settledOverride": null,
+      "settledAt": null,
+      "session": {
+       "threadId": "t-sidebar",
+       "status": "running",
+       "providerName": "codex",
+       "providerInstanceId": "codex",
+       "runtimeMode": "full-access",
+       "activeTurnId": "turn-1",
+       "lastError": null,
+       "updatedAt": "2026-10-01T11:59:00.000Z"
+      },
+      "latestUserMessageAt": "2026-10-01T12:00:00.000Z",
+      "hasPendingApprovals": false,
+      "hasPendingUserInput": false,
+      "hasActionableProposedPlan": false
+     },
+     {
+      "id": "t-keys",
+      "projectId": "p-t3ui",
+      "title": "Keybinding resolver parity with the web client",
+      "modelSelection": {
+       "instanceId": "codex",
+       "model": "gpt-5.5"
+      },
+      "runtimeMode": "full-access",
+      "interactionMode": "default",
+      "branch": null,
+      "worktreePath": null,
+      "pullRequests": [],
+      "latestTurn": {
+       "turnId": "turn-1",
+       "state": "running",
+       "requestedAt": "2026-10-01T11:30:00.000Z",
+       "startedAt": "2026-10-01T11:30:00.000Z",
+       "completedAt": null,
+       "assistantMessageId": null
+      },
+      "createdAt": "2026-10-01T09:56:00.000Z",
+      "updatedAt": "2026-10-01T11:56:00.000Z",
+      "archivedAt": null,
+      "settledOverride": null,
+      "settledAt": null,
+      "session": {
+       "threadId": "t-keys",
+       "status": "running",
+       "providerName": "codex",
+       "providerInstanceId": "codex",
+       "runtimeMode": "full-access",
+       "activeTurnId": "turn-1",
+       "lastError": null,
+       "updatedAt": "2026-10-01T11:59:00.000Z"
+      },
+      "latestUserMessageAt": "2026-10-01T11:56:00.000Z",
+      "hasPendingApprovals": true,
+      "hasPendingUserInput": false,
+      "hasActionableProposedPlan": false
+     },
+     {
+      "id": "t-toasts",
+      "projectId": "p-t3ui",
+      "title": "Toast stack geometry",
+      "modelSelection": {
+       "instanceId": "codex",
+       "model": "gpt-5.5"
+      },
+      "runtimeMode": "full-access",
+      "interactionMode": "default",
+      "branch": null,
+      "worktreePath": null,
+      "pullRequests": [],
+      "latestTurn": {
+       "turnId": "turn-1",
+       "state": "completed",
+       "requestedAt": "2026-10-01T11:30:00.000Z",
+       "startedAt": "2026-10-01T11:30:00.000Z",
+       "completedAt": "2026-10-01T11:48:00.000Z",
+       "assistantMessageId": null
+      },
+      "createdAt": "2026-10-01T09:42:00.000Z",
+      "updatedAt": "2026-10-01T11:42:00.000Z",
+      "archivedAt": null,
+      "settledOverride": null,
+      "settledAt": null,
+      "session": {
+       "threadId": "t-toasts",
+       "status": "ready",
+       "providerName": "codex",
+       "providerInstanceId": "codex",
+       "runtimeMode": "full-access",
+       "activeTurnId": null,
+       "lastError": null,
+       "updatedAt": "2026-10-01T11:59:00.000Z"
+      },
+      "latestUserMessageAt": "2026-10-01T11:42:00.000Z",
+      "hasPendingApprovals": false,
+      "hasPendingUserInput": false,
+      "hasActionableProposedPlan": false
+     },
+     {
+      "id": "t-glass",
+      "projectId": "p-t3ui",
+      "title": "Native glass under the main column",
+      "modelSelection": {
+       "instanceId": "codex",
+       "model": "gpt-5.5"
+      },
+      "runtimeMode": "full-access",
+      "interactionMode": "plan",
+      "branch": null,
+      "worktreePath": null,
+      "pullRequests": [],
+      "latestTurn": {
+       "turnId": "turn-1",
+       "state": "completed",
+       "requestedAt": "2026-10-01T11:30:00.000Z",
+       "startedAt": "2026-10-01T11:30:00.000Z",
+       "completedAt": "2026-10-01T11:10:00.000Z",
+       "assistantMessageId": null
+      },
+      "createdAt": "2026-10-01T09:05:00.000Z",
+      "updatedAt": "2026-10-01T11:05:00.000Z",
+      "archivedAt": null,
+      "settledOverride": null,
+      "settledAt": null,
+      "session": {
+       "threadId": "t-glass",
+       "status": "ready",
+       "providerName": "codex",
+       "providerInstanceId": "codex",
+       "runtimeMode": "full-access",
+       "activeTurnId": null,
+       "lastError": null,
+       "updatedAt": "2026-10-01T11:59:00.000Z"
+      },
+      "latestUserMessageAt": "2026-10-01T11:05:00.000Z",
+      "hasPendingApprovals": false,
+      "hasPendingUserInput": false,
+      "hasActionableProposedPlan": true
+     },
+     {
+      "id": "t-route",
+      "projectId": "p-t3ui",
+      "title": "Route history and settings back",
+      "modelSelection": {
+       "instanceId": "codex",
+       "model": "gpt-5.5"
+      },
+      "runtimeMode": "full-access",
+      "interactionMode": "default",
+      "branch": "route-history",
+      "worktreePath": "/Users/aadi/.t3/worktrees/t3UI/route-history",
+      "pullRequests": [],
+      "latestTurn": {
+       "turnId": "turn-1",
+       "state": "completed",
+       "requestedAt": "2026-10-01T11:30:00.000Z",
+       "startedAt": "2026-10-01T11:30:00.000Z",
+       "completedAt": "2026-10-01T09:55:00.000Z",
+       "assistantMessageId": null
+      },
+      "createdAt": "2026-10-01T07:50:00.000Z",
+      "updatedAt": "2026-10-01T09:50:00.000Z",
+      "archivedAt": null,
+      "settledOverride": null,
+      "settledAt": null,
+      "session": null,
+      "latestUserMessageAt": "2026-10-01T09:50:00.000Z",
+      "hasPendingApprovals": false,
+      "hasPendingUserInput": false,
+      "hasActionableProposedPlan": false
+     },
+     {
+      "id": "t-fonts",
+      "projectId": "p-t3ui",
+      "title": "Bundle DM Sans static instances",
+      "modelSelection": {
+       "instanceId": "codex",
+       "model": "gpt-5.5"
+      },
+      "runtimeMode": "full-access",
+      "interactionMode": "default",
+      "branch": null,
+      "worktreePath": null,
+      "pullRequests": [],
+      "latestTurn": {
+       "turnId": "turn-1",
+       "state": "completed",
+       "requestedAt": "2026-10-01T11:30:00.000Z",
+       "startedAt": "2026-10-01T11:30:00.000Z",
+       "completedAt": "2026-10-01T07:00:00.000Z",
+       "assistantMessageId": null
+      },
+      "createdAt": "2026-10-01T05:00:00.000Z",
+      "updatedAt": "2026-10-01T07:00:00.000Z",
+      "archivedAt": null,
+      "settledOverride": null,
+      "settledAt": null,
+      "session": null,
+      "latestUserMessageAt": "2026-10-01T07:00:00.000Z",
+      "hasPendingApprovals": false,
+      "hasPendingUserInput": false,
+      "hasActionableProposedPlan": false
+     },
+     {
+      "id": "t-icons",
+      "projectId": "p-t3ui",
+      "title": "Export lucide icons with typed tables",
+      "modelSelection": {
+       "instanceId": "codex",
+       "model": "gpt-5.5"
+      },
+      "runtimeMode": "full-access",
+      "interactionMode": "default",
+      "branch": null,
+      "worktreePath": null,
+      "pullRequests": [],
+      "latestTurn": {
+       "turnId": "turn-1",
+       "state": "completed",
+       "requestedAt": "2026-10-01T11:30:00.000Z",
+       "startedAt": "2026-10-01T11:30:00.000Z",
+       "completedAt": "2026-09-30T10:00:00.000Z",
+       "assistantMessageId": null
+      },
+      "createdAt": "2026-09-30T08:00:00.000Z",
+      "updatedAt": "2026-09-30T10:00:00.000Z",
+      "archivedAt": null,
+      "settledOverride": null,
+      "settledAt": null,
+      "session": null,
+      "latestUserMessageAt": "2026-09-30T10:00:00.000Z",
+      "hasPendingApprovals": false,
+      "hasPendingUserInput": false,
+      "hasActionableProposedPlan": false
+     },
+     {
+      "id": "t-ci",
+      "projectId": "p-t3ui",
+      "title": "macOS snapshot job on CI",
+      "modelSelection": {
+       "instanceId": "codex",
+       "model": "gpt-5.5"
+      },
+      "runtimeMode": "full-access",
+      "interactionMode": "default",
+      "branch": null,
+      "worktreePath": null,
+      "pullRequests": [],
+      "latestTurn": {
+       "turnId": "turn-1",
+       "state": "completed",
+       "requestedAt": "2026-09-28T11:00:00.000Z",
+       "startedAt": "2026-09-28T11:00:00.000Z",
+       "completedAt": "2026-09-28T12:00:00.000Z",
+       "assistantMessageId": null
+      },
+      "createdAt": "2026-09-28T10:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z",
+      "archivedAt": null,
+      "settledOverride": null,
+      "settledAt": null,
+      "session": null,
+      "latestUserMessageAt": "2026-09-28T12:00:00.000Z",
+      "hasPendingApprovals": false,
+      "hasPendingUserInput": false,
+      "hasActionableProposedPlan": false
+     },
+     {
+      "id": "t-diff",
+      "projectId": "p-web",
+      "title": "Diff panel whitespace toggle",
+      "modelSelection": {
+       "instanceId": "codex",
+       "model": "gpt-5.5"
+      },
+      "runtimeMode": "full-access",
+      "interactionMode": "default",
+      "branch": null,
+      "worktreePath": null,
+      "pullRequests": [],
+      "latestTurn": {
+       "turnId": "turn-1",
+       "state": "completed",
+       "requestedAt": "2026-10-01T11:30:00.000Z",
+       "startedAt": "2026-10-01T11:30:00.000Z",
+       "completedAt": "2026-10-01T10:40:00.000Z",
+       "assistantMessageId": null
+      },
+      "createdAt": "2026-10-01T08:30:00.000Z",
+      "updatedAt": "2026-10-01T10:30:00.000Z",
+      "archivedAt": null,
+      "settledOverride": null,
+      "settledAt": null,
+      "session": {
+       "threadId": "t-diff",
+       "status": "ready",
+       "providerName": "codex",
+       "providerInstanceId": "codex",
+       "runtimeMode": "full-access",
+       "activeTurnId": null,
+       "lastError": null,
+       "updatedAt": "2026-10-01T11:59:00.000Z"
+      },
+      "latestUserMessageAt": "2026-10-01T10:30:00.000Z",
+      "hasPendingApprovals": false,
+      "hasPendingUserInput": true,
+      "hasActionableProposedPlan": false
+     },
+     {
+      "id": "t-pr",
+      "projectId": "p-web",
+      "title": "PR badge for GitLab merge requests",
+      "modelSelection": {
+       "instanceId": "codex",
+       "model": "gpt-5.5"
+      },
+      "runtimeMode": "full-access",
+      "interactionMode": "default",
+      "branch": null,
+      "worktreePath": null,
+      "pullRequests": [],
+      "latestTurn": {
+       "turnId": "turn-1",
+       "state": "error",
+       "requestedAt": "2026-10-01T11:30:00.000Z",
+       "startedAt": "2026-10-01T11:30:00.000Z",
+       "completedAt": "2026-10-01T05:00:00.000Z",
+       "assistantMessageId": null
+      },
+      "createdAt": "2026-10-01T03:00:00.000Z",
+      "updatedAt": "2026-10-01T05:00:00.000Z",
+      "archivedAt": null,
+      "settledOverride": null,
+      "settledAt": null,
+      "session": {
+       "threadId": "t-pr",
+       "status": "error",
+       "providerName": "codex",
+       "providerInstanceId": "codex",
+       "runtimeMode": "full-access",
+       "activeTurnId": null,
+       "lastError": null,
+       "updatedAt": "2026-10-01T11:59:00.000Z"
+      },
+      "latestUserMessageAt": "2026-10-01T05:00:00.000Z",
+      "hasPendingApprovals": false,
+      "hasPendingUserInput": false,
+      "hasActionableProposedPlan": false
+     },
+     {
+      "id": "t-composer",
+      "projectId": "p-web",
+      "title": "Composer drafts survive reloads",
+      "modelSelection": {
+       "instanceId": "codex",
+       "model": "gpt-5.5"
+      },
+      "runtimeMode": "full-access",
+      "interactionMode": "default",
+      "branch": null,
+      "worktreePath": null,
+      "pullRequests": [],
+      "latestTurn": {
+       "turnId": "turn-1",
+       "state": "completed",
+       "requestedAt": "2026-10-01T11:30:00.000Z",
+       "startedAt": "2026-10-01T11:30:00.000Z",
+       "completedAt": "2026-09-30T06:00:00.000Z",
+       "assistantMessageId": null
+      },
+      "createdAt": "2026-09-30T04:00:00.000Z",
+      "updatedAt": "2026-09-30T06:00:00.000Z",
+      "archivedAt": null,
+      "settledOverride": null,
+      "settledAt": null,
+      "session": null,
+      "latestUserMessageAt": "2026-09-30T06:00:00.000Z",
+      "hasPendingApprovals": false,
+      "hasPendingUserInput": false,
+      "hasActionableProposedPlan": false
+     },
+     {
+      "id": "t-journal",
+      "projectId": "p-notes",
+      "title": "Weekly journal summary",
+      "modelSelection": {
+       "instanceId": "codex",
+       "model": "gpt-5.5"
+      },
+      "runtimeMode": "full-access",
+      "interactionMode": "default",
+      "branch": null,
+      "worktreePath": null,
+      "pullRequests": [],
+      "latestTurn": {
+       "turnId": "turn-1",
+       "state": "running",
+       "requestedAt": "2026-10-01T11:30:00.000Z",
+       "startedAt": "2026-10-01T11:30:00.000Z",
+       "completedAt": null,
+       "assistantMessageId": null
+      },
+      "createdAt": "2026-09-29T10:00:00.000Z",
+      "updatedAt": "2026-09-29T12:00:00.000Z",
+      "archivedAt": null,
+      "settledOverride": null,
+      "settledAt": null,
+      "session": {
+       "threadId": "t-journal",
+       "status": "running",
+       "providerName": "codex",
+       "providerInstanceId": "codex",
+       "runtimeMode": "full-access",
+       "activeTurnId": "turn-1",
+       "lastError": null,
+       "updatedAt": "2026-10-01T11:59:00.000Z"
+      },
+      "latestUserMessageAt": "2026-09-29T12:00:00.000Z",
+      "hasPendingApprovals": false,
+      "hasPendingUserInput": false,
+      "hasActionableProposedPlan": false
+     },
+     {
+      "id": "t-dns",
+      "projectId": "p-infra",
+      "title": "Rotate the staging DNS records",
+      "modelSelection": {
+       "instanceId": "codex",
+       "model": "gpt-5.5"
+      },
+      "runtimeMode": "full-access",
+      "interactionMode": "default",
+      "branch": null,
+      "worktreePath": null,
+      "pullRequests": [],
+      "latestTurn": null,
+      "createdAt": "2026-09-19T10:00:00.000Z",
+      "updatedAt": "2026-09-19T12:00:00.000Z",
+      "archivedAt": null,
+      "settledOverride": null,
+      "settledAt": null,
+      "session": null,
+      "latestUserMessageAt": "2026-09-19T12:00:00.000Z",
+      "hasPendingApprovals": false,
+      "hasPendingUserInput": false,
+      "hasActionableProposedPlan": false
+     }
+    ],
+    "updatedAt": "2026-10-01T12:00:00.000Z"
+   }
+  },
+  {
+   "id": "env-devbox",
+   "label": "devbox",
+   "kind": "remote",
+   "shell": {
+    "snapshotSequence": 977,
+    "projects": [
+     {
+      "id": "r-web",
+      "title": "t3code",
+      "workspaceRoot": "/srv/t3code",
+      "defaultModelSelection": null,
+      "scripts": [],
+      "createdAt": "2026-09-01T12:00:00.000Z",
+      "updatedAt": "2026-10-01T07:00:00.000Z",
+      "repositoryIdentity": {
+       "canonicalKey": "github.com/pingdotgg/t3code",
+       "locator": {
+        "source": "git-remote",
+        "remoteName": "origin",
+        "remoteUrl": "https://github.com/pingdotgg/t3code.git"
+       },
+       "rootPath": "/srv/t3code",
+       "displayName": "pingdotgg/t3code",
+       "name": "t3code"
+      }
+     },
+     {
+      "id": "r-ml",
+      "title": "embedding-evals",
+      "workspaceRoot": "/home/aadi/embedding-evals",
+      "defaultModelSelection": null,
+      "scripts": [],
+      "createdAt": "2026-09-01T12:00:00.000Z",
+      "updatedAt": "2026-09-25T12:00:00.000Z"
+     }
+    ],
+    "threads": [
+     {
+      "id": "r-bench",
+      "projectId": "r-web",
+      "title": "Benchmark the shell reducer on devbox",
+      "modelSelection": {
+       "instanceId": "codex",
+       "model": "gpt-5.5"
+      },
+      "runtimeMode": "full-access",
+      "interactionMode": "default",
+      "branch": null,
+      "worktreePath": null,
+      "pullRequests": [],
+      "latestTurn": {
+       "turnId": "turn-1",
+       "state": "completed",
+       "requestedAt": "2026-10-01T11:30:00.000Z",
+       "startedAt": "2026-10-01T11:30:00.000Z",
+       "completedAt": "2026-10-01T09:00:00.000Z",
+       "assistantMessageId": null
+      },
+      "createdAt": "2026-10-01T07:00:00.000Z",
+      "updatedAt": "2026-10-01T09:00:00.000Z",
+      "archivedAt": null,
+      "settledOverride": null,
+      "settledAt": null,
+      "session": null,
+      "latestUserMessageAt": "2026-10-01T09:00:00.000Z",
+      "hasPendingApprovals": false,
+      "hasPendingUserInput": false,
+      "hasActionableProposedPlan": false
+     },
+     {
+      "id": "r-eval",
+      "projectId": "r-ml",
+      "title": "Re-run the retrieval evals",
+      "modelSelection": {
+       "instanceId": "codex",
+       "model": "gpt-5.5"
+      },
+      "runtimeMode": "full-access",
+      "interactionMode": "default",
+      "branch": null,
+      "worktreePath": null,
+      "pullRequests": [],
+      "latestTurn": {
+       "turnId": "turn-1",
+       "state": "completed",
+       "requestedAt": "2026-10-01T11:30:00.000Z",
+       "startedAt": "2026-10-01T11:30:00.000Z",
+       "completedAt": "2026-09-25T12:00:00.000Z",
+       "assistantMessageId": null
+      },
+      "createdAt": "2026-09-25T10:00:00.000Z",
+      "updatedAt": "2026-09-25T12:00:00.000Z",
+      "archivedAt": null,
+      "settledOverride": null,
+      "settledAt": null,
+      "session": null,
+      "latestUserMessageAt": "2026-09-25T12:00:00.000Z",
+      "hasPendingApprovals": false,
+      "hasPendingUserInput": false,
+      "hasActionableProposedPlan": false
+     }
+    ],
+    "updatedAt": "2026-10-01T12:00:00.000Z"
+   }
+  }
+ ],
+ "route": {
+  "thread": {
+   "environmentId": "env-local",
+   "threadId": "t-toasts"
+  }
+ },
+ "ui": {
+  "projectExpandedById": {
+   "env-local:/Users/aadi/notes": false
+  },
+  "threadLastVisitedAtById": {
+   "env-local:t-fonts": "2026-10-01T07:01:00.000Z",
+   "env-local:t-icons": "2026-09-30T10:01:00.000Z",
+   "env-local:t-composer": "2026-09-30T06:01:00.000Z",
+   "env-devbox:r-bench": "2026-10-01T09:01:00.000Z",
+   "env-devbox:r-eval": "2026-09-25T12:01:00.000Z",
+   "env-local:t-route": "2026-10-01T09:56:00.000Z",
+   "env-local:t-toasts": "2026-10-01T11:48:00.000Z"
+  }
+ }
+}

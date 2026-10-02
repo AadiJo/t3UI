@@ -1,0 +1,16 @@
+{
+ "now": "2026-10-01T12:00:00.000Z",
+ "environments": [
+  {
+   "id": "env-local",
+   "label": "HOME-PC",
+   "kind": "local",
+   "shell": {
+    "snapshotSequence": 1,
+    "projects": [],
+    "threads": [],
+    "updatedAt": "2026-10-01T12:00:00.000Z"
+   }
+  }
+ ]
+}
