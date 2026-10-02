@@ -19,6 +19,12 @@
 //! 11. A provider that omits `supportsConversationRollback`, `supportsTextGeneration`, or
 //!     `showInteractionModeToggle` decodes as unsupported. The web client treats absent as
 //!     supported (`!== false`), so "Edit from here" and the mode toggle would vanish.
+//! 12. A context record of an unknown kind is dropped or fails the message instead of keeping
+//!     its kind and payload; a malformed known record (a mention without `path`) fails the whole
+//!     message or slides through as an unknown kind; the kebab-case kinds
+//!     (`preview-annotation`, `review-comment`) decode as unknown.
+//! 13. Encoding a context record writes `kind` twice or not at all, writes `null` for absent
+//!     `optional` fields (the server rejects them), or drops required `NullOr` keys.
 
 use serde_json::{Value, json};
 use t3_protocol::{
@@ -379,4 +385,113 @@ fn optional_provider_capabilities_default_to_supported() {
     assert!(!explicit.supports_conversation_rollback);
     assert!(!explicit.supports_text_generation);
     assert!(!explicit.show_interaction_mode_toggle);
+}
+
+/// One record of every known kind plus a future kind, as the composer writes them.
+fn context_records() -> Vec<Value> {
+    vec![
+        json!({"version": 1, "contextId": "m1", "label": "main.rs", "kind": "mention",
+               "path": "src/main.rs"}),
+        json!({"version": 1, "contextId": "s1", "label": "review", "kind": "skill",
+               "name": "review"}),
+        json!({"version": 1, "contextId": "i1", "label": "shot.png", "kind": "image",
+               "attachmentId": "att-1", "name": "shot.png", "mimeType": "image/png",
+               "sizeBytes": 2048}),
+        json!({"version": 1, "contextId": "f1", "label": "notes.pdf", "kind": "file",
+               "attachmentId": "att-2", "name": "notes.pdf", "mimeType": "application/pdf",
+               "sizeBytes": 10}),
+        json!({"version": 1, "contextId": "t1", "label": "Terminal 1 lines 3-5",
+               "kind": "terminal", "terminalId": "term-1", "terminalLabel": "Terminal 1",
+               "lineStart": 3, "lineEnd": 5, "text": "$ ls"}),
+        json!({"version": 1, "contextId": "e1", "label": "<button>", "kind": "element",
+               "pageUrl": "http://localhost:5173/", "pageTitle": null, "tagName": "button",
+               "selector": "#send", "htmlPreview": "<button id=\"send\">",
+               "componentName": null,
+               "source": {"functionName": "Send", "fileName": "src/Send.tsx",
+                          "lineNumber": 12, "columnNumber": null},
+               "styles": ""}),
+        json!({"version": 1, "contextId": "p1", "label": "Annotation",
+               "kind": "preview-annotation", "annotationId": "a1",
+               "pageUrl": "http://localhost:5173/", "pageTitle": "App", "comment": "bigger",
+               "targetSummary": "1 element", "styleChanges": ["font-size: 18px"],
+               "regionCount": 2, "screenshotContextId": "i1"}),
+        json!({"version": 1, "contextId": "r1", "label": "lib.rs L4-6",
+               "kind": "review-comment", "sectionId": "sec", "sectionTitle": "Changes",
+               "filePath": "src/lib.rs", "startIndex": 4, "endIndex": 6, "rangeLabel": "L4-6",
+               "text": "why?", "diff": "@@ -1 +1 @@",
+               "pullRequest": {"number": 7, "title": "Fix",
+                               "url": "https://github.com/o/r/pull/7", "headBranch": "fix",
+                               "baseBranch": "main", "state": "open", "isDraft": false}}),
+        json!({"version": 1, "contextId": "d1", "label": "Diagram", "kind": "diagram",
+               "payload": {"nodes": 3}}),
+    ]
+}
+
+#[test]
+fn context_records_decode_by_kind_and_drop_malformed_known_records() {
+    use t3_protocol::orchestration::{ContextPayload, ContextRecord, OrchestrationMessageContext};
+
+    let malformed_mention =
+        json!({"version": 1, "contextId": "bad", "label": "x", "kind": "mention"});
+    assert!(
+        serde_json::from_value::<ContextRecord>(malformed_mention.clone()).is_err(),
+        "a malformed known record must not decode as an unknown kind"
+    );
+
+    let mut records = context_records();
+    records.insert(1, malformed_mention);
+    let context: OrchestrationMessageContext =
+        serde_json::from_value(json!({"version": 1, "records": records})).unwrap();
+
+    let ids: Vec<&str> = context
+        .records
+        .iter()
+        .map(|r| r.context_id.as_str())
+        .collect();
+    assert_eq!(ids, ["m1", "s1", "i1", "f1", "t1", "e1", "p1", "r1", "d1"]);
+    let kinds: Vec<&str> = context.records.iter().map(|r| r.payload.kind()).collect();
+    assert_eq!(
+        kinds,
+        [
+            "mention",
+            "skill",
+            "image",
+            "file",
+            "terminal",
+            "element",
+            "preview-annotation",
+            "review-comment",
+            "diagram"
+        ]
+    );
+
+    let payloads: Vec<&ContextPayload> = context.records.iter().map(|r| &r.payload).collect();
+    assert!(matches!(payloads[0], ContextPayload::Mention { path } if path == "src/main.rs"));
+    assert!(matches!(payloads[1], ContextPayload::Skill { name } if name == "review"));
+    assert!(matches!(payloads[2], ContextPayload::Image(image)
+        if image.attachment_id.as_str() == "att-1" && image.size_bytes == 2048));
+    assert!(matches!(payloads[4], ContextPayload::Terminal(terminal)
+        if terminal.line_start == 3 && terminal.line_end == 5));
+    assert!(matches!(payloads[5], ContextPayload::Element(element)
+        if element.page_title.is_none()
+            && element.source.as_ref().and_then(|s| s.line_number) == Some(12)));
+    assert!(
+        matches!(payloads[6], ContextPayload::PreviewAnnotation(annotation)
+        if annotation.region_count == Some(2) && annotation.elements.is_none())
+    );
+    assert!(matches!(payloads[7], ContextPayload::ReviewComment(review)
+        if review.pull_request.as_ref().map(|pr| pr.number) == Some(7)
+            && review.fence_language.is_none()));
+    assert!(matches!(payloads[8], ContextPayload::Unknown(unknown)
+        if unknown.kind == "diagram" && unknown.payload == json!({"nodes": 3})));
+}
+
+#[test]
+fn context_records_encode_back_to_the_wire_form() {
+    use t3_protocol::orchestration::ContextRecord;
+
+    for wire in context_records() {
+        let record: ContextRecord = serde_json::from_value(wire.clone()).unwrap();
+        assert_eq!(serde_json::to_value(&record).unwrap(), wire);
+    }
 }

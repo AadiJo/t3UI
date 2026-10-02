@@ -9,6 +9,8 @@
 //! 4. Usage limits (rate-limit windows) are dropped or the provider row is lost.
 //! 5. `Schema.Option` fields (`{"_tag":"Some","value":..}`) in diagnostics decode as `None`
 //!    when present, or fail the whole result.
+//! 6. Context records the server accepted and echoed (one of every kind, plus an unknown kind)
+//!    come back fewer, untyped, or as the wrong kind.
 
 mod support;
 
@@ -110,10 +112,10 @@ registry! {
         ServerRefreshUsageRates, ServerDiscoverSourceControl, ServerGetTraceDiagnostics,
         ServerGetProcessDiagnostics, ServerGetHostResources, ServerGetProcessResourceHistory,
         ServerGetResourceTelemetryHistory, CloudGetRelayClientStatus, AgentSessionsScan,
-        PreviewList,
+        PreviewList, DispatchCommand,
     ],
     stream: [
-        SubscribeServerConfig, SubscribeShell, PullRequestsSubscribeRefreshes,
+        SubscribeServerConfig, SubscribeShell, SubscribeThread, PullRequestsSubscribeRefreshes,
         SubscribeResourceTelemetry, ProviderAuthSubscribe, ProviderInstallSubscribe,
         SubscribeProjectClones, SubscribeWorktreeSetup, SubscribePreviewEvents,
         SubscribeDiscoveredLocalServers, SubscribeDeviceState,
@@ -204,5 +206,35 @@ fn provider_setup_errors_keep_their_detail() {
     assert!(
         failure.display_message().contains("managed setup"),
         "{failure}"
+    );
+}
+
+#[test]
+fn echoed_message_context_keeps_every_record_kind() {
+    use t3_protocol::orchestration::OrchestrationThreadDetailSnapshot;
+
+    // `open_thread` loads the new thread over HTTP; the echoed message is in that snapshot.
+    let snapshot: OrchestrationThreadDetailSnapshot =
+        Transcript::parse(FIXTURE).http("/api/orchestration/threads/");
+    let context = snapshot
+        .thread
+        .messages
+        .iter()
+        .find_map(|m| m.context.as_ref())
+        .expect("no message with context came back");
+    let kinds: Vec<&str> = context.records.iter().map(|r| r.payload.kind()).collect();
+    assert_eq!(
+        kinds,
+        [
+            "mention",
+            "skill",
+            "image",
+            "file",
+            "terminal",
+            "element",
+            "preview-annotation",
+            "review-comment",
+            "diagram",
+        ]
     );
 }

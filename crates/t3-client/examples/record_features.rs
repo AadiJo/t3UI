@@ -1,6 +1,7 @@
 //! Records one call of each feature RPC (pull requests, usage, ...) against the e2e harness so
-//! `tests/features.rs` can decode real responses into their typed results. Read-only calls only:
-//! nothing here mutates server state beyond caches.
+//! `tests/features.rs` can decode real responses into their typed results. Read-only calls,
+//! plus one new thread whose first message carries a context record of every kind (the server
+//! echoes them back in the thread stream).
 //!
 //! ```sh
 //! e2e/run-local.sh up --server nightly --detach
@@ -13,10 +14,13 @@ mod common;
 use std::{path::PathBuf, time::Duration};
 
 use anyhow::{Context as _, Result, bail};
-use t3_client::{Environment, RpcError};
+use t3_client::{Environment, RpcError, commands};
 use t3_protocol::{
     ServerError, Stream, Unary,
     methods::*,
+    orchestration::{
+        InteractionMode, MessageRole, ModelSelection, OrchestrationMessageContext, RuntimeMode,
+    },
     preview::{DiscoveredLocalServersInput, PreviewListInput},
     providers::ProviderSetupInput,
     pull_requests::{
@@ -212,7 +216,90 @@ async fn run(harness: &common::HarnessState) -> Result<String> {
     first::<SubscribeDiscoveredLocalServers>(&env, &DiscoveredLocalServersInput::default()).await;
     first::<SubscribeDeviceState>(&env, &Empty {}).await;
 
+    send_context_turn(&env, &project.id).await?;
+
     drop(env);
     tokio::time::sleep(Duration::from_millis(200)).await;
     Ok(label)
+}
+
+/// Starts a thread whose first message carries one context record of every kind (plus a kind
+/// this build does not know) and waits until the thread stream echoes the message back.
+async fn send_context_turn(env: &Environment, project: &t3_protocol::ProjectId) -> Result<()> {
+    let context: OrchestrationMessageContext = serde_json::from_value(serde_json::json!({
+        "version": 1,
+        "records": [
+            {"version": 1, "contextId": "m1", "label": "main.ts", "kind": "mention",
+             "path": "src/main.ts"},
+            {"version": 1, "contextId": "s1", "label": "review", "kind": "skill",
+             "name": "review"},
+            {"version": 1, "contextId": "i1", "label": "shot.png", "kind": "image",
+             "attachmentId": "att-1", "name": "shot.png", "mimeType": "image/png",
+             "sizeBytes": 2048},
+            {"version": 1, "contextId": "f1", "label": "notes.pdf", "kind": "file",
+             "attachmentId": "att-2", "name": "notes.pdf", "mimeType": "application/pdf",
+             "sizeBytes": 10},
+            {"version": 1, "contextId": "t1", "label": "Terminal 1 lines 3-5",
+             "kind": "terminal", "terminalId": "term-1", "terminalLabel": "Terminal 1",
+             "lineStart": 3, "lineEnd": 5, "text": "$ ls"},
+            {"version": 1, "contextId": "e1", "label": "<button>", "kind": "element",
+             "pageUrl": "http://localhost:5173/", "pageTitle": null, "tagName": "button",
+             "selector": "#send", "htmlPreview": "<button id=\"send\">", "componentName": null,
+             "source": {"functionName": "Send", "fileName": "src/Send.tsx", "lineNumber": 12,
+                        "columnNumber": null},
+             "styles": ""},
+            {"version": 1, "contextId": "p1", "label": "Annotation",
+             "kind": "preview-annotation", "annotationId": "a1",
+             "pageUrl": "http://localhost:5173/", "pageTitle": "App", "comment": "bigger",
+             "targetSummary": "1 element", "styleChanges": ["font-size: 18px"],
+             "regionCount": 2, "screenshotContextId": "i1"},
+            {"version": 1, "contextId": "r1", "label": "lib.ts L4-6", "kind": "review-comment",
+             "sectionId": "sec", "sectionTitle": "Changes", "filePath": "src/lib.ts",
+             "startIndex": 4, "endIndex": 6, "rangeLabel": "L4-6", "text": "why?",
+             "diff": "@@ -1 +1 @@",
+             "pullRequest": {"number": 7, "title": "Fix", "url": "https://example.com/pull/7",
+                             "headBranch": "fix", "baseBranch": "main", "state": "open",
+                             "isDraft": false}},
+            {"version": 1, "contextId": "d1", "label": "Diagram", "kind": "diagram",
+             "payload": {"nodes": 3}},
+        ],
+    }))?;
+    let sent = context.records.len();
+    let mut turn = commands::new_thread_turn(
+        project.clone(),
+        "Recording: message context",
+        "Look at [main.ts](t3-context://v1/mention/m1) with [review](t3-context://v1/skill/s1).",
+        ModelSelection {
+            instance_id: "codex".into(),
+            model: "gpt-5.4".into(),
+            options: Vec::new(),
+        },
+        RuntimeMode::FullAccess,
+        InteractionMode::Default,
+    );
+    turn.message.context = Some(context);
+    let thread_id = turn.thread_id.clone();
+    env.dispatch(turn.into()).await?;
+
+    let handle = env.open_thread(thread_id);
+    let mut state = handle.state();
+    let echoed = common::wait_for(&mut state, Duration::from_secs(20), |s| {
+        s.thread.as_ref().is_some_and(|t| {
+            t.messages
+                .iter()
+                .any(|m| m.role == MessageRole::User && m.context.is_some())
+        })
+    })
+    .await
+    .context("the context message never came back")?;
+    let records = echoed
+        .thread
+        .as_ref()
+        .and_then(|t| t.messages.iter().find_map(|m| m.context.as_ref()))
+        .map_or(0, |c| c.records.len());
+    println!(
+        "{:<40} sent {sent} context records, got {records} back",
+        "context turn"
+    );
+    Ok(())
 }

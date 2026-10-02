@@ -560,22 +560,219 @@ pub struct ChatAttachment {
 #[serde(rename_all = "camelCase")]
 pub struct OrchestrationMessageContext {
     pub version: u32,
-    #[serde(default)]
+    /// Records that fail to decode (a malformed known kind) are dropped, like upstream.
+    #[serde(default, deserialize_with = "crate::schema::forward_compatible")]
     pub records: Vec<ContextRecord>,
 }
 
-/// One composer context chip (`ComposerContextRecord`): mention, skill, file, image, terminal,
-/// element, preview annotation, review comment, or a newer kind. The common fields are typed;
-/// kind-specific fields (`path`, `name`, `attachmentId`, `text`, ...) stay in `fields`.
+/// The payload behind one composer chip (`ComposerContextRecord`, contracts
+/// `composerContext.ts`). The message text places the chip with a
+/// `[label](t3-context://v1/<kind>/<contextId>)` link; this record carries what it points at.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ContextRecord {
+    /// Always 1.
     pub version: u32,
+    /// `[a-z0-9_-]{1,128}`, unique within a message.
     pub context_id: String,
     pub label: String,
-    pub kind: String,
     #[serde(flatten)]
-    pub fields: serde_json::Map<String, Value>,
+    pub payload: ContextPayload,
+}
+
+/// Kind-specific fields of a [`ContextRecord`], tagged by `kind`. A known kind with bad fields
+/// fails to decode (and is dropped from the message); kinds this build does not know become
+/// [`ContextPayload::Unknown`] with their payload intact.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "kebab-case")]
+pub enum ContextPayload {
+    /// Image bytes travel as the `ChatAttachment` with id `attachment_id`.
+    Image(AttachmentContext),
+    File(AttachmentContext),
+    Terminal(TerminalContext),
+    Element(ElementContext),
+    PreviewAnnotation(PreviewAnnotationContext),
+    ReviewComment(ReviewCommentContext),
+    /// `@path` mention of a workspace file or folder.
+    Mention {
+        path: String,
+    },
+    /// `$skill` reference.
+    Skill {
+        name: String,
+    },
+    #[serde(untagged)]
+    Unknown(UnknownContext),
+}
+
+impl ContextPayload {
+    /// The wire `kind` (`mention`, `review-comment`, ...; the original string for unknown kinds).
+    pub fn kind(&self) -> &str {
+        match self {
+            Self::Image(_) => "image",
+            Self::File(_) => "file",
+            Self::Terminal(_) => "terminal",
+            Self::Element(_) => "element",
+            Self::PreviewAnnotation(_) => "preview-annotation",
+            Self::ReviewComment(_) => "review-comment",
+            Self::Mention { .. } => "mention",
+            Self::Skill { .. } => "skill",
+            Self::Unknown(unknown) => &unknown.kind,
+        }
+    }
+}
+
+/// Binds an image or file chip to the message attachment that holds its bytes.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AttachmentContext {
+    pub attachment_id: AttachmentId,
+    pub name: String,
+    pub mime_type: String,
+    pub size_bytes: u64,
+}
+
+/// Lines selected from a terminal (`line_end >= line_start`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TerminalContext {
+    pub terminal_id: String,
+    pub terminal_label: String,
+    pub line_start: u32,
+    pub line_end: u32,
+    /// At most 64,000 chars.
+    pub text: String,
+}
+
+/// A page element picked in the preview browser. Also the shape of each element inside a
+/// [`PreviewAnnotationContext`].
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ElementContext {
+    pub page_url: String,
+    pub page_title: Option<String>,
+    pub tag_name: String,
+    pub selector: Option<String>,
+    pub html_preview: String,
+    pub component_name: Option<String>,
+    pub source: Option<ElementSource>,
+    pub styles: String,
+}
+
+/// Where a picked element's component is defined, when the page exposes it.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ElementSource {
+    pub function_name: Option<String>,
+    pub file_name: Option<String>,
+    pub line_number: Option<u32>,
+    pub column_number: Option<u32>,
+}
+
+/// A drawn-on preview annotation. Its screenshot is a separate image record linked by
+/// `screenshot_context_id`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PreviewAnnotationContext {
+    pub annotation_id: String,
+    pub page_url: String,
+    pub page_title: Option<String>,
+    pub comment: String,
+    pub target_summary: String,
+    #[serde(default)]
+    pub style_changes: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub elements: Option<Vec<ElementContext>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub element_ids: Option<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub region_count: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stroke_count: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub style_change_details: Option<Vec<StyleChangeDetail>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub screenshot_context_id: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StyleChangeDetail {
+    pub target_id: String,
+    pub selector: Option<String>,
+    pub property: String,
+    pub previous_value: String,
+    pub value: String,
+}
+
+/// A comment on a diff range, optionally on a pull request (`end_index >= start_index`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReviewCommentContext {
+    pub section_id: String,
+    pub section_title: String,
+    pub file_path: String,
+    pub start_index: u32,
+    pub end_index: u32,
+    pub range_label: String,
+    /// At most 16,000 chars.
+    pub text: String,
+    /// At most 32,000 chars.
+    pub diff: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fence_language: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pull_request: Option<PullRequestContextMetadata>,
+}
+
+/// Snapshot of the pull request a review comment came from.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PullRequestContextMetadata {
+    pub number: u64,
+    pub title: String,
+    pub url: String,
+    pub head_branch: String,
+    pub base_branch: String,
+    pub state: PullRequestState,
+    pub is_draft: bool,
+}
+
+/// A record of a kind this build does not know; re-encodes unchanged. Known kinds are refused
+/// so a malformed known record fails instead of landing here.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(try_from = "UnknownContextWire")]
+pub struct UnknownContext {
+    pub kind: String,
+    pub payload: Value,
+}
+
+#[derive(Deserialize)]
+struct UnknownContextWire {
+    kind: String,
+    #[serde(default)]
+    payload: Value,
+}
+
+impl TryFrom<UnknownContextWire> for UnknownContext {
+    type Error = String;
+
+    fn try_from(UnknownContextWire { kind, payload }: UnknownContextWire) -> Result<Self, String> {
+        const KNOWN: [&str; 8] = [
+            "image",
+            "file",
+            "terminal",
+            "element",
+            "preview-annotation",
+            "review-comment",
+            "mention",
+            "skill",
+        ];
+        if KNOWN.contains(&kind.as_str()) {
+            return Err(format!("malformed `{kind}` context record"));
+        }
+        Ok(Self { kind, payload })
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
