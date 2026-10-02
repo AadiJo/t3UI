@@ -6,6 +6,7 @@
 //! `cx.colors()` ([`ActiveColors`]); never hard-code a color outside [`tokens`].
 
 pub mod assets;
+pub mod components;
 pub mod fonts;
 pub mod icon;
 pub mod theme;
@@ -13,6 +14,7 @@ pub mod tokens;
 pub mod window;
 
 pub use assets::Assets;
+pub use components::*;
 pub use icon::{FileIcon, Icon, IconName, Logo, file_icon, logo};
 pub use theme::{ActiveColors, Appearance, Theme, ThemeMode};
 pub use tokens::Colors;
