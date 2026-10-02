@@ -39,6 +39,9 @@ pub struct UiState {
     pub default_advertised_endpoint_key: Option<String>,
     /// Sidebar width in px (`chat_thread_sidebar_width`). `None` uses the default width.
     pub sidebar_width: Option<f32>,
+    /// Right panel width in px, shared by every thread (`t3code:preview-panel-width`). `None`
+    /// uses the default width.
+    pub right_panel_width: Option<f32>,
     pub theme: ThemePreference,
 }
 

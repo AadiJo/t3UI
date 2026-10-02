@@ -10,6 +10,7 @@
 pub mod chrome;
 pub mod dialogs;
 pub mod keybindings;
+pub mod panels;
 pub mod sidebar;
 pub mod state;
 pub mod toast;
