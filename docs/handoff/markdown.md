@@ -22,7 +22,7 @@ Matched against the July fork (`t3code-again` ddeeb09), not fe7d3092c. Unlanded 
 - syntect keeps the **first** of two equally specific theme rules, while VS Code keeps the last, so the theme converter emits rules in reverse (export-assets.mjs:130). fancy-regex can't express `\G` or variable-length lookbehinds, so the converter rewrites patterns (export-assets.mjs `onigToFancy`, `splitLookbehinds`). That's also why Bash stays on bat's grammar.
 
 ## Known bugs / gaps
-- Branch `markdown` (294807f): caching stable blocks as cached views (`src/units.rs`) passes preland and is measured (numbers below). It hasn't been checked in a rendered snapshot. After a width change, a cached block can overlap its neighbour for one frame.
+- Tip of branch `markdown` (4739fc1): caching stable blocks as cached views (`src/units.rs`). Passes preland. Its first snapshot run (CI 36968928934) and bench (run 36968926896) were dispatched but not reviewed. After a width change, a cached block can overlap its neighbour for one frame.
 - Bash highlights at 91.8% parity. Lines over 20k bytes aren't tokenized (engine.rs:20).
 - Table column widths approximate Chromium's auto layout (render.rs:1576). The parser's autolinks and HTML sanitizer are approximations of remark-gfm and rehype-sanitize. Chunk sizes count bytes, not UTF-16.
 - The selection color is hard-coded macOS blue and was never checked against the fork. Italics depend on t3-ui's baked italic fonts and haven't been checked in a scene.
@@ -43,4 +43,4 @@ Matched against the July fork (`t3code-again` ddeeb09), not fe7d3092c. Unlanded 
 - Linux release, GPUI-free paths:
   - Parse: 24 KB of markdown in 0.33 ms. A streaming update (chunking plus re-parsing the tail) averages 119 µs.
   - Highlighting: TypeScript 0.39 ms/line, Rust 0.07 ms/line. Cache hits about 10 µs. Streaming highlighter 125-433 µs per update. Grammar load 130 ms, done in the background at startup.
-- Frame timing: see the `markdown-bench` run on branch `markdown` (caching off vs on, top-pinned vs bottom-pinned).
+- Frame timing (caching off vs on, top-pinned vs bottom-pinned): the `markdown-bench` artifact of run 36968926896 (`gh run download 36968926896 -R AadiJo/t3UI`). Not reviewed yet.
