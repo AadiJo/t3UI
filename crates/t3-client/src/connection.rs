@@ -51,7 +51,10 @@ impl ConnectionStatus {
                 ..
             }
             | ConnectionStatus::Reconnecting { failure, .. } => {
-                format!("Failed to connect. Reconnecting... Reason: {}", failure.detail)
+                format!(
+                    "Failed to connect. Reconnecting... Reason: {}",
+                    failure.detail
+                )
             }
             ConnectionStatus::Connecting { .. } => "Reconnecting...".into(),
             ConnectionStatus::Connected { .. } => "Connected".into(),

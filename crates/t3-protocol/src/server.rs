@@ -528,12 +528,24 @@ pub struct SubscribeServerConfigInput {
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum ServerConfigStreamEvent {
     /// Always first.
-    Snapshot { config: Box<ServerConfig> },
-    KeybindingsUpdated { payload: KeybindingsUpdated },
-    ProviderStatuses { payload: ProvidersUpdated },
-    SettingsUpdated { payload: Box<SettingsUpdatedPayload> },
-    EnvironmentThemesUpdated { payload: Value },
-    UsageLimitSourcesUpdated { payload: Value },
+    Snapshot {
+        config: Box<ServerConfig>,
+    },
+    KeybindingsUpdated {
+        payload: KeybindingsUpdated,
+    },
+    ProviderStatuses {
+        payload: ProvidersUpdated,
+    },
+    SettingsUpdated {
+        payload: Box<SettingsUpdatedPayload>,
+    },
+    EnvironmentThemesUpdated {
+        payload: Value,
+    },
+    UsageLimitSourcesUpdated {
+        payload: Value,
+    },
     #[serde(other)]
     Unknown,
 }
@@ -566,17 +578,12 @@ impl ServerConfig {
                 true
             }
             ServerConfigStreamEvent::EnvironmentThemesUpdated { payload } => {
-                self.environment_themes = payload
-                    .get("themes")
-                    .and_then(Value::as_array)
-                    .cloned();
+                self.environment_themes = payload.get("themes").and_then(Value::as_array).cloned();
                 true
             }
             ServerConfigStreamEvent::UsageLimitSourcesUpdated { payload } => {
-                self.usage_limit_sources = payload
-                    .get("sources")
-                    .and_then(Value::as_array)
-                    .cloned();
+                self.usage_limit_sources =
+                    payload.get("sources").and_then(Value::as_array).cloned();
                 true
             }
             ServerConfigStreamEvent::Unknown => false,

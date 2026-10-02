@@ -111,7 +111,11 @@ fn text_of(state: &ThreadState, id: &str) -> String {
 #[test]
 fn streaming_appends_and_completion_keeps_or_replaces_text() {
     let mut state = state_at(1);
-    state.apply_event(event(2, "thread.session-set", session("running", Some("turn-1"))));
+    state.apply_event(event(
+        2,
+        "thread.session-set",
+        session("running", Some("turn-1")),
+    ));
     let latest = |s: &ThreadState| s.thread.as_ref().unwrap().latest_turn.clone().unwrap();
     assert_eq!(latest(&state).state, TurnState::Running);
 
@@ -146,7 +150,13 @@ fn streaming_appends_and_completion_keeps_or_replaces_text() {
     state.apply_event(event(
         7,
         "thread.message-sent",
-        message("assistant:1", "assistant", "Hello, world.", Some("turn-1"), false),
+        message(
+            "assistant:1",
+            "assistant",
+            "Hello, world.",
+            Some("turn-1"),
+            false,
+        ),
     ));
     assert_eq!(text_of(&state, "assistant:1"), "Hello, world.");
 
@@ -154,7 +164,10 @@ fn streaming_appends_and_completion_keeps_or_replaces_text() {
     state.apply_event(event(8, "thread.session-set", session("ready", None)));
     let turn = latest(&state);
     assert_eq!(turn.state, TurnState::Completed);
-    assert_eq!(turn.completed_at.as_deref(), Some("2026-10-01T00:00:09.000Z"));
+    assert_eq!(
+        turn.completed_at.as_deref(),
+        Some("2026-10-01T00:00:09.000Z")
+    );
     assert_eq!(state.last_sequence, 8);
 }
 
@@ -166,10 +179,18 @@ fn session_errors_and_interrupts_settle_a_running_turn() {
         ("stopped", TurnState::Interrupted),
     ] {
         let mut state = state_at(1);
-        state.apply_event(event(2, "thread.session-set", session("running", Some("turn-1"))));
+        state.apply_event(event(
+            2,
+            "thread.session-set",
+            session("running", Some("turn-1")),
+        ));
         state.apply_event(event(3, "thread.session-set", session(status, None)));
         let thread = state.thread.as_ref().unwrap();
-        assert_eq!(thread.latest_turn.as_ref().unwrap().state, expected, "{status}");
+        assert_eq!(
+            thread.latest_turn.as_ref().unwrap().state,
+            expected,
+            "{status}"
+        );
         assert_eq!(
             thread.session.as_ref().unwrap().status,
             SessionStatus::from(status)
@@ -195,7 +216,10 @@ fn delta_clones_only_the_streaming_message() {
     ));
     let before = &published.thread.as_ref().unwrap().messages;
     let after = &state.thread.as_ref().unwrap().messages;
-    assert!(Arc::ptr_eq(&before[0], &after[0]), "unchanged message was cloned");
+    assert!(
+        Arc::ptr_eq(&before[0], &after[0]),
+        "unchanged message was cloned"
+    );
     assert!(!Arc::ptr_eq(&before[1], &after[1]));
     assert_eq!(before[1].text, "x", "published state was mutated");
     assert_eq!(after[1].text, "xy");
@@ -204,17 +228,32 @@ fn delta_clones_only_the_streaming_message() {
 #[test]
 fn missing_checkpoint_never_overwrites_a_real_one() {
     let mut state = state_at(1);
-    state.apply_event(event(2, "thread.turn-diff-completed", diff("turn-2", 2, "ready")));
-    state.apply_event(event(3, "thread.turn-diff-completed", diff("turn-1", 1, "ready")));
+    state.apply_event(event(
+        2,
+        "thread.turn-diff-completed",
+        diff("turn-2", 2, "ready"),
+    ));
+    state.apply_event(event(
+        3,
+        "thread.turn-diff-completed",
+        diff("turn-1", 1, "ready"),
+    ));
     assert!(!state.apply_event(event(
         4,
         "thread.turn-diff-completed",
         diff("turn-2", 2, "missing")
     )));
     let checkpoints = &state.thread.as_ref().unwrap().checkpoints;
-    let counts: Vec<_> = checkpoints.iter().map(|c| c.checkpoint_turn_count).collect();
+    let counts: Vec<_> = checkpoints
+        .iter()
+        .map(|c| c.checkpoint_turn_count)
+        .collect();
     assert_eq!(counts, vec![1, 2]);
-    assert!(checkpoints.iter().all(|c| c.status == CheckpointStatus::Ready));
+    assert!(
+        checkpoints
+            .iter()
+            .all(|c| c.status == CheckpointStatus::Ready)
+    );
     // Unchanged events still advance the cursor.
     assert_eq!(state.last_sequence, 4);
 }
@@ -225,28 +264,58 @@ fn activities_upsert_by_id_and_context_window_supersedes() {
     state.apply_event(event(
         2,
         "thread.activity-appended",
-        activity("task-progress:t1:a", "task.progress", "turn-1", Some(1), json!({"step": 1})),
+        activity(
+            "task-progress:t1:a",
+            "task.progress",
+            "turn-1",
+            Some(1),
+            json!({"step": 1}),
+        ),
     ));
     state.apply_event(event(
         3,
         "thread.activity-appended",
-        activity("cw-1", "context-window.updated", "turn-1", Some(2), json!({"usedTokens": 10})),
+        activity(
+            "cw-1",
+            "context-window.updated",
+            "turn-1",
+            Some(2),
+            json!({"usedTokens": 10}),
+        ),
     ));
     state.apply_event(event(
         4,
         "thread.activity-appended",
-        activity("task-progress:t1:a", "task.progress", "turn-1", Some(3), json!({"step": 2})),
+        activity(
+            "task-progress:t1:a",
+            "task.progress",
+            "turn-1",
+            Some(3),
+            json!({"step": 2}),
+        ),
     ));
     state.apply_event(event(
         5,
         "thread.activity-appended",
-        activity("cw-2", "context-window.updated", "turn-1", Some(4), json!({"usedTokens": 20})),
+        activity(
+            "cw-2",
+            "context-window.updated",
+            "turn-1",
+            Some(4),
+            json!({"usedTokens": 20}),
+        ),
     ));
     // An unresolvable usage row does not replace a resolvable one.
     state.apply_event(event(
         6,
         "thread.activity-appended",
-        activity("cw-3", "context-window.updated", "turn-1", Some(5), json!({})),
+        activity(
+            "cw-3",
+            "context-window.updated",
+            "turn-1",
+            Some(5),
+            json!({}),
+        ),
     ));
     let activities = &state.thread.as_ref().unwrap().activities;
     let ids: Vec<_> = activities.iter().map(|a| a.id.as_str()).collect();
@@ -257,10 +326,29 @@ fn activities_upsert_by_id_and_context_window_supersedes() {
 #[test]
 fn activities_without_sequence_sort_last_and_out_of_order_rows_are_placed() {
     let mut state = state_at(1);
-    state.apply_event(event(2, "thread.activity-appended", activity("b", "tool.completed", "turn-1", Some(5), json!({}))));
-    state.apply_event(event(3, "thread.activity-appended", activity("n", "checkpoint.captured", "turn-1", None, json!({}))));
-    state.apply_event(event(4, "thread.activity-appended", activity("a", "tool.completed", "turn-1", Some(2), json!({}))));
-    let ids: Vec<_> = state.thread.as_ref().unwrap().activities.iter().map(|a| a.id.as_str()).collect();
+    state.apply_event(event(
+        2,
+        "thread.activity-appended",
+        activity("b", "tool.completed", "turn-1", Some(5), json!({})),
+    ));
+    state.apply_event(event(
+        3,
+        "thread.activity-appended",
+        activity("n", "checkpoint.captured", "turn-1", None, json!({})),
+    ));
+    state.apply_event(event(
+        4,
+        "thread.activity-appended",
+        activity("a", "tool.completed", "turn-1", Some(2), json!({})),
+    ));
+    let ids: Vec<_> = state
+        .thread
+        .as_ref()
+        .unwrap()
+        .activities
+        .iter()
+        .map(|a| a.id.as_str())
+        .collect();
     assert_eq!(ids, vec!["a", "b", "n"]);
 }
 
@@ -268,33 +356,62 @@ fn activities_without_sequence_sort_last_and_out_of_order_rows_are_placed() {
 fn revert_drops_rows_of_later_turns() {
     let mut state = state_at(1);
     let events = [
-        ("thread.message-sent", message("u1", "user", "one", None, false)),
-        ("thread.message-sent", message("a1", "assistant", "r1", Some("turn-1"), false)),
+        (
+            "thread.message-sent",
+            message("u1", "user", "one", None, false),
+        ),
+        (
+            "thread.message-sent",
+            message("a1", "assistant", "r1", Some("turn-1"), false),
+        ),
         ("thread.turn-diff-completed", diff("turn-1", 1, "ready")),
-        ("thread.message-sent", message("sys", "system", "note", Some("turn-2"), false)),
-        ("thread.message-sent", message("u2", "user", "two", None, false)),
-        ("thread.message-sent", message("a2", "assistant", "r2", Some("turn-2"), false)),
+        (
+            "thread.message-sent",
+            message("sys", "system", "note", Some("turn-2"), false),
+        ),
+        (
+            "thread.message-sent",
+            message("u2", "user", "two", None, false),
+        ),
+        (
+            "thread.message-sent",
+            message("a2", "assistant", "r2", Some("turn-2"), false),
+        ),
         ("thread.turn-diff-completed", diff("turn-2", 2, "ready")),
-        ("thread.activity-appended", activity("act-2", "tool.completed", "turn-2", Some(1), json!({}))),
+        (
+            "thread.activity-appended",
+            activity("act-2", "tool.completed", "turn-2", Some(1), json!({})),
+        ),
     ];
     for (offset, (event_type, payload)) in events.into_iter().enumerate() {
         state.apply_event(event(2 + offset as u64, event_type, payload));
     }
     let epoch = state.history_epoch;
-    state.apply_event(event(20, "thread.reverted", json!({"threadId": "t1", "turnCount": 1})));
+    state.apply_event(event(
+        20,
+        "thread.reverted",
+        json!({"threadId": "t1", "turnCount": 1}),
+    ));
     let thread = state.thread.as_ref().unwrap();
     let ids: Vec<_> = thread.messages.iter().map(|m| m.id.as_str()).collect();
     assert_eq!(ids, vec!["u1", "a1", "sys"]);
     assert!(thread.activities.is_empty());
     assert_eq!(thread.checkpoints.len(), 1);
-    assert_eq!(thread.latest_turn.as_ref().unwrap().turn_id.as_str(), "turn-1");
+    assert_eq!(
+        thread.latest_turn.as_ref().unwrap().turn_id.as_str(),
+        "turn-1"
+    );
     assert_eq!(state.history_epoch, epoch + 1);
 }
 
 #[test]
 fn deletion_clears_the_thread() {
     let mut state = state_at(1);
-    state.apply_event(event(2, "thread.deleted", json!({"threadId": "t1", "deletedAt": T})));
+    state.apply_event(event(
+        2,
+        "thread.deleted",
+        json!({"threadId": "t1", "deletedAt": T}),
+    ));
     assert!(state.deleted);
     assert!(state.thread.is_none());
     assert!(state.page.is_none());
@@ -323,7 +440,14 @@ fn older_pages_merge_once_and_never_after_history_changed() {
     assert!(!stale.merge_older_page(epoch, older.clone()));
 
     assert!(state.merge_older_page(epoch, older));
-    let ids: Vec<_> = state.thread.as_ref().unwrap().messages.iter().map(|m| m.id.as_str()).collect();
+    let ids: Vec<_> = state
+        .thread
+        .as_ref()
+        .unwrap()
+        .messages
+        .iter()
+        .map(|m| m.id.as_str())
+        .collect();
     assert_eq!(ids, vec!["u1", "u2"]);
     assert!(!state.page.as_ref().unwrap().has_more);
 }
@@ -349,15 +473,23 @@ fn shell_upserts_in_place_and_keeps_unchanged_rows_shared() {
         }))
         .unwrap()
     };
-    assert!(!state.apply(upsert(9, "stale")), "an event below the cursor applied");
+    assert!(
+        !state.apply(upsert(9, "stale")),
+        "an event below the cursor applied"
+    );
     assert!(state.apply(upsert(11, "B2")));
     assert_eq!(state.projects.len(), 2);
     assert_eq!(state.projects[1].title, "B2");
     assert!(Arc::ptr_eq(&before.projects[0], &state.projects[0]));
 
-    assert!(state.apply(serde_json::from_value::<ShellStreamItem>(json!({
-        "kind": "thread-removed", "sequence": 12, "threadId": "nope",
-    })).unwrap()));
+    assert!(
+        state.apply(
+            serde_json::from_value::<ShellStreamItem>(json!({
+                "kind": "thread-removed", "sequence": 12, "threadId": "nope",
+            }))
+            .unwrap()
+        )
+    );
     assert_eq!(state.snapshot_sequence, 12);
     assert!(state.apply(ShellStreamItem::Synchronized));
     assert_eq!(state.status, SyncStatus::Live);
@@ -367,7 +499,11 @@ fn shell_upserts_in_place_and_keeps_unchanged_rows_shared() {
 #[test]
 fn thread_snapshot_item_replaces_merged_history() {
     let mut state = state_at(3);
-    state.apply_event(event(4, "thread.message-sent", message("u1", "user", "x", None, false)));
+    state.apply_event(event(
+        4,
+        "thread.message-sent",
+        message("u1", "user", "x", None, false),
+    ));
     let epoch = state.history_epoch;
     let item: ThreadStreamItem = serde_json::from_value(json!({
         "kind": "snapshot",

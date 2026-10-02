@@ -44,8 +44,7 @@ const UPLOAD_TIMEOUT: Duration = Duration::from_secs(300);
 pub trait HttpAuth: Send + Sync + 'static {
     /// Adds auth headers for one request. DPoP implementations sign `method` and `url`, so
     /// this is called once per request and never reused.
-    fn authorize(&self, method: &Method, url: &Url, headers: &mut HeaderMap)
-    -> Result<(), String>;
+    fn authorize(&self, method: &Method, url: &Url, headers: &mut HeaderMap) -> Result<(), String>;
 }
 
 /// `Authorization: Bearer <token>` from pairing.
@@ -118,12 +117,12 @@ impl HttpError {
                         BlockedReason::Authentication,
                         "The environment credential is invalid.",
                     ),
-                    Some("EnvironmentScopeRequiredError" | "EnvironmentOperationForbiddenError") => {
-                        ConnectionFailure::blocked(
-                            BlockedReason::Permission,
-                            "The environment credential does not grant the required access.",
-                        )
-                    }
+                    Some(
+                        "EnvironmentScopeRequiredError" | "EnvironmentOperationForbiddenError",
+                    ) => ConnectionFailure::blocked(
+                        BlockedReason::Permission,
+                        "The environment credential does not grant the required access.",
+                    ),
                     Some("EnvironmentRequestInvalidError") => ConnectionFailure::blocked(
                         BlockedReason::Configuration,
                         "The environment rejected the authentication request.",
@@ -203,7 +202,9 @@ impl EnvironmentHttp {
 
     /// Resolves a server-relative URL such as an asset's `relative_url`.
     pub fn resolve(&self, relative: &str) -> Url {
-        self.base.join(relative).unwrap_or_else(|_| self.base.clone())
+        self.base
+            .join(relative)
+            .unwrap_or_else(|_| self.base.clone())
     }
 
     /// `GET /.well-known/t3/environment` (no auth).
@@ -358,9 +359,7 @@ impl EnvironmentHttp {
         authenticated: bool,
         timeout: Duration,
     ) -> Result<T, HttpError> {
-        let bytes = self
-            .send(method, url, body, authenticated, timeout)
-            .await?;
+        let bytes = self.send(method, url, body, authenticated, timeout).await?;
         serde_json::from_slice(&bytes).map_err(|e| HttpError::Decode(e.to_string()))
     }
 
@@ -373,7 +372,11 @@ impl EnvironmentHttp {
         authenticated: bool,
         timeout: Duration,
     ) -> Result<Vec<u8>, HttpError> {
-        let auth = if authenticated { self.auth.clone() } else { None };
+        let auth = if authenticated {
+            self.auth.clone()
+        } else {
+            None
+        };
         crate::runtime::spawn(async move {
             let mut headers = HeaderMap::new();
             if let Some(auth) = &auth {
@@ -427,7 +430,11 @@ fn map_reqwest_error(error: reqwest::Error) -> HttpError {
     } else {
         // Upstream's wording (`rpc/http.ts:156`), with the root cause rather than reqwest's
         // generic "error sending request" chain.
-        let url = error.url().map(Url::as_str).unwrap_or("(unknown)").to_owned();
+        let url = error
+            .url()
+            .map(Url::as_str)
+            .unwrap_or("(unknown)")
+            .to_owned();
         HttpError::Network(format!(
             "Failed to fetch remote environment endpoint {url} ({}).",
             root_cause(&error)

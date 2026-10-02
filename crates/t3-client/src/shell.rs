@@ -60,7 +60,9 @@ impl ShellState {
         &'a self,
         project: &'a ProjectId,
     ) -> impl Iterator<Item = &'a Arc<OrchestrationThreadShell>> + 'a {
-        self.threads.iter().filter(move |t| &t.project_id == project)
+        self.threads
+            .iter()
+            .filter(move |t| &t.project_id == project)
     }
 
     /// Replaces everything with a snapshot (HTTP fast path or socket snapshot item). Keeps the
@@ -106,18 +108,20 @@ impl ShellState {
                 self.status = SyncStatus::Live;
                 changed
             }
-            ShellStreamItem::ProjectUpserted { sequence, project } => {
-                self.advance(sequence, |state| upsert(&mut state.projects, project, |p| &p.id))
-            }
+            ShellStreamItem::ProjectUpserted { sequence, project } => self
+                .advance(sequence, |state| {
+                    upsert(&mut state.projects, project, |p| &p.id)
+                }),
             ShellStreamItem::ProjectRemoved {
                 sequence,
                 project_id,
             } => self.advance(sequence, |state| {
                 state.projects.retain(|p| p.id != project_id)
             }),
-            ShellStreamItem::ThreadUpserted { sequence, thread } => {
-                self.advance(sequence, |state| upsert(&mut state.threads, thread, |t| &t.id))
-            }
+            ShellStreamItem::ThreadUpserted { sequence, thread } => self
+                .advance(sequence, |state| {
+                    upsert(&mut state.threads, thread, |t| &t.id)
+                }),
             ShellStreamItem::ThreadRemoved {
                 sequence,
                 thread_id,

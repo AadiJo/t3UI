@@ -373,7 +373,10 @@ impl ThreadPullRequestLink {
     pub fn same_key(&self, host: &str, repository: &str, number: u64) -> bool {
         self.number == number
             && self.host.trim().eq_ignore_ascii_case(host.trim())
-            && self.repository.trim().eq_ignore_ascii_case(repository.trim())
+            && self
+                .repository
+                .trim()
+                .eq_ignore_ascii_case(repository.trim())
     }
 }
 
@@ -775,7 +778,9 @@ pub enum ShellStreamItem {
         thread_id: ThreadId,
     },
     /// A `kind` this client does not know. Ignore it.
-    Unknown { kind: String },
+    Unknown {
+        kind: String,
+    },
 }
 
 // Stream items decode through a flat struct of optional fields instead of an internally tagged
@@ -795,7 +800,10 @@ impl<'de> Deserialize<'de> for ShellStreamItem {
         }
         use serde::de::Error;
         let wire = Wire::deserialize(deserializer)?;
-        let sequence = || wire.sequence.ok_or_else(|| D::Error::missing_field("sequence"));
+        let sequence = || {
+            wire.sequence
+                .ok_or_else(|| D::Error::missing_field("sequence"))
+        };
         Ok(match wire.kind.as_str() {
             "snapshot" => Self::Snapshot(
                 wire.snapshot
@@ -804,7 +812,9 @@ impl<'de> Deserialize<'de> for ShellStreamItem {
             "synchronized" => Self::Synchronized,
             "project-upserted" => Self::ProjectUpserted {
                 sequence: sequence()?,
-                project: wire.project.ok_or_else(|| D::Error::missing_field("project"))?,
+                project: wire
+                    .project
+                    .ok_or_else(|| D::Error::missing_field("project"))?,
             },
             "project-removed" => Self::ProjectRemoved {
                 sequence: sequence()?,
@@ -814,7 +824,9 @@ impl<'de> Deserialize<'de> for ShellStreamItem {
             },
             "thread-upserted" => Self::ThreadUpserted {
                 sequence: sequence()?,
-                thread: wire.thread.ok_or_else(|| D::Error::missing_field("thread"))?,
+                thread: wire
+                    .thread
+                    .ok_or_else(|| D::Error::missing_field("thread"))?,
             },
             "thread-removed" => Self::ThreadRemoved {
                 sequence: sequence()?,

@@ -43,13 +43,22 @@ pub enum ServerFrame {
         values: Vec<Box<RawValue>>,
     },
     /// Terminal result for a request (unary success/failure, or end of stream).
-    Exit { request_id: String, exit: ExitEncoded },
+    Exit {
+        request_id: String,
+        exit: ExitEncoded,
+    },
     /// Connection-level failure not tied to a request. Every in-flight request is lost.
-    Defect { defect: serde_json::Value },
+    Defect {
+        defect: serde_json::Value,
+    },
     Pong,
-    ClientProtocolError { error: serde_json::Value },
+    ClientProtocolError {
+        error: serde_json::Value,
+    },
     /// A frame with a `_tag` this client does not know. Ignored by callers.
-    Unknown { tag: String },
+    Unknown {
+        tag: String,
+    },
 }
 
 /// Encoded `Exit<A, E>`.
@@ -63,9 +72,13 @@ pub enum ExitEncoded {
 #[derive(Debug)]
 pub enum CauseReason {
     /// An expected, typed failure. `error` decodes into the method's error schema.
-    Fail { error: Box<RawValue> },
+    Fail {
+        error: Box<RawValue>,
+    },
     /// An unexpected defect (thrown error, bug, payload schema mismatch).
-    Die { defect: serde_json::Value },
+    Die {
+        defect: serde_json::Value,
+    },
     Interrupt,
 }
 

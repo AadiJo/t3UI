@@ -162,10 +162,19 @@ pub struct FilesystemBrowseEntry {
 #[serde(tag = "_tag", rename_all = "kebab-case")]
 pub enum AssetResource {
     #[serde(rename_all = "camelCase")]
-    WorkspaceFile { thread_id: ThreadId, path: String },
+    WorkspaceFile {
+        thread_id: ThreadId,
+        path: String,
+    },
     #[serde(rename_all = "camelCase")]
-    MediaFile { thread_id: ThreadId, path: String },
-    DraftWorkspaceFile { cwd: String, path: String },
+    MediaFile {
+        thread_id: ThreadId,
+        path: String,
+    },
+    DraftWorkspaceFile {
+        cwd: String,
+        path: String,
+    },
     #[serde(rename_all = "camelCase")]
     Attachment {
         attachment_id: AttachmentId,
@@ -182,7 +191,10 @@ pub enum AssetResource {
         #[serde(skip_serializing_if = "Option::is_none")]
         path: Option<String>,
     },
-    GithubMedia { cwd: String, url: String },
+    GithubMedia {
+        cwd: String,
+        url: String,
+    },
 }
 
 #[derive(Debug, Clone, Serialize)]

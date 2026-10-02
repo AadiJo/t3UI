@@ -266,7 +266,10 @@ impl Environment {
         let mut sessions = self.inner.shared.session.subscribe();
         loop {
             // Mark both seen together so a change to either after this point wakes the select.
-            let session = sessions.borrow_and_update().clone().filter(Session::is_open);
+            let session = sessions
+                .borrow_and_update()
+                .clone()
+                .filter(Session::is_open);
             let current = status.borrow_and_update().clone();
             match (session, current) {
                 (Some(session), ConnectionStatus::Connected { .. }) => return Ok(session),
@@ -302,7 +305,9 @@ impl Environment {
         &self,
         payload: &M::Payload,
     ) -> Result<M::Success, RpcError<M::Error>> {
-        let session = self.session().ok_or(RpcError::Disconnected(CloseReason::NotConnected))?;
+        let session = self
+            .session()
+            .ok_or(RpcError::Disconnected(CloseReason::NotConnected))?;
         session.rpc.request::<M>(payload).await
     }
 
@@ -312,7 +317,9 @@ impl Environment {
         &self,
         payload: &M::Payload,
     ) -> Result<Subscription<M>, RpcError<M::Error>> {
-        let session = self.session().ok_or(RpcError::Disconnected(CloseReason::NotConnected))?;
+        let session = self
+            .session()
+            .ok_or(RpcError::Disconnected(CloseReason::NotConnected))?;
         Ok(session.rpc.subscribe::<M>(payload))
     }
 
@@ -339,7 +346,9 @@ impl Environment {
         let size_bytes = bytes.len() as u64;
         let session = self
             .session()
-            .ok_or(UploadError::Rpc(RpcError::Disconnected(CloseReason::NotConnected)))?;
+            .ok_or(UploadError::Rpc(RpcError::Disconnected(
+                CloseReason::NotConnected,
+            )))?;
         let upload = session
             .rpc
             .request::<AttachmentsCreateUploadUrl>(&AttachmentCreateUploadUrlInput {
@@ -688,9 +697,17 @@ async fn run_attempt(
 async fn probe(session: &Session) -> Result<(), String> {
     let request = async {
         if session.descriptor.capabilities.connection_probe {
-            session.rpc.request::<ServerProbe>(&Empty {}).await.map(drop)
+            session
+                .rpc
+                .request::<ServerProbe>(&Empty {})
+                .await
+                .map(drop)
         } else {
-            session.rpc.request::<ServerGetConfig>(&Empty {}).await.map(drop)
+            session
+                .rpc
+                .request::<ServerGetConfig>(&Empty {})
+                .await
+                .map(drop)
         }
     };
     match tokio::time::timeout(PROBE_TIMEOUT, request).await {
@@ -835,7 +852,11 @@ async fn follow_config(
 /// Waits for an open session. `None` when the environment is gone.
 async fn next_session(sessions: &mut watch::Receiver<Option<Session>>) -> Option<Session> {
     loop {
-        if let Some(session) = sessions.borrow_and_update().clone().filter(Session::is_open) {
+        if let Some(session) = sessions
+            .borrow_and_update()
+            .clone()
+            .filter(Session::is_open)
+        {
             return Some(session);
         }
         sessions.changed().await.ok()?;
@@ -917,10 +938,12 @@ async fn follow_shell(shared: Arc<Shared>) {
                 Err(error) => tracing::debug!(%error, "shell snapshot over http failed"),
             }
         }
-        let mut stream = session.rpc.subscribe::<SubscribeShell>(&SubscribeShellInput {
-            after_sequence: state.resume_cursor(),
-            request_completion_marker: marker.then_some(true),
-        });
+        let mut stream = session
+            .rpc
+            .subscribe::<SubscribeShell>(&SubscribeShellInput {
+                after_sequence: state.resume_cursor(),
+                request_completion_marker: marker.then_some(true),
+            });
         state.begin_sync(marker);
         publish(&state);
         let error = loop {
@@ -986,13 +1009,15 @@ async fn follow_thread(
             }
         }
 
-        let mut stream = session.rpc.subscribe::<SubscribeThread>(&SubscribeThreadInput {
-            thread_id: thread_id.clone(),
-            reasoning_messages: reasoning.then_some(true),
-            after_sequence: state.resume_cursor(),
-            request_completion_marker: marker.then_some(true),
-            turn_limit: pagination.then_some(INITIAL_TURN_LIMIT),
-        });
+        let mut stream = session
+            .rpc
+            .subscribe::<SubscribeThread>(&SubscribeThreadInput {
+                thread_id: thread_id.clone(),
+                reasoning_messages: reasoning.then_some(true),
+                after_sequence: state.resume_cursor(),
+                request_completion_marker: marker.then_some(true),
+                turn_limit: pagination.then_some(INITIAL_TURN_LIMIT),
+            });
         state.begin_sync(marker);
         publish(&state);
 

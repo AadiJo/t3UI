@@ -162,7 +162,10 @@ fn every_recorded_frame_and_item_decodes_as_a_known_kind() {
             match item {
                 ThreadStreamItem::Unknown { kind } => panic!("unknown thread item {kind}"),
                 ThreadStreamItem::Event(event) => {
-                    assert!(!matches!(event.body, EventBody::Unknown { .. }), "{event:?}");
+                    assert!(
+                        !matches!(event.body, EventBody::Unknown { .. }),
+                        "{event:?}"
+                    );
                     event_types.push(event.body.event_type().to_owned());
                 }
                 _ => {}
@@ -184,8 +187,9 @@ fn shell_replay_matches_the_servers_later_snapshot() {
     let live_id = transcript.request_id("orchestration.subscribeShell", |p| {
         p.get("afterSequence").is_some()
     });
-    let fresh_id =
-        transcript.request_id("orchestration.subscribeShell", |p| p.as_object().unwrap().is_empty());
+    let fresh_id = transcript.request_id("orchestration.subscribeShell", |p| {
+        p.as_object().unwrap().is_empty()
+    });
 
     let mut state = ShellState::default();
     state.apply_snapshot(transcript.http::<OrchestrationShellSnapshot>("/api/orchestration/shell"));
@@ -208,17 +212,21 @@ fn shell_replay_matches_the_servers_later_snapshot() {
     // the live upsert labeled 21 already carries event 22 (the final `session-set`), while the
     // fresh snapshot was cut at 21. Rows match except for what event 22 changed, and the row's
     // session matches the thread snapshot taken at 22.
-    let without_session = |rows: &[std::sync::Arc<t3_protocol::orchestration::OrchestrationThreadShell>]| {
-        rows.iter()
-            .map(|row| {
-                let mut row = (**row).clone();
-                row.session = None;
-                row.updated_at.clear();
-                row
-            })
-            .collect::<Vec<_>>()
-    };
-    assert_eq!(without_session(&state.threads), without_session(&server.threads));
+    let without_session =
+        |rows: &[std::sync::Arc<t3_protocol::orchestration::OrchestrationThreadShell>]| {
+            rows.iter()
+                .map(|row| {
+                    let mut row = (**row).clone();
+                    row.session = None;
+                    row.updated_at.clear();
+                    row
+                })
+                .collect::<Vec<_>>()
+        };
+    assert_eq!(
+        without_session(&state.threads),
+        without_session(&server.threads)
+    );
     let thread_fresh_id = transcript.request_id("orchestration.subscribeThread", |p| {
         p.get("afterSequence").is_none()
     });
@@ -251,8 +259,7 @@ fn thread_replay_matches_the_servers_later_snapshot() {
         p.get("afterSequence").is_none()
     });
 
-    let initial: OrchestrationThreadDetailSnapshot =
-        transcript.http("/api/orchestration/threads/");
+    let initial: OrchestrationThreadDetailSnapshot = transcript.http("/api/orchestration/threads/");
     let thread_id: ThreadId = initial.thread.id.clone();
     let mut state = ThreadState::new(thread_id);
     state.apply_snapshot(initial);

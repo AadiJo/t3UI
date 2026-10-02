@@ -223,7 +223,10 @@ mod tests {
     fn pairing_url_reads_fragment_then_query() {
         let target = parse_pairing_url("http://localhost:4810/pair#token=ABC").unwrap();
         assert_eq!(target.credential, "ABC");
-        assert_eq!(bases(&target), ("http://localhost:4810/", "ws://localhost:4810/"));
+        assert_eq!(
+            bases(&target),
+            ("http://localhost:4810/", "ws://localhost:4810/")
+        );
 
         let target = parse_pairing_url("https://box.ts.net/pair?token=Q1").unwrap();
         assert_eq!(target.credential, "Q1");
@@ -242,24 +245,36 @@ mod tests {
         assert_eq!(target.credential, "XYZ");
         assert_eq!(
             bases(&target),
-            ("https://studio.tail1.ts.net:8443/", "wss://studio.tail1.ts.net:8443/")
+            (
+                "https://studio.tail1.ts.net:8443/",
+                "wss://studio.tail1.ts.net:8443/"
+            )
         );
     }
 
     #[test]
     fn websocket_scheme_urls_map_to_http() {
         let target = parse_pairing_url("wss://box.example/pair#token=T").unwrap();
-        assert_eq!(bases(&target), ("https://box.example/", "wss://box.example/"));
+        assert_eq!(
+            bases(&target),
+            ("https://box.example/", "wss://box.example/")
+        );
     }
 
     #[test]
     fn host_and_code_normalize_host() {
         let target = resolve_host_and_code(" //studio.ts.net/some/path?x=1 ", " CODE ").unwrap();
         assert_eq!(target.credential, "CODE");
-        assert_eq!(bases(&target), ("https://studio.ts.net/", "wss://studio.ts.net/"));
+        assert_eq!(
+            bases(&target),
+            ("https://studio.ts.net/", "wss://studio.ts.net/")
+        );
 
         let target = resolve_host_and_code("http://192.168.1.4:3773", "C").unwrap();
-        assert_eq!(bases(&target), ("http://192.168.1.4:3773/", "ws://192.168.1.4:3773/"));
+        assert_eq!(
+            bases(&target),
+            ("http://192.168.1.4:3773/", "ws://192.168.1.4:3773/")
+        );
     }
 
     #[test]
@@ -286,11 +301,15 @@ mod tests {
     #[test]
     fn errors_use_upstream_copy() {
         assert_eq!(
-            parse_pairing_url("http://localhost:3773/pair").unwrap_err().to_string(),
+            parse_pairing_url("http://localhost:3773/pair")
+                .unwrap_err()
+                .to_string(),
             "Pairing URL is missing its token."
         );
         assert_eq!(
-            parse_pairing_url("ftp://x/pair#token=a").unwrap_err().to_string(),
+            parse_pairing_url("ftp://x/pair#token=a")
+                .unwrap_err()
+                .to_string(),
             "Pairing URL is invalid."
         );
         assert_eq!(
@@ -302,7 +321,9 @@ mod tests {
             "Enter a pairing code."
         );
         assert_eq!(
-            resolve_host_and_code("ftp://box", "x").unwrap_err().to_string(),
+            resolve_host_and_code("ftp://box", "x")
+                .unwrap_err()
+                .to_string(),
             "Backend URL is invalid."
         );
         let json_without_url = r#"{"id":"1","credential":"T","scopes":[],"expiresAt":"x"}"#;

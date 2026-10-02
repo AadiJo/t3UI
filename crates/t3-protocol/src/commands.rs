@@ -14,8 +14,8 @@ use crate::{
     ids::{ApprovalRequestId, AttachmentId, CommandId, MessageId, ProjectId, ThreadId, TurnId},
     orchestration::{
         ApprovalDecision, AttachmentKind, ChatAttachment, InteractionMode, ModelSelection,
-        OrchestrationMessageContext, ProjectIconOverride, ProjectScript,
-        SourceProposedPlanReference, ThreadEnvMode, ThreadLinkedPullRequest, RuntimeMode,
+        OrchestrationMessageContext, ProjectIconOverride, ProjectScript, RuntimeMode,
+        SourceProposedPlanReference, ThreadEnvMode, ThreadLinkedPullRequest,
     },
 };
 

@@ -42,10 +42,11 @@ use crate::{
     vcs::{
         GitActionProgressEvent, GitPreparePullRequestThreadInput,
         GitPreparePullRequestThreadResult, GitPullRequestRefInput, GitResolvePullRequestResult,
-        GitRunStackedActionInput, ReviewDiffPreviewInput, ReviewDiffPreviewResult, VcsCreateRefInput,
-        VcsCreateRefResult, VcsCreateWorktreeInput, VcsCreateWorktreeResult, VcsCwdInput,
-        VcsInitInput, VcsListRefsInput, VcsListRefsResult, VcsPullResult, VcsRemoveWorktreeInput,
-        VcsStatusResult, VcsStatusStreamEvent, VcsSwitchRefInput, VcsSwitchRefResult,
+        GitRunStackedActionInput, ReviewDiffPreviewInput, ReviewDiffPreviewResult,
+        VcsCreateRefInput, VcsCreateRefResult, VcsCreateWorktreeInput, VcsCreateWorktreeResult,
+        VcsCwdInput, VcsInitInput, VcsListRefsInput, VcsListRefsResult, VcsPullResult,
+        VcsRemoveWorktreeInput, VcsStatusResult, VcsStatusStreamEvent, VcsSwitchRefInput,
+        VcsSwitchRefResult,
     },
 };
 

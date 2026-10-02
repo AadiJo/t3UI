@@ -108,9 +108,10 @@ pub enum ConnectError {
 /// Failure of one RPC call. `E` is the method's typed error schema.
 #[derive(Debug, thiserror::Error)]
 pub enum RpcError<E> {
-    /// The server failed the request with the method's expected error.
-    #[error("request failed")]
-    Failed(E),
+    /// The server failed the request with the method's expected error. Boxed so `Result`s
+    /// carrying this error stay small (typed errors hold several strings and a field map).
+    #[error("request failed: {0}")]
+    Failed(Box<E>),
     /// The server hit an unexpected error (Effect `Die`), or sent an undecodable failure.
     #[error("server defect: {0}")]
     Defect(String),
@@ -129,7 +130,7 @@ impl<E> RpcError<E> {
     /// The typed failure, if the server returned one.
     pub fn failure(&self) -> Option<&E> {
         match self {
-            RpcError::Failed(error) => Some(error),
+            RpcError::Failed(error) => Some(&**error),
             _ => None,
         }
     }
@@ -167,7 +168,7 @@ fn failure_from_cause<E: serde::de::DeserializeOwned>(cause: Vec<CauseReason>) -
         match reason {
             CauseReason::Fail { error } => {
                 return match serde_json::from_str(error.get()) {
-                    Ok(error) => RpcError::Failed(error),
+                    Ok(error) => RpcError::Failed(Box::new(error)),
                     Err(_) => RpcError::Defect(error.get().to_owned()),
                 };
             }

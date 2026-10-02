@@ -86,8 +86,11 @@ fn exit_failures_keep_typed_errors_and_defects() {
     else {
         panic!("expected a failure exit");
     };
-    let [CauseReason::Fail { error }, CauseReason::Die { defect }, CauseReason::Interrupt] =
-        cause.as_slice()
+    let [
+        CauseReason::Fail { error },
+        CauseReason::Die { defect },
+        CauseReason::Interrupt,
+    ] = cause.as_slice()
     else {
         panic!("unexpected causes: {cause:?}");
     };
@@ -130,7 +133,8 @@ fn client_frames_match_effect_encoding() {
 
 #[test]
 fn unknown_stream_kinds_and_event_types_are_tolerated() {
-    let item: ShellStreamItem = serde_json::from_value(json!({"kind": "project-renamed-v2"})).unwrap();
+    let item: ShellStreamItem =
+        serde_json::from_value(json!({"kind": "project-renamed-v2"})).unwrap();
     assert_eq!(
         item,
         ShellStreamItem::Unknown {

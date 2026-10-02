@@ -203,7 +203,10 @@ fn prepend_unique<T, K: PartialEq>(
 }
 
 /// Applies one event to a thread (upstream `applyThreadDetailEvent`). Pure: no IO, no clock.
-pub fn apply_thread_event(thread: &mut OrchestrationThread, event: OrchestrationEvent) -> EventEffect {
+pub fn apply_thread_event(
+    thread: &mut OrchestrationThread,
+    event: OrchestrationEvent,
+) -> EventEffect {
     let occurred_at = event.occurred_at;
     match event.body {
         EventBody::ProjectCreated(_)
@@ -393,7 +396,9 @@ pub fn apply_thread_event(thread: &mut OrchestrationThread, event: Orchestration
                 return EventEffect::Unchanged;
             }
             latest.state = TurnState::Interrupted;
-            latest.started_at.get_or_insert_with(|| p.created_at.clone());
+            latest
+                .started_at
+                .get_or_insert_with(|| p.created_at.clone());
             latest.completed_at.get_or_insert(p.created_at);
             thread.updated_at = occurred_at;
         }
@@ -448,11 +453,15 @@ pub fn apply_thread_event(thread: &mut OrchestrationThread, event: Orchestration
         }
         EventBody::ThreadProposedPlanUpserted(p) => {
             let plan = p.proposed_plan;
-            thread.proposed_plans.retain(|existing| existing.id != plan.id);
-            thread.proposed_plans.push(plan);
             thread
                 .proposed_plans
-                .sort_by(|a, b| a.created_at.cmp(&b.created_at).then_with(|| a.id.cmp(&b.id)));
+                .retain(|existing| existing.id != plan.id);
+            thread.proposed_plans.push(plan);
+            thread.proposed_plans.sort_by(|a, b| {
+                a.created_at
+                    .cmp(&b.created_at)
+                    .then_with(|| a.id.cmp(&b.id))
+            });
             thread.updated_at = occurred_at;
         }
         EventBody::ThreadTurnDiffCompleted(p) => {
@@ -474,9 +483,7 @@ pub fn apply_thread_event(thread: &mut OrchestrationThread, event: Orchestration
             };
             thread.checkpoints.retain(|c| c.turn_id != p.turn_id);
             thread.checkpoints.push(Arc::new(checkpoint));
-            thread
-                .checkpoints
-                .sort_by_key(|c| c.checkpoint_turn_count);
+            thread.checkpoints.sort_by_key(|c| c.checkpoint_turn_count);
             // Mid-turn diffs record the checkpoint but must not settle a running turn.
             let still_running = session_running_turn(thread, &p.turn_id);
             let applies = thread
@@ -570,7 +577,12 @@ fn apply_message_sent(
     p: t3_protocol::orchestration::ThreadMessageSentPayload,
 ) {
     // Recent messages are at the end; search from the back.
-    match thread.messages.iter_mut().rev().find(|m| m.id == p.message_id) {
+    match thread
+        .messages
+        .iter_mut()
+        .rev()
+        .find(|m| m.id == p.message_id)
+    {
         Some(existing) => {
             let message = Arc::make_mut(existing);
             if p.streaming {
@@ -664,9 +676,7 @@ fn apply_revert(thread: &mut OrchestrationThread, turn_count: u32) {
     thread
         .checkpoints
         .retain(|c| c.checkpoint_turn_count <= turn_count);
-    thread
-        .checkpoints
-        .sort_by_key(|c| c.checkpoint_turn_count);
+    thread.checkpoints.sort_by_key(|c| c.checkpoint_turn_count);
     let retained: Vec<TurnId> = thread
         .checkpoints
         .iter()
@@ -705,7 +715,9 @@ fn retain_messages_after_revert(
         .filter(|m| {
             m.role == MessageRole::System
                 || is_imported_message(&m.id)
-                || m.turn_id.as_ref().is_some_and(|t| retained_turns.contains(t))
+                || m.turn_id
+                    .as_ref()
+                    .is_some_and(|t| retained_turns.contains(t))
         })
         .map(|m| &m.id)
         .collect();
@@ -720,10 +732,16 @@ fn retain_messages_after_revert(
             .filter(|m| {
                 m.role == role
                     && !keep.contains(&&m.id)
-                    && m.turn_id.as_ref().is_none_or(|t| retained_turns.contains(t))
+                    && m.turn_id
+                        .as_ref()
+                        .is_none_or(|t| retained_turns.contains(t))
             })
             .collect();
-        fallback.sort_by(|a, b| a.created_at.cmp(&b.created_at).then_with(|| a.id.cmp(&b.id)));
+        fallback.sort_by(|a, b| {
+            a.created_at
+                .cmp(&b.created_at)
+                .then_with(|| a.id.cmp(&b.id))
+        });
         keep.extend(fallback.into_iter().take(missing).map(|m| &m.id));
     }
     messages

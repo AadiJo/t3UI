@@ -69,13 +69,17 @@ fn parse_args() -> Result<Args> {
             "--model" => parsed.model = Some(value()?),
             "--follow-secs" => parsed.follow = Duration::from_secs(value()?.parse()?),
             "--watch-secs" => parsed.watch = Some(Duration::from_secs(value()?.parse()?)),
-            "-" => std::io::stdin().read_to_string(&mut parsed.pairing).map(drop)?,
+            "-" => std::io::stdin()
+                .read_to_string(&mut parsed.pairing)
+                .map(drop)?,
             _ if parsed.pairing.is_empty() => parsed.pairing = arg,
             _ => bail!("unexpected argument {arg}"),
         }
     }
     if parsed.pairing.is_empty() {
-        bail!("usage: probe <pairing link | t3 serve output | -> [--turn TEXT] [--workspace DIR] [--record FILE]");
+        bail!(
+            "usage: probe <pairing link | t3 serve output | -> [--turn TEXT] [--workspace DIR] [--record FILE]"
+        );
     }
     Ok(parsed)
 }
@@ -90,7 +94,11 @@ struct Recorder {
 enum Recorded {
     Frame(FrameDirection, String),
     /// Only `/api/orchestration/*` responses; auth endpoints carry credentials.
-    Http { path: String, status: u16, body: String },
+    Http {
+        path: String,
+        status: u16,
+        body: String,
+    },
 }
 
 impl Recorder {
@@ -312,7 +320,11 @@ async fn run(args: &Args) -> Result<String> {
     println!(
         "thread live at sequence {}: \"{}\" {} messages",
         state.last_sequence,
-        state.thread.as_ref().map(|t| t.title.as_str()).unwrap_or(""),
+        state
+            .thread
+            .as_ref()
+            .map(|t| t.title.as_str())
+            .unwrap_or(""),
         state.thread.as_ref().map_or(0, |t| t.messages.len())
     );
 
@@ -431,10 +443,7 @@ async fn follow_thread(
                 state.last_sequence,
                 detail.messages.len(),
                 detail.activities.len(),
-                detail
-                    .session
-                    .as_ref()
-                    .map_or("-", |s| s.status.as_str()),
+                detail.session.as_ref().map_or("-", |s| s.status.as_str()),
                 detail
                     .latest_turn
                     .as_ref()
@@ -453,19 +462,24 @@ async fn follow_thread(
             if line != last {
                 println!("  {line}");
                 for activity in detail.activities.iter().rev().take(1) {
-                    println!("    activity {} [{}] {}", activity.kind, activity.tone, activity.summary);
+                    println!(
+                        "    activity {} [{}] {}",
+                        activity.kind, activity.tone, activity.summary
+                    );
                 }
                 last = line;
             }
-            let settled = detail.latest_turn.as_ref().is_some_and(|t| {
-                t.state != t3_protocol::orchestration::TurnState::Running
-            }) && detail.session.as_ref().is_none_or(|s| {
-                !matches!(
-                    s.status,
-                    t3_protocol::orchestration::SessionStatus::Running
-                        | t3_protocol::orchestration::SessionStatus::Starting
-                )
-            });
+            let settled = detail
+                .latest_turn
+                .as_ref()
+                .is_some_and(|t| t.state != t3_protocol::orchestration::TurnState::Running)
+                && detail.session.as_ref().is_none_or(|s| {
+                    !matches!(
+                        s.status,
+                        t3_protocol::orchestration::SessionStatus::Running
+                            | t3_protocol::orchestration::SessionStatus::Starting
+                    )
+                });
             if settled {
                 println!("  turn settled");
                 return;
@@ -550,7 +564,11 @@ fn model_selection(
         .iter()
         .find(|p| p.enabled)
         .and_then(|p| {
-            let model = p.models.iter().find(|m| m.is_default).or(p.models.first())?;
+            let model = p
+                .models
+                .iter()
+                .find(|m| m.is_default)
+                .or(p.models.first())?;
             Some(ModelSelection {
                 instance_id: p.instance_id.clone(),
                 model: model.slug.clone(),
@@ -579,7 +597,10 @@ fn make_repo() -> Result<PathBuf> {
             .env("GIT_COMMITTER_EMAIL", "probe@example.com")
             .output()?;
         if !status.status.success() {
-            bail!("git {args:?} failed: {}", String::from_utf8_lossy(&status.stderr));
+            bail!(
+                "git {args:?} failed: {}",
+                String::from_utf8_lossy(&status.stderr)
+            );
         }
         Ok(())
     };
