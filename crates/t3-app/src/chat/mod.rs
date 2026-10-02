@@ -68,6 +68,8 @@ pub enum Slot {
     BranchToolbar,
     /// The header's right-side actions (scripts, Open in, Git).
     HeaderActions,
+    /// The thread's terminal drawer, the last child of the chat column (it sizes itself).
+    TerminalDrawer,
 }
 
 /// What a slot builder receives.
@@ -84,6 +86,7 @@ struct Slots {
     composer: Option<SlotBuilder>,
     branch_toolbar: Option<SlotBuilder>,
     header_actions: Option<SlotBuilder>,
+    terminal_drawer: Option<SlotBuilder>,
 }
 
 impl Global for Slots {}
@@ -100,6 +103,7 @@ pub fn register_slot(
         Slot::Composer => slots.composer = Some(builder),
         Slot::BranchToolbar => slots.branch_toolbar = Some(builder),
         Slot::HeaderActions => slots.header_actions = Some(builder),
+        Slot::TerminalDrawer => slots.terminal_drawer = Some(builder),
     }
 }
 
@@ -203,6 +207,7 @@ pub struct ChatView {
     composer: Option<AnyView>,
     branch_toolbar: Option<AnyView>,
     header_actions: Option<AnyView>,
+    terminal_drawer: Option<AnyView>,
     overlay: OverlayGeometry,
     _tasks: Vec<Task<()>>,
     _subscriptions: Vec<Subscription>,
@@ -269,21 +274,24 @@ impl ChatView {
                 .clone()
                 .map(|builder| builder(slot_context.clone(), window, cx))
         };
-        let (composer, branch_toolbar, header_actions) = match cx.try_global::<Slots>() {
-            Some(slots) => {
-                let (a, b, c) = (
-                    slots.composer.clone(),
-                    slots.branch_toolbar.clone(),
-                    slots.header_actions.clone(),
-                );
-                (
-                    build(&a, window, cx),
-                    build(&b, window, cx),
-                    build(&c, window, cx),
-                )
-            }
-            None => (None, None, None),
-        };
+        let (composer, branch_toolbar, header_actions, terminal_drawer) =
+            match cx.try_global::<Slots>() {
+                Some(slots) => {
+                    let (a, b, c, d) = (
+                        slots.composer.clone(),
+                        slots.branch_toolbar.clone(),
+                        slots.header_actions.clone(),
+                        slots.terminal_drawer.clone(),
+                    );
+                    (
+                        build(&a, window, cx),
+                        build(&b, window, cx),
+                        build(&c, window, cx),
+                        build(&d, window, cx),
+                    )
+                }
+                None => (None, None, None, None),
+            };
 
         let mut this = Self {
             app_state,
@@ -297,6 +305,7 @@ impl ChatView {
             composer,
             branch_toolbar,
             header_actions,
+            terminal_drawer,
             overlay: OverlayGeometry::default(),
             _tasks: tasks,
             _subscriptions: subscriptions,
@@ -529,6 +538,7 @@ impl Render for ChatView {
                 this.child(self.render_header(window, cx))
                     .children(self.render_error_banner(cx))
                     .child(self.render_body(window, cx))
+                    .children(self.terminal_drawer.clone())
             })
     }
 }
