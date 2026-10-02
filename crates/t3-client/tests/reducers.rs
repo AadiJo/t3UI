@@ -21,6 +21,10 @@
 //! 9. Shell: an upsert appends a duplicate row, or replaces unchanged rows (breaking `Arc`
 //!    sharing that views rely on); removing an unknown id panics.
 //! 10. Streaming a delta clones every message instead of only the streaming one.
+//! 12. A long-open thread keeps every activity forever: `tool.updated` rows a later
+//!     `tool.completed` of the same call supersedes are kept (the server drops them from
+//!     snapshots), and there is no retained-row budget. A budget must never drop a row that
+//!     keeps an approval or question open.
 //! 11. Pending requests: a resolution that arrives before its request leaves it open; internal
 //!     approval types (`tool_user_input`) show as approvals; a stale-request failure keeps it
 //!     open, or any other failure closes it; legacy `requestType` maps to the wrong kind;
@@ -731,4 +735,82 @@ fn an_older_page_ahead_of_the_live_state_waits_for_the_live_events() {
         "a page parked before a revert merged after it"
     );
     assert!(!state.page.as_ref().unwrap().loading_older);
+}
+
+fn tool_activity(id: &str, kind: &str, turn: &str, sequence: i64, call: &str) -> Value {
+    json!({"threadId": "t1", "activity": {
+        "id": id, "tone": "tool", "kind": kind, "summary": "Ran command",
+        "payload": {"itemType": "command_execution", "toolCallId": call}, "turnId": turn,
+        "sequence": sequence, "createdAt": T,
+    }})
+}
+
+#[test]
+fn superseded_tool_updates_are_compacted_like_server_snapshots() {
+    let mut state = state_at(1);
+    let rows = [
+        ("u1", "tool.updated", "turn-1", "call-a"),
+        ("u2", "tool.updated", "turn-1", "call-a"),
+        ("u3", "tool.updated", "turn-1", "call-b"),
+        ("c1", "tool.completed", "turn-1", "call-a"),
+        // Same call id in another turn: not superseded by turn-1's completion.
+        ("u4", "tool.updated", "turn-2", "call-a"),
+    ];
+    for (offset, (id, kind, turn, call)) in rows.into_iter().enumerate() {
+        let sequence = offset as u64 + 2;
+        state.apply_event(event(
+            sequence,
+            "thread.activity-appended",
+            tool_activity(id, kind, turn, sequence as i64, call),
+        ));
+    }
+    let ids: Vec<_> = state
+        .thread
+        .as_ref()
+        .unwrap()
+        .activities
+        .iter()
+        .map(|a| a.id.as_str())
+        .collect();
+    assert_eq!(ids, vec!["u3", "c1", "u4"]);
+}
+
+#[test]
+fn activity_budget_keeps_open_requests() {
+    let mut state = state_at(1);
+    state.apply_event(event(
+        2,
+        "thread.activity-appended",
+        json!({"threadId": "t1", "activity": {
+            "id": "approval-1", "tone": "approval", "kind": "approval.requested",
+            "summary": "Approve", "payload": {"requestId": "r1", "requestKind": "command"},
+            "turnId": "turn-1", "sequence": 1, "createdAt": T,
+        }}),
+    ));
+    for n in 0..1_200u64 {
+        state.apply_event(event(
+            3 + n,
+            "thread.activity-appended",
+            activity(
+                &format!("row-{n}"),
+                "tool.completed",
+                "turn-1",
+                Some(2 + n as i64),
+                json!({}),
+            ),
+        ));
+    }
+    let thread = state.thread.as_ref().unwrap();
+    assert!(
+        thread.activities.len() <= t3_client::thread::ACTIVITY_BUDGET + 1,
+        "{} activities retained",
+        thread.activities.len()
+    );
+    assert!(thread.activities.len() >= t3_client::thread::ACTIVITY_BUDGET * 9 / 10);
+    assert_eq!(thread.activities.last().unwrap().id.as_str(), "row-1199");
+    assert_eq!(
+        state.pending_requests().approvals.len(),
+        1,
+        "the open approval was dropped"
+    );
 }

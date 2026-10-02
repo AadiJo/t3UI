@@ -23,6 +23,11 @@ use t3_protocol::{
 
 pub use crate::shell::SyncStatus;
 
+/// Most activities kept per thread, like the server's thread snapshot
+/// (`THREAD_DETAIL_ACTIVITY_LIMIT`). Rows that keep an approval or question open are kept
+/// beyond it.
+pub const ACTIVITY_BUDGET: usize = 500;
+
 /// Paging state for older turns of a windowed snapshot.
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -846,9 +851,24 @@ fn is_resolvable_context_window(activity: &OrchestrationThreadActivity) -> bool 
             .is_some_and(|tokens| tokens.is_finite() && tokens >= 0.0)
 }
 
-/// `thread.activity-appended`: upsert by id (stable ids replace earlier rows), keep sorted.
+/// `thread.activity-appended`: upsert by id (stable ids replace earlier rows), keep sorted,
+/// then compact like the server's snapshots so a long-open thread stays bounded.
 fn apply_activity(thread: &mut OrchestrationThread, activity: Arc<OrchestrationThreadActivity>) {
-    let activities = &mut thread.activities;
+    let completed_tool = (activity.kind == "tool.completed")
+        .then(|| tool_lifecycle_identity(&activity))
+        .flatten()
+        .map(|identity| (activity.turn_id.clone(), identity));
+    insert_activity(&mut thread.activities, activity);
+    if let Some((turn, identity)) = completed_tool {
+        drop_superseded_tool_updates(&mut thread.activities, &turn, &identity);
+    }
+    enforce_activity_budget(&mut thread.activities);
+}
+
+fn insert_activity(
+    activities: &mut Vec<Arc<OrchestrationThreadActivity>>,
+    activity: Arc<OrchestrationThreadActivity>,
+) {
     let supersedes = is_resolvable_context_window(&activity);
     let known = activities.iter().any(|a| a.id == activity.id);
     // Live streams append in order; skip the re-sort for that common case.
@@ -869,4 +889,109 @@ fn apply_activity(thread: &mut OrchestrationThread, activity: Arc<OrchestrationT
     });
     activities.push(activity);
     activities.sort_by(|a, b| activity_order(a, b));
+}
+
+/// Which tool call an activity belongs to (server `toolLifecycleIdentity`,
+/// `ActivityPayloadProjection.ts`): the tool call id, else item type + title (without a trailing
+/// "complete(d)") + detail. `None` for rows without any identity; those are never compacted.
+fn tool_lifecycle_identity(activity: &OrchestrationThreadActivity) -> Option<String> {
+    let payload = activity.payload.as_object()?;
+    let text = |value: Option<&Value>| {
+        value
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(str::to_owned)
+    };
+    let call_id = text(payload.get("toolCallId"))
+        .or_else(|| text(payload.get("data").and_then(|data| data.get("toolCallId"))));
+    if let Some(call_id) = call_id {
+        return Some(format!("id:{call_id}"));
+    }
+    let item_type = text(payload.get("itemType")).unwrap_or_default();
+    let title = text(payload.get("title")).unwrap_or_else(|| activity.summary.clone());
+    let label = strip_completion_suffix(&title).trim().to_owned();
+    let detail = text(payload.get("detail")).unwrap_or_default();
+    if item_type.is_empty() && label.is_empty() && detail.is_empty() {
+        return None;
+    }
+    Some(format!("{item_type}\u{1f}{label}\u{1f}{detail}"))
+}
+
+/// Drops a trailing " complete" / " completed" (case-insensitive), as the server does.
+fn strip_completion_suffix(title: &str) -> &str {
+    let trimmed = title.trim_end();
+    for suffix in [" completed", " complete"] {
+        if trimmed.len() >= suffix.len() {
+            let (head, tail) = trimmed.split_at(trimmed.len() - suffix.len());
+            if tail.eq_ignore_ascii_case(suffix) {
+                return head.trim_end();
+            }
+        }
+    }
+    trimmed
+}
+
+/// Server `dropSupersededToolUpdatedActivities`, applied incrementally: when a call completes,
+/// its earlier `tool.updated` rows in the same turn carry nothing the completion lacks.
+/// Updates after the completion belong to a later call reusing the identity and stay.
+fn drop_superseded_tool_updates(
+    activities: &mut Vec<Arc<OrchestrationThreadActivity>>,
+    turn: &Option<TurnId>,
+    identity: &str,
+) {
+    let Some(completion) = activities.iter().rposition(|a| {
+        a.kind == "tool.completed"
+            && &a.turn_id == turn
+            && tool_lifecycle_identity(a).as_deref() == Some(identity)
+    }) else {
+        return;
+    };
+    let mut index = 0;
+    activities.retain(|a| {
+        let keep = !(index < completion
+            && a.kind == "tool.updated"
+            && &a.turn_id == turn
+            && tool_lifecycle_identity(a).as_deref() == Some(identity));
+        index += 1;
+        keep
+    });
+}
+
+/// Keeps the newest [`ACTIVITY_BUDGET`] rows, plus any older row that keeps an approval or
+/// question open, so the pending-request UI never loses a request the user still has to answer.
+fn enforce_activity_budget(activities: &mut Vec<Arc<OrchestrationThreadActivity>>) {
+    let Some(excess) = activities
+        .len()
+        .checked_sub(ACTIVITY_BUDGET)
+        .filter(|n| *n > 0)
+    else {
+        return;
+    };
+    let open = crate::pending_requests(activities);
+    let open_ids: std::collections::HashSet<&str> = open
+        .approvals
+        .iter()
+        .map(|a| a.request_id.as_str())
+        .chain(open.user_inputs.iter().map(|u| u.request_id.as_str()))
+        .collect();
+    let keeps_request_open = |a: &OrchestrationThreadActivity| {
+        matches!(
+            a.kind.as_str(),
+            "approval.requested" | "user-input.requested"
+        ) && a
+            .payload
+            .get("requestId")
+            .and_then(Value::as_str)
+            .is_some_and(|id| open_ids.contains(id))
+    };
+    let mut dropped = 0;
+    activities.retain(|a| {
+        if dropped < excess && !keeps_request_open(a) {
+            dropped += 1;
+            false
+        } else {
+            true
+        }
+    });
 }
