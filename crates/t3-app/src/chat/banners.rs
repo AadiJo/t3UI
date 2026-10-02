@@ -2,7 +2,7 @@
 
 use gpui_kit::{
     AnyElement, Context, InteractiveElement as _, IntoElement, ParentElement as _, Styled as _,
-    div, prelude::FluentBuilder as _, px,
+    div, px,
 };
 use t3_ui::{
     ActiveColors as _, Button, ButtonSize, ButtonVariant, Icon, IconName, TooltipExt as _,
@@ -38,14 +38,18 @@ impl ChatView {
         let error = self.thread_error()?;
         let colors = cx.colors();
         let words: Vec<&str> = error.split_whitespace().collect();
+        // Line-clamp puts the ellipsis right after what fits of the third word.
         let lines = words.iter().take(3).enumerate().map(|(index, word)| {
-            let last = index == 2 && words.len() > 3;
+            let text = if index == 2 && words.len() > 3 {
+                format!("{}…", word.chars().next().unwrap_or_default())
+            } else {
+                word.to_string()
+            };
             div()
                 .w(px(SQUEEZED_TEXT_WIDTH))
                 .overflow_hidden()
                 .whitespace_nowrap()
-                .when(last, |this| this.text_ellipsis())
-                .child(word.to_string())
+                .child(text)
         });
         let text = div()
             .id("thread-error-text")

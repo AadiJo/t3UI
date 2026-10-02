@@ -58,6 +58,9 @@ pub(super) struct Timeline {
     pub markdown: MarkdownCache,
     /// The copy button showing its check, by key, until the 1s reset.
     pub copied: Option<String>,
+    /// The user scrolled (wheel or scrollbar) since the list last followed the end. Programmatic
+    /// moves and content growth never show the scroll-to-end pill (`free-scrolling` mode).
+    pub manual_navigation: bool,
     /// Inputs of the last derivation, kept so local toggles can re-derive.
     last: Option<LastInput>,
 }
@@ -75,11 +78,16 @@ impl Timeline {
         let list = ListState::new(0, ListAlignment::Top, px(OVERDRAW));
         list.set_follow_mode(FollowMode::Tail);
         let view = cx.weak_entity();
-        // Re-render on scroll so the scroll-to-end pill follows the position.
+        // The list reports wheel scrolls only: those are manual navigation. Re-render so the
+        // scroll-to-end pill follows the position.
         list.set_scroll_handler(move |_, _, cx| {
             let view = view.clone();
             cx.defer(move |cx| {
-                view.update(cx, |_, cx| cx.notify()).ok();
+                view.update(cx, |this, cx| {
+                    this.timeline.manual_navigation = true;
+                    cx.notify();
+                })
+                .ok();
             });
         });
         Self {
@@ -94,6 +102,7 @@ impl Timeline {
             trees: HashMap::new(),
             markdown: MarkdownCache::default(),
             copied: None,
+            manual_navigation: false,
             last: None,
         }
     }
@@ -202,13 +211,21 @@ impl Timeline {
     }
 
     /// Follows the end again (send, the scroll-to-end pill).
-    pub fn follow_end(&self) {
+    pub fn follow_end(&mut self) {
+        self.manual_navigation = false;
         self.list.set_follow_mode(FollowMode::Tail);
     }
 
-    /// The scroll-to-end pill: shown once the user left the live edge.
-    pub fn show_scroll_to_end(&self) -> bool {
-        !self.list.is_following_tail() && self.list.is_scrolled_to_end() == Some(false)
+    /// The scroll-to-end pill: shown after manual navigation left the live edge
+    /// (`onIsAtEndChange`). Reaching the end again resumes following and resets the mode.
+    pub fn show_scroll_to_end(&mut self) -> bool {
+        if self.list.is_scrollbar_dragging() {
+            self.manual_navigation = true;
+        }
+        if self.list.is_following_tail() {
+            self.manual_navigation = false;
+        }
+        self.manual_navigation && self.list.is_scrolled_to_end() == Some(false)
     }
 
     /// The changed-files tree for a checkpoint, created on first use and updated when the

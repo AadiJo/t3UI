@@ -33,7 +33,8 @@ fn update(model: &mut TimelineModel, state: &ThreadState) -> Option<t3_logic::ti
         SessionPhase::of(thread.session.as_ref()),
         SessionPhase::Running | SessionPhase::Connecting
     );
-    let started = active_work_started_at(thread.latest_turn.as_ref(), thread.session.as_ref(), None);
+    let started =
+        active_work_started_at(thread.latest_turn.as_ref(), thread.session.as_ref(), None);
     let none = HashSet::new();
     let groups = HashSet::new();
     model.update(TimelineInput {
@@ -82,7 +83,11 @@ fn streaming_turns_update_the_timeline_by_valid_splices() {
             }
             let thread = state.thread.as_ref().unwrap();
             let running = SessionPhase::of(thread.session.as_ref()) == SessionPhase::Running;
-            if running && rows.iter().any(|r| matches!(r.kind, RowKind::TurnFold { .. })) {
+            if running
+                && rows
+                    .iter()
+                    .any(|r| matches!(r.kind, RowKind::TurnFold { .. }))
+            {
                 folded_while_running = true;
             }
         });
@@ -91,14 +96,18 @@ fn streaming_turns_update_the_timeline_by_valid_splices() {
         // The settled turn folds, and the incremental rows equal a fresh derivation.
         let rows = model.rows().to_vec();
         assert!(
-            rows.iter().any(|r| matches!(r.kind, RowKind::TurnFold { .. })),
+            rows.iter()
+                .any(|r| matches!(r.kind, RowKind::TurnFold { .. })),
             "{scenario}: the settled turn did not fold"
         );
         let mut fresh = TimelineModel::default();
         update(&mut fresh, &final_state);
         let fresh: Vec<&TimelineRow> = fresh.rows().iter().map(Arc::as_ref).collect();
         let ours: Vec<&TimelineRow> = rows.iter().map(Arc::as_ref).collect();
-        assert_eq!(ours, fresh, "{scenario}: incremental rows differ from a fresh derivation");
+        assert_eq!(
+            ours, fresh,
+            "{scenario}: incremental rows differ from a fresh derivation"
+        );
 
         if scenario == "showcase" {
             assert!(

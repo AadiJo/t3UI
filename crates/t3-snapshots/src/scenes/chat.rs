@@ -109,8 +109,22 @@ fn build(show: Show, window: &mut Window, cx: &mut App) -> AnyView {
     let target = match show {
         Show::End(name) | Show::Top(name) | Show::Expanded(name) => {
             let thread = ThreadRef::new(environment, format!("thread-{name}").into());
+            // The reference visited the thread, which clears its sidebar "Completed" pill. The
+            // view does this itself only while its window is active, which a headless one is not.
+            let completed_at = THREADS
+                .iter()
+                .find(|(fixture, _)| *fixture == name)
+                .and_then(|(_, text)| {
+                    let state = json(text);
+                    state["thread"]["latestTurn"]["completedAt"]
+                        .as_str()
+                        .map(str::to_owned)
+                });
             app_state.update(cx, |state, cx| {
-                state.replace_route(Route::Thread(thread.clone()), cx)
+                state.replace_route(Route::Thread(thread.clone()), cx);
+                if let Some(completed_at) = completed_at {
+                    state.mark_thread_visited(&thread, &completed_at, cx);
+                }
             });
             ChatTarget::Thread(thread)
         }

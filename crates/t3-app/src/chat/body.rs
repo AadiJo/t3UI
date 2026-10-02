@@ -154,7 +154,8 @@ impl ChatView {
                             .rounded(px(20.))
                             .border_1()
                             .border_color(colors.border)
-                            .bg(colors.composer_glass),
+                            // GPUI has no backdrop blur: the glass's solid `card` fallback.
+                            .bg(colors.card),
                     )
                     .into_any_element()
             }
