@@ -1179,3 +1179,74 @@ JSON decoding with unknown `_tag`.
 10. Animated ping dots in status indicators conflict with the no-continuous-animation rule.
 11. Importing the official desktop app's saved environments (`~/.t3/userdata/connection-catalog.json`, Electron safeStorage via the "T3 Code Safe Storage" Keychain key) is possible in theory but not recommended (fragile, crosses app boundaries).
 12. Keychain prompts on unsigned/ad-hoc builds; mitigated by a single secrets item (§7.2).
+
+---
+
+## 9. Native implementation (T3UI)
+
+What `t3-client` and `t3-app` actually do, and how to check it. Sections 3 and 4 are the
+reference this follows.
+
+### 9.1 Modules
+
+| Piece | Where | Notes |
+| --- | --- | --- |
+| Clerk FAPI client, native mode | `crates/t3-client/src/cloud/clerk.rs` | `_is_native=1`, `__clerk_api_version=2026-05-12`, client token in `Authorization: Bearer`, rotated token read from every response's `Authorization` header (error responses too). Bodies form-encoded; DELETE goes as POST `_method=DELETE`. Accepts both `{"response","client"}` envelopes and bare resources. |
+| Relay client | `crates/t3-client/src/cloud/relay.rs` | List (Clerk JWT as bearer), status and connect (relay DPoP token + proof with `ath`), token exchange with `client_id=t3-web`, both scopes in one token, scope set checked, one retry after `invalid_bearer`. Error copy from upstream `errorPresentation.ts`, transport failures carry the network hint. |
+| DPoP | `crates/t3-client/src/cloud/dpop.rs` | P-256 key via `p256` (pure Rust, so the macOS cross-check needs no C toolchain). Header and payload members in jose's order. |
+| DPoP environment endpoint | `crates/t3-client/src/cloud/endpoint.rs` | `DpopEndpoint` implements `Endpoint`; a `BootstrapSource` supplies one-time credentials (the relay for T3 Connect). Token cached in memory per environment, re-minted when it has under 60 s left, after a failed cached-token ticket, or after an HTTP 401. One mint at a time, 30 s bound. |
+| HTTP renewal hook | `crates/t3-client/src/http.rs` | `HttpAuth::renew` (default no-op): called before each authenticated request and once after a 401, so `Session::http` keeps working past the one-hour DPoP token lifetime. |
+| Service | `crates/t3-client/src/cloud/connect.rs` | `T3Connect`: email-code and provider sign-in, restore, sign-out, discovery state on a `watch` channel, endpoints and catalog entries for relay environments. |
+| Provider sign-in | `crates/t3-client/src/cloud/oauth.rs` | `WebAuthenticator` trait. The app implements it on macOS with `ASWebAuthenticationSession` (callback scheme `t3code`, Safari cookies shared); other platforms hide the provider buttons. |
+| App | `crates/t3-app/src/cloud_ui/` (with the Connections UI) | `CloudAccount` global, sign-in dialog, account and environment rows. Starts saved relay environments of the signed-in account at launch (the generic boot skips relay targets). |
+
+Secrets (in the `SecretStore`): `t3-connect:dpop-key` (base64url P-256 scalar),
+`t3-connect:clerk-client` (Clerk client token), `t3-connect:account` (JSON: user id, session
+id, email, name). Relay and environment access tokens are memory only.
+
+Catalog: connecting a linked environment saves
+`{"kind":"relay","accountId":"user_..."}`. Entries of another account are dropped when a
+different account signs in; sign-out removes all relay entries (1.5).
+
+### 9.2 Verified without an account (2026-10-02)
+
+- `cargo run -p t3-client --example connect_probe -- public`: Clerk native API on, `email_code`
+  first factor and the four social providers enabled; our FAPI transport gets an anonymous
+  client and stores its rotated token; relay issuer equals the token-exchange `resource`; an
+  unauthenticated listing decodes as `RelayAuthInvalidError(invalid_bearer)`.
+- `node e2e/dpop-crosscheck.mjs`: 40 proofs from `connect_probe proofs` pass upstream's
+  `verifyDpopProof` (method, URL with query stripped, thumbprint, `ath`); the verifier rejects
+  each mismatch; header, JWK and payload members match a proof from the web client's
+  `createBrowserDpopProof` exactly. RFC 9449 `jkt` and `ath` vectors are unit tests.
+- `connect_probe dpop` against an isolated `t3@nightly serve` (e2e/run-local.sh): a pairing
+  credential stands in for the relay's one-time credential. The client redeems it with a DPoP
+  proof, connects the WebSocket with a DPoP ticket, the session reports
+  `dpop-access-token` with the standard scopes, the shell loads over DPoP HTTP, and after the
+  admin revokes the session the next request gets 401, re-mints once and succeeds; a reconnect
+  reuses the new token. The run writes the HTTP log (paths and statuses only) to `--record`.
+
+### 9.3 Needs a real account
+
+Run this with your own T3 account (state goes to a temp dir unless `--data-dir` is given):
+
+```sh
+cargo run -p t3-client --example connect_probe -- --email you@example.com [--connect devbox] [--sign-out]
+```
+
+It signs in with an emailed code, lists linked environments with relay status, connects to
+the chosen one through the relay, and loads its shell over DPoP. Not yet observed:
+
+- The sign-in responses for a real account: `status` values, the first factor shape, and
+  that the session JWT for template `t3-relay` is accepted by `/v1/client/dpop-token`.
+- Relay `connect` with our thumbprint and the tunnel host accepting our proof.
+- Provider sign-in: whether Clerk accepts `redirect_url=t3code://app/` from this client and
+  what the callback carries. Only the macOS build can try it.
+- Whether Clerk adds bot checks (`protect_check`) or client trust for native sign-ins; both
+  surface as an error that points to another method.
+
+### 9.4 Differences from the web client
+
+- No onboarding wizard after sign-in, no avatar image (initial only), no "Mobile clients" page.
+- Sign-up is not offered in-app (Clerk requires a captcha); the dialog links to
+  `accounts.t3.codes/sign-up`.
+- Status dots for checking and connecting use a static halo instead of the ping animation.
