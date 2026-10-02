@@ -2,6 +2,8 @@
 //! `examples/record_scenarios.rs`) and replaying threads through the reducer.
 #![allow(dead_code)] // Each test file uses a different subset.
 
+pub mod ws;
+
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 use t3_client::ThreadState;

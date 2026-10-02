@@ -4,8 +4,8 @@
 //! owns it. That task routes server frames to callers by request id, acks every stream chunk
 //! (the server sends nothing more on a stream until it gets the ack), and pings every 5 seconds;
 //! three consecutive missed pongs close the connection, matching upstream's patched
-//! `makePinger`. A server `Defect` fails every in-flight request but keeps the socket open
-//! (protocol.md 1.7); owners of subscriptions resubscribe.
+//! `makePinger`. A server `Defect` fails every in-flight request and closes the connection
+//! (protocol.md 1.7), so the supervisor reconnects and subscriptions start clean.
 //!
 //! ```ignore
 //! let conn = RpcConnection::connect(request).await?;
@@ -61,6 +61,8 @@ const PING_INTERVAL: Duration = Duration::from_secs(5);
 /// Consecutive unanswered pings before the connection is considered dead.
 const MAX_MISSED_PONGS: u32 = 3;
 const OPEN_TIMEOUT: Duration = Duration::from_secs(15);
+/// How long a best-effort close handshake may take.
+const CLOSE_TIMEOUT: Duration = Duration::from_secs(2);
 
 /// Why a connection ended.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -73,6 +75,8 @@ pub enum CloseReason {
     PingTimeout,
     /// The environment has no live connection right now.
     NotConnected,
+    /// The server sent a connection-level defect; every in-flight request was lost.
+    Defect(String),
     /// The socket failed.
     Transport(String),
 }
@@ -87,6 +91,7 @@ impl std::fmt::Display for CloseReason {
             CloseReason::Remote(reason) => write!(f, "server closed the connection: {reason}"),
             CloseReason::PingTimeout => write!(f, "server stopped responding"),
             CloseReason::NotConnected => write!(f, "not connected"),
+            CloseReason::Defect(defect) => write!(f, "server error: {defect}"),
             CloseReason::Transport(error) => write!(f, "{error}"),
         }
     }
@@ -523,6 +528,10 @@ async fn run_socket(
 
     tracing::debug!(%reason, "rpc connection closed");
     let _ = closed.send(Some(reason.clone()));
+    // Ended on our side while the peer may still be talking: tell it, best effort.
+    if matches!(reason, CloseReason::Defect(_) | CloseReason::PingTimeout) {
+        let _ = tokio::time::timeout(CLOSE_TIMEOUT, socket.close(None)).await;
+    }
     for (_, entry) in pending.drain() {
         match entry {
             Pending::Unary(tx) => drop(tx.send(Outcome::Disconnected(reason.clone()))),
@@ -608,10 +617,12 @@ async fn handle_frame(
             Ok(())
         }
         // The request that died never gets an `Exit`, and the frame does not say which one it
-        // was, so fail them all (what the TS client does). The socket itself stays usable.
+        // was, so fail them all (what the TS client does). Then end the connection: streams
+        // that survived on the server would otherwise stay allocated with nobody acking them,
+        // while followers resubscribe on top. A fresh session starts clean.
         ServerFrame::Defect { defect } => {
             let message = defect_message(&defect);
-            tracing::warn!(%message, "server defect; failing in-flight requests");
+            tracing::warn!(%message, "server defect; failing in-flight requests and reconnecting");
             for (_, entry) in pending.drain() {
                 match entry {
                     Pending::Unary(tx) => drop(tx.send(Outcome::Defect(message.clone()))),
@@ -620,7 +631,7 @@ async fn handle_frame(
                     }
                 }
             }
-            Ok(())
+            Err(CloseReason::Defect(message))
         }
         ServerFrame::ClientProtocolError { error } => {
             tracing::warn!(%error, "server reported a client protocol error");

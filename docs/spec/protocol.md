@@ -942,7 +942,7 @@ Keep `t3_state` free of IO so the reducers can be driven by recorded frame logs 
 - Outgoing: serialize one message per text frame. Allocate ids from an `AtomicU64`, send as strings.
 - Incoming `Chunk`: push each value into the stream's channel, then send `Ack` with the identical id string. With a bounded channel, the `send().await` before the Ack is your backpressure; keep the bound modest (16 to 64) and never block the socket task on UI work.
 - Incoming `Exit`: remove the entry; complete the oneshot or close the stream channel with the exit.
-- Incoming `Defect`: fail every pending entry (1.7) and let the supervisor resubscribe. Do not close the socket.
+- Incoming `Defect`: fail every pending entry (1.7), then close the socket so the supervisor reconnects. Streams that survived on the server would otherwise stay allocated and un-acked (their entries are gone, so nobody can Interrupt them) while followers resubscribe on top.
 - Incoming `Pong`: clear the ping flag.
 - Ping timer: every 5 s, if a Pong arrived since the last Ping send a new one; after 3 consecutive misses, drop the connection and reconnect.
 - Dropping a stream handle sends `Interrupt` (best effort).
