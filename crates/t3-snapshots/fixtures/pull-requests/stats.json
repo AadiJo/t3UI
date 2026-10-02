@@ -1,0 +1,72 @@
+[
+ {
+  "projectId": "project-aurora",
+  "repository": "acme/aurora-web",
+  "number": 482,
+  "additions": 312,
+  "deletions": 48
+ },
+ {
+  "projectId": "project-aurora",
+  "repository": "acme/aurora-web",
+  "number": 479,
+  "additions": 1204,
+  "deletions": 377
+ },
+ {
+  "projectId": "project-aurora",
+  "repository": "acme/aurora-web",
+  "number": 471,
+  "additions": 18,
+  "deletions": 6
+ },
+ {
+  "projectId": "project-borealis",
+  "repository": "acme/borealis-api",
+  "number": 212,
+  "additions": 240,
+  "deletions": 31
+ },
+ {
+  "projectId": "project-borealis",
+  "repository": "acme/borealis-api",
+  "number": 208,
+  "additions": 902,
+  "deletions": 455
+ },
+ {
+  "projectId": "project-cirrus",
+  "repository": "acme/cirrus-docs",
+  "number": 96,
+  "additions": 64,
+  "deletions": 12
+ },
+ {
+  "projectId": "project-cirrus",
+  "repository": "acme/cirrus-docs",
+  "number": 95,
+  "additions": 9,
+  "deletions": 9
+ },
+ {
+  "projectId": "project-aurora",
+  "repository": "acme/aurora-web",
+  "number": 470,
+  "additions": 4,
+  "deletions": 4
+ },
+ {
+  "projectId": "project-aurora",
+  "repository": "acme/aurora-web",
+  "number": 466,
+  "additions": 37,
+  "deletions": 15
+ },
+ {
+  "projectId": "project-cirrus",
+  "repository": "acme/cirrus-docs",
+  "number": 90,
+  "additions": 120,
+  "deletions": 210
+ }
+]

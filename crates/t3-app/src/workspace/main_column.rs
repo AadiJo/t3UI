@@ -18,6 +18,7 @@ use t3_ui::{
 };
 
 use super::index_view::IndexView;
+use crate::pull_requests::PullRequestsView;
 use crate::{
     chat::{ChatTarget, ChatView},
     chrome::{TypeScale as _, drag_region},
@@ -83,9 +84,8 @@ pub fn build_main_view(
         Route::Settings(_) | Route::Project(_) => cx
             .new(|cx| Placeholder::new("Settings", app_state.clone(), cx))
             .into(),
-        // pull_requests/: PullRequestsView::new(app_state, window, cx).
         Route::PullRequests => cx
-            .new(|cx| Placeholder::new("Pull Requests", app_state.clone(), cx))
+            .new(|cx| PullRequestsView::new(app_state.clone(), window, cx))
             .into(),
         // usage/: UsageView::new(app_state, window, cx).
         Route::Usage => cx

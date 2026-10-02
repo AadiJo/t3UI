@@ -395,6 +395,11 @@ impl AppState {
     // ---------------------------------------------------------------------------------------
     // Transient UI state
 
+    /// Where persisted client files live (views with their own state file write through it).
+    pub fn store(&self) -> &Store {
+        &self.store
+    }
+
     /// The time relative labels ("5m ago") are computed against, in epoch milliseconds. Fixed in
     /// snapshot scenes so captures are reproducible.
     pub fn now_millis(&self) -> i64 {

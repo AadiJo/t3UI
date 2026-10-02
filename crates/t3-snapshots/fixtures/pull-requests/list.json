@@ -1,0 +1,371 @@
+{
+ "viewers": {
+  "github.com": "octocat"
+ },
+ "providers": [
+  {
+   "host": "github.com",
+   "kind": "github",
+   "searchesOnHost": true,
+   "projectCount": 3,
+   "configured": true,
+   "detail": null
+  }
+ ],
+ "entries": [
+  {
+   "provider": "github",
+   "host": "github.com",
+   "projectId": "project-aurora",
+   "projectTitle": "aurora-web",
+   "repository": "acme/aurora-web",
+   "number": 482,
+   "title": "Stream tool output into the work log as it arrives",
+   "url": "https://github.com/acme/aurora-web/pull/482",
+   "author": {
+    "login": "octocat",
+    "name": "The Octocat",
+    "avatarUrl": null
+   },
+   "headBranch": "octocat/stream-work-log",
+   "baseBranch": "main",
+   "state": "open",
+   "isDraft": false,
+   "mergeability": "mergeable",
+   "additions": 0,
+   "deletions": 0,
+   "createdAt": "2026-10-01T18:20:19.555Z",
+   "updatedAt": "2026-10-02T04:20:19.555Z",
+   "viewerReviewRequested": false,
+   "labels": [
+    {
+     "name": "enhancement",
+     "color": "a2eeef"
+    },
+    {
+     "name": "ui",
+     "color": "5319e7"
+    }
+   ],
+   "checksState": "passing",
+   "reviewDecision": "approved"
+  },
+  {
+   "provider": "github",
+   "host": "github.com",
+   "projectId": "project-aurora",
+   "projectTitle": "aurora-web",
+   "repository": "acme/aurora-web",
+   "number": 479,
+   "title": "Split composer state into its own store",
+   "url": "https://github.com/acme/aurora-web/pull/479",
+   "author": {
+    "login": "octocat",
+    "name": "The Octocat",
+    "avatarUrl": null
+   },
+   "headBranch": "octocat/composer-store",
+   "baseBranch": "main",
+   "state": "open",
+   "isDraft": true,
+   "mergeability": "mergeable",
+   "additions": 0,
+   "deletions": 0,
+   "createdAt": "2026-10-01T16:27:19.555Z",
+   "updatedAt": "2026-10-02T02:27:19.555Z",
+   "viewerReviewRequested": false,
+   "labels": [],
+   "checksState": "pending"
+  },
+  {
+   "provider": "github",
+   "host": "github.com",
+   "projectId": "project-aurora",
+   "projectTitle": "aurora-web",
+   "repository": "acme/aurora-web",
+   "number": 471,
+   "title": "Fix flaky reconnect test on slow CI runners",
+   "url": "https://github.com/acme/aurora-web/pull/471",
+   "author": {
+    "login": "octocat",
+    "name": "The Octocat",
+    "avatarUrl": null
+   },
+   "headBranch": "octocat/reconnect-flake",
+   "baseBranch": "main",
+   "state": "open",
+   "isDraft": false,
+   "mergeability": "conflicting",
+   "additions": 0,
+   "deletions": 0,
+   "createdAt": "2026-09-30T17:32:19.555Z",
+   "updatedAt": "2026-10-01T03:32:19.555Z",
+   "viewerReviewRequested": false,
+   "labels": [
+    {
+     "name": "bug",
+     "color": "d73a4a"
+    }
+   ],
+   "checksState": "failing",
+   "reviewDecision": "changes-requested"
+  },
+  {
+   "provider": "github",
+   "host": "github.com",
+   "projectId": "project-borealis",
+   "projectTitle": "borealis-api",
+   "repository": "acme/borealis-api",
+   "number": 212,
+   "title": "Add pagination to the threads endpoint",
+   "url": "https://github.com/acme/borealis-api/pull/212",
+   "author": {
+    "login": "mona",
+    "name": "Mona Lisa",
+    "avatarUrl": null
+   },
+   "headBranch": "mona/threads-pagination",
+   "baseBranch": "main",
+   "state": "open",
+   "isDraft": false,
+   "mergeability": "mergeable",
+   "additions": 0,
+   "deletions": 0,
+   "createdAt": "2026-10-01T17:57:19.555Z",
+   "updatedAt": "2026-10-02T03:57:19.555Z",
+   "viewerReviewRequested": true,
+   "labels": [
+    {
+     "name": "api",
+     "color": "0e8a16"
+    },
+    {
+     "name": "size:M",
+     "color": "fbca04"
+    }
+   ],
+   "checksState": "passing",
+   "reviewDecision": "review-required"
+  },
+  {
+   "provider": "github",
+   "host": "github.com",
+   "projectId": "project-borealis",
+   "projectTitle": "borealis-api",
+   "repository": "acme/borealis-api",
+   "number": 208,
+   "title": "Migrate session storage to SQLite",
+   "url": "https://github.com/acme/borealis-api/pull/208",
+   "author": {
+    "login": "hubot",
+    "name": null,
+    "avatarUrl": null
+   },
+   "headBranch": "hubot/sqlite-sessions",
+   "baseBranch": "main",
+   "state": "open",
+   "isDraft": false,
+   "mergeability": "mergeable",
+   "additions": 0,
+   "deletions": 0,
+   "createdAt": "2026-10-01T13:32:19.555Z",
+   "updatedAt": "2026-10-01T23:32:19.555Z",
+   "viewerReviewRequested": true,
+   "labels": [
+    {
+     "name": "database",
+     "color": "1d76db"
+    },
+    {
+     "name": "breaking",
+     "color": "b60205"
+    },
+    {
+     "name": "needs design",
+     "color": "cccccc"
+    },
+    {
+     "name": "backend",
+     "color": "c5def5"
+    }
+   ],
+   "checksState": "pending"
+  },
+  {
+   "provider": "github",
+   "host": "github.com",
+   "projectId": "project-cirrus",
+   "projectTitle": "cirrus-docs",
+   "repository": "acme/cirrus-docs",
+   "number": 96,
+   "title": "Document the pairing flow end to end",
+   "url": "https://github.com/acme/cirrus-docs/pull/96",
+   "author": {
+    "login": "mona",
+    "name": "Mona Lisa",
+    "avatarUrl": null
+   },
+   "headBranch": "docs/pairing-flow",
+   "baseBranch": "main",
+   "state": "open",
+   "isDraft": false,
+   "mergeability": "mergeable",
+   "additions": 0,
+   "deletions": 0,
+   "createdAt": "2026-10-01T15:32:19.555Z",
+   "updatedAt": "2026-10-02T01:32:19.555Z",
+   "viewerReviewRequested": false,
+   "labels": [
+    {
+     "name": "documentation",
+     "color": "0075ca"
+    }
+   ],
+   "checksState": "passing"
+  },
+  {
+   "provider": "github",
+   "host": "github.com",
+   "projectId": "project-cirrus",
+   "projectTitle": "cirrus-docs",
+   "repository": "acme/cirrus-docs",
+   "number": 95,
+   "title": "Fix broken links in the providers guide",
+   "url": "https://github.com/acme/cirrus-docs/pull/95",
+   "author": {
+    "login": "lisa",
+    "name": null,
+    "avatarUrl": null
+   },
+   "headBranch": "lisa/provider-links",
+   "baseBranch": "main",
+   "state": "open",
+   "isDraft": false,
+   "mergeability": "mergeable",
+   "additions": 0,
+   "deletions": 0,
+   "createdAt": "2026-09-29T18:12:19.555Z",
+   "updatedAt": "2026-09-30T04:12:19.555Z",
+   "viewerReviewRequested": false,
+   "labels": [],
+   "checksState": "passing",
+   "reviewDecision": "approved"
+  },
+  {
+   "provider": "github",
+   "host": "github.com",
+   "projectId": "project-aurora",
+   "projectTitle": "aurora-web",
+   "repository": "acme/aurora-web",
+   "number": 470,
+   "title": "Bump vite from 7.1.2 to 7.1.4",
+   "url": "https://github.com/acme/aurora-web/pull/470",
+   "author": {
+    "login": "dependabot[bot]",
+    "name": null,
+    "avatarUrl": null,
+    "isBot": true
+   },
+   "headBranch": "dependabot/npm_and_yarn/vite-7.1.4",
+   "baseBranch": "main",
+   "state": "open",
+   "isDraft": false,
+   "mergeability": "mergeable",
+   "additions": 0,
+   "deletions": 0,
+   "createdAt": "2026-09-28T17:12:19.555Z",
+   "updatedAt": "2026-09-29T03:12:19.555Z",
+   "viewerReviewRequested": false,
+   "labels": [
+    {
+     "name": "dependencies",
+     "color": "0366d6"
+    }
+   ],
+   "checksState": "passing"
+  },
+  {
+   "provider": "github",
+   "host": "github.com",
+   "projectId": "project-borealis",
+   "projectTitle": "borealis-api",
+   "repository": "acme/borealis-api",
+   "number": 205,
+   "title": "Rate limit the pairing endpoint",
+   "url": "https://github.com/acme/borealis-api/pull/205",
+   "author": {
+    "login": "lisa",
+    "name": null,
+    "avatarUrl": null
+   },
+   "headBranch": "lisa/pairing-rate-limit",
+   "baseBranch": "main",
+   "state": "open",
+   "isDraft": false,
+   "mergeability": "mergeable",
+   "additions": 0,
+   "deletions": 0,
+   "createdAt": "2026-09-25T17:32:19.555Z",
+   "updatedAt": "2026-09-26T03:32:19.555Z",
+   "viewerReviewRequested": false,
+   "labels": []
+  },
+  {
+   "provider": "github",
+   "host": "github.com",
+   "projectId": "project-aurora",
+   "projectTitle": "aurora-web",
+   "repository": "acme/aurora-web",
+   "number": 466,
+   "title": "Remember the sidebar width per window",
+   "url": "https://github.com/acme/aurora-web/pull/466",
+   "author": {
+    "login": "hubot",
+    "name": null,
+    "avatarUrl": null
+   },
+   "headBranch": "hubot/sidebar-width",
+   "baseBranch": "main",
+   "state": "merged",
+   "isDraft": false,
+   "mergeability": "mergeable",
+   "additions": 0,
+   "deletions": 0,
+   "createdAt": "2026-09-24T21:32:19.555Z",
+   "updatedAt": "2026-09-25T07:32:19.555Z",
+   "viewerReviewRequested": false,
+   "labels": [],
+   "checksState": "passing",
+   "reviewDecision": "approved"
+  },
+  {
+   "provider": "github",
+   "host": "github.com",
+   "projectId": "project-cirrus",
+   "projectTitle": "cirrus-docs",
+   "repository": "acme/cirrus-docs",
+   "number": 90,
+   "title": "Rewrite the quick start for npx t3",
+   "url": "https://github.com/acme/cirrus-docs/pull/90",
+   "author": {
+    "login": "octocat",
+    "name": "The Octocat",
+    "avatarUrl": null
+   },
+   "headBranch": "octocat/quick-start",
+   "baseBranch": "main",
+   "state": "closed",
+   "isDraft": false,
+   "mergeability": "mergeable",
+   "additions": 0,
+   "deletions": 0,
+   "createdAt": "2026-09-24T03:12:19.555Z",
+   "updatedAt": "2026-09-24T13:12:19.555Z",
+   "viewerReviewRequested": false,
+   "labels": []
+  }
+ ],
+ "errors": [],
+ "truncated": false,
+ "nextCursors": {}
+}

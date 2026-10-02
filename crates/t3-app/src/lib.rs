@@ -14,6 +14,7 @@ pub mod keybindings;
 pub mod notifications;
 pub mod pages;
 pub mod pairing;
+pub mod pull_requests;
 pub mod sidebar;
 pub mod state;
 pub mod toast;
