@@ -24,6 +24,16 @@ use crate::{
     connection::{BlockedReason, ConnectionFailure, TransientReason},
 };
 
+type ResponseTap = Box<dyn Fn(&Method, &Url, u16, &[u8]) + Send + Sync>;
+static RESPONSE_TAP: OnceLock<ResponseTap> = OnceLock::new();
+
+/// Installs a process-wide observer for every HTTP response (method, URL, status, body). For
+/// debugging and recording golden transcripts; responses include credentials (`/oauth/token`,
+/// tickets), so filter by path before persisting anything.
+pub fn set_response_tap(tap: impl Fn(&Method, &Url, u16, &[u8]) + Send + Sync + 'static) {
+    let _ = RESPONSE_TAP.set(Box::new(tap));
+}
+
 const DESCRIPTOR_TIMEOUT: Duration = Duration::from_secs(10);
 const AUTH_TIMEOUT: Duration = Duration::from_secs(15);
 const SNAPSHOT_TIMEOUT: Duration = Duration::from_secs(20);
@@ -371,7 +381,7 @@ impl EnvironmentHttp {
                     .map_err(HttpError::Auth)?;
             }
             let mut request = client()
-                .request(method, url)
+                .request(method.clone(), url.clone())
                 .headers(headers)
                 .timeout(timeout);
             request = match body {
@@ -392,6 +402,9 @@ impl EnvironmentHttp {
             let response = request.send().await.map_err(map_reqwest_error)?;
             let status = response.status();
             let bytes = response.bytes().await.map_err(map_reqwest_error)?;
+            if let Some(tap) = RESPONSE_TAP.get() {
+                tap(&method, &url, status.as_u16(), &bytes);
+            }
             if status.is_success() {
                 Ok(bytes.to_vec())
             } else {

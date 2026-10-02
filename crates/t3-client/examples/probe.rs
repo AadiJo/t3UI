@@ -11,9 +11,10 @@
 //! ```
 //!
 //! The first argument is anything `t3 serve`, `t3 pair`, or `t3 auth pairing create` prints
-//! (`-` reads it from stdin). `--record` writes every non-keepalive frame as JSONL
-//! (`{"ms","dir","frame"}`), with the host label and home directory redacted; that is how
-//! `tests/fixtures/*.jsonl` are made. Saved state goes to `T3UI_DATA_DIR` (default: a temp dir).
+//! (`-` reads it from stdin). `--record` writes every non-keepalive frame (`{"ms","dir":
+//! "sent"|"received","frame"}`) and every `/api/orchestration/*` response (`{"ms","dir":"http",
+//! "path","status","body"}`) as JSONL, with the host label, tailnet name, and home directory
+//! redacted; that is how `tests/fixtures/*.jsonl` are made. Saved state goes to `T3UI_DATA_DIR` (default: a temp dir).
 
 use std::{
     io::{Read as _, Write as _},
@@ -72,11 +73,24 @@ fn parse_args() -> Result<Args> {
     Ok(parsed)
 }
 
-/// Collects frames for `--record`; redaction happens on write.
+/// Collects frames and orchestration HTTP responses for `--record`; redaction happens on write.
 #[derive(Default)]
 struct Recorder {
     started: Option<Instant>,
-    lines: Vec<(u128, FrameDirection, String)>,
+    lines: Vec<(u128, Recorded)>,
+}
+
+enum Recorded {
+    Frame(FrameDirection, String),
+    /// Only `/api/orchestration/*` responses; auth endpoints carry credentials.
+    Http { path: String, status: u16, body: String },
+}
+
+impl Recorder {
+    fn push(&mut self, entry: Recorded) {
+        let started = *self.started.get_or_insert_with(Instant::now);
+        self.lines.push((started.elapsed().as_millis(), entry));
+    }
 }
 
 fn main() -> Result<()> {
@@ -97,15 +111,29 @@ fn main() -> Result<()> {
     let recorder = Arc::new(Mutex::new(Recorder::default()));
     if args.record.is_some() {
         let recorder = recorder.clone();
+        let frames = recorder.clone();
         set_frame_tap(move |direction, text| {
             if text == r#"{"_tag":"Ping"}"# || text == r#"{"_tag":"Pong"}"# {
                 return;
             }
-            let mut recorder = recorder.lock().unwrap();
-            let started = *recorder.started.get_or_insert_with(Instant::now);
-            recorder
-                .lines
-                .push((started.elapsed().as_millis(), direction, text.to_owned()));
+            frames
+                .lock()
+                .unwrap()
+                .push(Recorded::Frame(direction, text.to_owned()));
+        });
+        t3_client::http::set_response_tap(move |_method, url, status, body| {
+            if !url.path().starts_with("/api/orchestration/") {
+                return;
+            }
+            let path = match url.query() {
+                Some(query) => format!("{}?{query}", url.path()),
+                None => url.path().to_owned(),
+            };
+            recorder.lock().unwrap().push(Recorded::Http {
+                path,
+                status,
+                body: String::from_utf8_lossy(body).into_owned(),
+            });
         });
     }
 
@@ -274,6 +302,46 @@ async fn run(args: &Args) -> Result<String> {
         follow_thread(&mut thread, args.follow).await;
     }
 
+    // 7. Fresh subscriptions without a cursor, so the recording also holds socket snapshots.
+    if let Some(session) = env.session() {
+        let mut shell_stream = session
+            .rpc
+            .subscribe::<t3_protocol::methods::SubscribeShell>(&Default::default());
+        if let Ok(Some(Ok(item))) =
+            tokio::time::timeout(Duration::from_secs(10), shell_stream.next()).await
+        {
+            println!("socket shell item: {}", item_kind_shell(&item));
+        }
+        let mut thread_stream = session
+            .rpc
+            .subscribe::<t3_protocol::methods::SubscribeThread>(
+                &t3_protocol::orchestration::SubscribeThreadInput {
+                    thread_id: thread_id.clone(),
+                    reasoning_messages: Some(true),
+                    after_sequence: None,
+                    request_completion_marker: Some(true),
+                    turn_limit: Some(10),
+                },
+            );
+        for _ in 0..2 {
+            match tokio::time::timeout(Duration::from_secs(10), thread_stream.next()).await {
+                Ok(Some(Ok(t3_protocol::orchestration::ThreadStreamItem::Snapshot(snapshot)))) => {
+                    println!(
+                        "socket thread snapshot at {}: {} messages, {} activities",
+                        snapshot.snapshot_sequence,
+                        snapshot.thread.messages.len(),
+                        snapshot.thread.activities.len()
+                    )
+                }
+                Ok(Some(Ok(other))) => println!("socket thread item: {other:?}"),
+                other => {
+                    println!("socket thread stream: {other:?}");
+                    break;
+                }
+            }
+        }
+    }
+
     let shell_state = shell.borrow().clone();
     if let Some(row) = shell_state.thread(&thread_id) {
         println!(
@@ -288,6 +356,19 @@ async fn run(args: &Args) -> Result<String> {
     drop(env);
     tokio::time::sleep(Duration::from_millis(200)).await;
     Ok(descriptor.label.clone())
+}
+
+fn item_kind_shell(item: &t3_protocol::orchestration::ShellStreamItem) -> String {
+    use t3_protocol::orchestration::ShellStreamItem::*;
+    match item {
+        Snapshot(s) => format!(
+            "snapshot at {} ({} projects, {} threads)",
+            s.snapshot_sequence,
+            s.projects.len(),
+            s.threads.len()
+        ),
+        other => format!("{other:?}"),
+    }
 }
 
 /// Prints thread state changes until the latest turn settles or `limit` passes.
@@ -430,6 +511,23 @@ fn make_repo() -> Result<PathBuf> {
     Ok(dir)
 }
 
+/// Replaces `<machine>.<tailnet>.ts.net` hostnames, which identify the recording machine.
+fn redact_tailnet_hosts(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(index) = rest.find(".ts.net") {
+        let head = &rest[..index];
+        let start = head
+            .rfind(|c: char| !(c.is_ascii_alphanumeric() || c == '.' || c == '-'))
+            .map_or(0, |i| i + 1);
+        out.push_str(&head[..start]);
+        out.push_str("fixture-host.tailnet.ts.net");
+        rest = &rest[index + ".ts.net".len()..];
+    }
+    out.push_str(rest);
+    out
+}
+
 /// Writes the recorded frames as JSONL with the host label and home directory redacted.
 fn write_recording(path: &PathBuf, recorder: &Recorder, label: &str) -> Result<()> {
     let home = std::env::var("HOME").unwrap_or_default();
@@ -445,19 +543,28 @@ fn write_recording(path: &PathBuf, recorder: &Recorder, label: &str) -> Result<(
         if user.len() > 2 {
             text = text.replace(&format!("/{user}/"), "/user/");
         }
-        text
+        redact_tailnet_hosts(&text)
     };
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)?;
     }
     let mut file = std::fs::File::create(path)?;
-    for (ms, direction, frame) in &recorder.lines {
-        let frame: serde_json::Value = serde_json::from_str(&redact(frame))?;
-        let line = serde_json::json!({
-            "ms": ms,
-            "dir": match direction { FrameDirection::Sent => "sent", FrameDirection::Received => "received" },
-            "frame": frame,
-        });
+    for (ms, entry) in &recorder.lines {
+        let line = match entry {
+            Recorded::Frame(direction, frame) => serde_json::json!({
+                "ms": ms,
+                "dir": match direction { FrameDirection::Sent => "sent", FrameDirection::Received => "received" },
+                "frame": serde_json::from_str::<serde_json::Value>(&redact(frame))?,
+            }),
+            Recorded::Http { path, status, body } => serde_json::json!({
+                "ms": ms,
+                "dir": "http",
+                "path": path,
+                "status": status,
+                "body": serde_json::from_str::<serde_json::Value>(&redact(body))
+                    .unwrap_or(serde_json::Value::String(redact(body))),
+            }),
+        };
         writeln!(file, "{line}")?;
     }
     Ok(())
