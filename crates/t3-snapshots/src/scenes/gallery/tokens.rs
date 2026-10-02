@@ -1,70 +1,13 @@
-//! Design-system gallery: the token sheet (type scale, colors, icons) and every t3-ui
-//! primitive in every state, captured dark and light.
+//! Token sheet: type scale, color tokens, status colors, icons, logos and file icons.
 
 use gpui_kit::{
-    AnyElement, App, AppContext as _, Context, FontWeight, Hsla, IntoElement, ParentElement,
-    Pixels, Render, SharedString, Styled, Window, div, prelude::FluentBuilder as _, px,
+    AnyElement, App, FontWeight, Hsla, IntoElement, ParentElement, Pixels, Styled, div, px,
 };
-use t3_ui::{ActiveColors as _, Colors, Icon, IconName, Logo, ThemeMode, file_icon, logo, tokens};
+use t3_ui::{Colors, Icon, IconName, Logo, file_icon, logo, tokens};
 
-use super::Scene;
+use super::section;
 
-pub fn scenes() -> Vec<Scene> {
-    vec![
-        Scene::new("gallery-tokens-dark", ThemeMode::Dark, |_, cx| {
-            cx.new(|_| Gallery(Page::Tokens)).into()
-        })
-        .size(1440., 1500.),
-        Scene::new("gallery-tokens-light", ThemeMode::Light, |_, cx| {
-            cx.new(|_| Gallery(Page::Tokens)).into()
-        })
-        .size(1440., 1500.),
-    ]
-}
-
-#[derive(Clone, Copy)]
-enum Page {
-    Tokens,
-}
-
-struct Gallery(Page);
-
-impl Render for Gallery {
-    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let colors = cx.colors();
-        div()
-            .size_full()
-            .bg(colors.background)
-            .text_color(colors.foreground)
-            .text_size(px(14.))
-            .line_height(px(20.))
-            .p(px(32.))
-            .flex()
-            .flex_col()
-            .gap(px(28.))
-            .map(|this| match self.0 {
-                Page::Tokens => this.children(tokens_page(colors, cx)),
-            })
-    }
-}
-
-fn section(title: &str, colors: &Colors, body: impl IntoElement) -> AnyElement {
-    div()
-        .flex()
-        .flex_col()
-        .gap(px(12.))
-        .child(
-            div()
-                .text_size(px(11.))
-                .font_weight(FontWeight::MEDIUM)
-                .text_color(colors.muted_foreground)
-                .child(SharedString::from(title.to_uppercase())),
-        )
-        .child(body)
-        .into_any_element()
-}
-
-fn tokens_page(colors: &'static Colors, cx: &App) -> Vec<AnyElement> {
+pub(super) fn tokens_page(colors: &'static Colors, cx: &App) -> Vec<AnyElement> {
     let type_rows = [
         ("text-xs", tokens::text::XS),
         ("text-sm", tokens::text::SM),
