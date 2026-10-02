@@ -1,0 +1,9 @@
+{
+  "name": "t3ui",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": { "dev": "cargo run", "test": "cargo test --workspace" },
+  "features": ["markdown", "highlight"],
+  "retries": 3,
+  "nullable": null
+}

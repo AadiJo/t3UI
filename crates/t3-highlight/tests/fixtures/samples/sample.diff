@@ -1,0 +1,13 @@
+diff --git a/crates/t3-app/src/lib.rs b/crates/t3-app/src/lib.rs
+index 3f2a1c4..9b8e7d0 100644
+--- a/crates/t3-app/src/lib.rs
++++ b/crates/t3-app/src/lib.rs
+@@ -12,9 +12,11 @@ pub struct Workspace;
+ impl Workspace {
+-    pub fn new(_window: &mut Window, _cx: &mut Context<Self>) -> Self {
+-        Self
++    pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
++        let sidebar = cx.new(|cx| Sidebar::new(window, cx));
++        Self { sidebar }
+     }
+ }

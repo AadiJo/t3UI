@@ -1,0 +1,13 @@
+# Offline converter: Shiki's TextMate grammars -> .sublime-syntax for syntect. Run through
+# tools/export-assets.mjs. Its own workspace because syntect-tmlanguage needs Oniguruma (C),
+# which the app must not depend on.
+[package]
+name = "t3-highlight-grammars"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+syntect-tmlanguage = "=0.1.0"

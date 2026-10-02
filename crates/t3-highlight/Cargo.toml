@@ -1,0 +1,18 @@
+[package]
+name = "t3-highlight"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Syntax highlighting with the fork's Shiki pierre-dark/pierre-light colors. No GPUI."
+
+[dependencies]
+syntect.workspace = true
+two-face.workspace = true
+parking_lot.workspace = true
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true

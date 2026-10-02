@@ -15,6 +15,7 @@ publish = false
 t3-protocol = { path = "crates/t3-protocol" }
 t3-client = { path = "crates/t3-client" }
 t3-ui = { path = "crates/t3-ui" }
+t3-highlight = { path = "crates/t3-highlight" }
 
 # UI. gpui-kit re-exports GPUI (gpui-pre), gpui-base and gpui-component, pinned together.
 gpui-kit = { version = "=0.7.0" }
@@ -38,6 +39,10 @@ chrono = { version = "0.4", features = ["serde"] }
 base64 = "0.23"
 directories = "6"
 parking_lot = "0.12"
+
+# Markdown + syntax highlighting. Pure-Rust regex (fancy) so macOS cross-checks need no C toolchain.
+syntect = { version = "5.3", default-features = false, features = ["parsing", "regex-fancy", "plist-load", "yaml-load"] }
+two-face = { version = "0.5.2", default-features = false, features = ["syntect-fancy"] }
 
 [workspace.lints.rust]
 unsafe_op_in_unsafe_fn = "deny"
