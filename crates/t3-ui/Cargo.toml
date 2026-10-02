@@ -17,6 +17,7 @@ objc2-foundation = { workspace = true, features = ["NSString", "NSGeometry"] }
 objc2-app-kit = { workspace = true, features = [
     "NSAppearance",
     "NSApplication",
+    "NSGraphics",
     "NSResponder",
     "NSView",
     "NSVisualEffectView",

@@ -36,24 +36,20 @@ impl Render for Workspace {
     }
 }
 
-/// Boots the application: assets, gpui-kit init, and the main window.
+/// Boots the application: bundled assets, gpui-kit and t3-ui init, and the main window
+/// with its native glass. Owned by the design system; views are built by `Workspace::new`.
 pub fn run() {
     gpui_kit::application()
-        .with_assets(gpui_kit::assets::Assets)
+        .with_assets(t3_ui::Assets)
         .run(|cx| {
             gpui_kit::init(cx);
-            let options = gpui_kit::WindowOptions {
-                titlebar: Some(gpui_kit::TitlebarOptions {
-                    title: Some("T3 Code".into()),
-                    appears_transparent: true,
-                    traffic_light_position: Some(gpui_kit::point(
-                        gpui_kit::px(16.),
-                        gpui_kit::px(18.),
-                    )),
-                }),
-                ..Default::default()
-            };
+            // TODO(settings): load the persisted theme preference instead of `System`.
+            t3_ui::init(t3_ui::ThemeMode::System, cx);
+            t3_ui::theme::enable_native_appearance(cx);
+            let options = t3_ui::window::main_window_options(cx);
             gpui_kit::open_window(options, cx, |window, cx| {
+                t3_ui::window::install_glass(window);
+                t3_ui::theme::observe_system_appearance(window, cx).detach();
                 cx.new(|cx| Workspace::new(window, cx))
             })
             .expect("failed to open main window");

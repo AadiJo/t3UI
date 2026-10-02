@@ -7084,6 +7084,7 @@ dependencies = [
  "gpui-kit",
  "image",
  "t3-app",
+ "t3-ui",
 ]
 
 [[package]]

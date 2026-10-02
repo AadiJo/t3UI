@@ -10,6 +10,7 @@ pub mod fonts;
 pub mod icon;
 pub mod theme;
 pub mod tokens;
+pub mod window;
 
 pub use assets::Assets;
 pub use icon::{FileIcon, Icon, IconName, Logo, file_icon, logo};
