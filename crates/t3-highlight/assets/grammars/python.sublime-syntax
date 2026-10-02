@@ -131,8 +131,8 @@ contexts:
   comments:
     - match: "#\\s*(type:)\\s*+(?!$|#)"
       captures:
-        1: comment.typehint.directive.notation.python
         0: meta.typehint.comment.python
+        1: comment.typehint.directive.notation.python
       push: begin-end-body-6
     - include: comments-base
   begin-end-body-7:
@@ -182,16 +182,16 @@ contexts:
     - meta_scope: meta.function.decorator.python
     - match: "(\\))(.*?)(?=\\s*(?:#|$))|(?=[\\n#])"
       captures:
-        2: invalid.illegal.decorator.python
         1: punctuation.definition.arguments.end.python
+        2: invalid.illegal.decorator.python
       pop: true
     - include: decorator-name
     - include: function-arguments
   decorator:
     - match: "^\\s*((@))\\s*(?=[_[:alpha:]]\\w*)"
       captures:
-        2: punctuation.definition.decorator.python
         1: entity.name.function.decorator.python
+        2: punctuation.definition.decorator.python
       push: begin-end-body-11
   decorator-name:
     - include: builtin-callables
@@ -227,8 +227,8 @@ contexts:
     - meta_scope: string.quoted.docstring.single.python
     - match: "(\\1)|(\\n)"
       captures:
-        2: invalid.illegal.newline.python
         1: punctuation.definition.string.end.python
+        2: invalid.illegal.newline.python
       pop: true
     - include: codetags
     - include: docstring-guts-unicode
@@ -257,8 +257,8 @@ contexts:
       push: begin-end-body-14
     - match: "([Rr])([\"'])"
       captures:
-        2: punctuation.definition.string.begin.python
         1: storage.type.string.python
+        2: punctuation.definition.string.begin.python
       push: begin-end-body-15
   docstring-guts-unicode:
     - include: escape-sequence-unicode
@@ -289,16 +289,16 @@ contexts:
     - match: "\\[\\^?](?!.*?])"
     - match: "(\\[)(\\^)?(])?"
       captures:
-        3: constant.character.set.regexp
         1: punctuation.character.set.begin.regexp constant.other.set.regexp
         2: keyword.operator.negation.regexp
+        3: constant.character.set.regexp
       push: begin-end-body-17
   begin-end-body-18:
     - meta_scope: comment.regexp
     - match: "(\\)|(?=\"))|((?=(?<!\\\\)\\n))"
       captures:
-        2: invalid.illegal.newline.python
         1: punctuation.comment.end.regexp
+        2: invalid.illegal.newline.python
       pop: true
     - include: codetags
   double-one-regexp-comments:
@@ -309,8 +309,8 @@ contexts:
   begin-end-body-19:
     - match: "(\\)|(?=\"))|((?=(?<!\\\\)\\n))"
       captures:
-        2: invalid.illegal.newline.python
         1: keyword.operator.conditional.negative.regexp punctuation.parenthesis.conditional.end.regexp
+        2: invalid.illegal.newline.python
       pop: true
     - include: double-one-regexp-expression
   double-one-regexp-conditional:
@@ -356,41 +356,41 @@ contexts:
   double-one-regexp-lookahead-negative:
     - match: "(\\()\\?!"
       captures:
-        1: punctuation.parenthesis.lookahead.begin.regexp
         0: keyword.operator.lookahead.negative.regexp
+        1: punctuation.parenthesis.lookahead.begin.regexp
       push: begin-end-body-21
   begin-end-body-22:
     - match: "(\\)|(?=\"))|((?=(?<!\\\\)\\n))"
       captures:
-        2: invalid.illegal.newline.python
         1: keyword.operator.lookbehind.regexp punctuation.parenthesis.lookbehind.end.regexp
+        2: invalid.illegal.newline.python
       pop: true
     - include: double-one-regexp-expression
   double-one-regexp-lookbehind:
     - match: "(\\()\\?<="
       captures:
-        1: punctuation.parenthesis.lookbehind.begin.regexp
         0: keyword.operator.lookbehind.regexp
+        1: punctuation.parenthesis.lookbehind.begin.regexp
       push: begin-end-body-22
   begin-end-body-23:
     - match: "(\\)|(?=\"))|((?=(?<!\\\\)\\n))"
       captures:
-        2: invalid.illegal.newline.python
         1: keyword.operator.lookbehind.negative.regexp punctuation.parenthesis.lookbehind.end.regexp
+        2: invalid.illegal.newline.python
       pop: true
     - include: double-one-regexp-expression
   double-one-regexp-lookbehind-negative:
     - match: "(\\()\\?<!"
       captures:
-        1: punctuation.parenthesis.lookbehind.begin.regexp
         0: keyword.operator.lookbehind.negative.regexp
+        1: punctuation.parenthesis.lookbehind.begin.regexp
       push: begin-end-body-23
   begin-end-body-24:
     - meta_scope: meta.named.regexp
     - match: "(\\)|(?=\"))|((?=(?<!\\\\)\\n))"
       captures:
-        2: invalid.illegal.newline.python
         1: support.other.parenthesis.regexp punctuation.parenthesis.named.end.regexp
+        2: invalid.illegal.newline.python
       pop: true
     - include: double-one-regexp-expression
   double-one-regexp-named-group:
@@ -414,8 +414,8 @@ contexts:
   begin-end-body-26:
     - match: "(\\)|(?=\"))|((?=(?<!\\\\)\\n))"
       captures:
-        2: invalid.illegal.newline.python
         1: support.other.parenthesis.regexp punctuation.parenthesis.non-capturing.end.regexp
+        2: invalid.illegal.newline.python
       pop: true
     - include: double-one-regexp-expression
   double-one-regexp-parentheses-non-capturing:
@@ -427,8 +427,8 @@ contexts:
     - meta_scope: meta.character.set.regexp
     - match: "(]|(?=\"\"\"))"
       captures:
-        2: invalid.illegal.newline.python
         1: punctuation.character.set.end.regexp constant.other.set.regexp
+        2: invalid.illegal.newline.python
       pop: true
     - include: regexp-charecter-set-escapes
     - match: "[^\\n]"
@@ -437,9 +437,9 @@ contexts:
     - match: "\\[\\^?](?!.*?])"
     - match: "(\\[)(\\^)?(])?"
       captures:
+        1: punctuation.character.set.begin.regexp constant.other.set.regexp
         2: keyword.operator.negation.regexp
         3: constant.character.set.regexp
-        1: punctuation.character.set.begin.regexp constant.other.set.regexp
       push: begin-end-body-27
   begin-end-body-28:
     - meta_scope: comment.regexp
@@ -457,16 +457,16 @@ contexts:
   begin-end-body-29:
     - match: "(\\)|(?=\"\"\"))"
       captures:
-        2: invalid.illegal.newline.python
         1: keyword.operator.conditional.negative.regexp punctuation.parenthesis.conditional.end.regexp
+        2: invalid.illegal.newline.python
       pop: true
     - include: double-three-regexp-expression
     - include: comments-string-double-three
   double-three-regexp-conditional:
     - match: "(\\()\\?\\((\\w+(?:\\s+[[:alnum:]]+)?|\\d+)\\)"
       captures:
-        1: punctuation.parenthesis.conditional.begin.regexp
         0: keyword.operator.conditional.regexp
+        1: punctuation.parenthesis.conditional.begin.regexp
       push: begin-end-body-29
   double-three-regexp-expression:
     - include: regexp-base-expression
@@ -528,16 +528,16 @@ contexts:
   begin-end-body-33:
     - match: "(\\)|(?=\"\"\"))"
       captures:
-        2: invalid.illegal.newline.python
         1: keyword.operator.lookbehind.negative.regexp punctuation.parenthesis.lookbehind.end.regexp
+        2: invalid.illegal.newline.python
       pop: true
     - include: double-three-regexp-expression
     - include: comments-string-double-three
   double-three-regexp-lookbehind-negative:
     - match: "(\\()\\?<!"
       captures:
-        1: punctuation.parenthesis.lookbehind.begin.regexp
         0: keyword.operator.lookbehind.negative.regexp
+        1: punctuation.parenthesis.lookbehind.begin.regexp
       push: begin-end-body-33
   begin-end-body-34:
     - meta_scope: meta.named.regexp
@@ -551,8 +551,8 @@ contexts:
   double-three-regexp-named-group:
     - match: "(\\()(\\?P<\\w+(?:\\s+[[:alnum:]]+)?>)"
       captures:
-        2: entity.name.tag.named.group.regexp
         1: support.other.parenthesis.regexp punctuation.parenthesis.named.begin.regexp
+        2: entity.name.tag.named.group.regexp
       push: begin-end-body-34
   begin-end-body-35:
     - match: "(\\)|(?=\"\"\"))"
@@ -570,8 +570,8 @@ contexts:
   begin-end-body-36:
     - match: "(\\)|(?=\"\"\"))"
       captures:
-        2: invalid.illegal.newline.python
         1: support.other.parenthesis.regexp punctuation.parenthesis.non-capturing.end.regexp
+        2: invalid.illegal.newline.python
       pop: true
     - include: double-three-regexp-expression
     - include: comments-string-double-three
@@ -649,16 +649,16 @@ contexts:
   fstring-fnorm-quoted-multi-line:
     - match: "\\b([Ff])([BUbu])?('''|\"\"\")"
       captures:
-        2: invalid.illegal.prefix.python
         1: string.interpolated.python string.quoted.multi.python storage.type.string.python
+        2: invalid.illegal.prefix.python
         3: punctuation.definition.string.begin.python string.interpolated.python string.quoted.multi.python
       push: begin-end-body-37
   begin-end-body-38:
     - meta_scope: meta.fstring.python
     - match: "(\\3)|((?<!\\\\)\\n)"
       captures:
-        2: invalid.illegal.newline.python
         1: punctuation.definition.string.end.python string.interpolated.python string.quoted.single.python
+        2: invalid.illegal.newline.python
       pop: true
     - include: fstring-guts
     - include: fstring-illegal-single-brace
@@ -667,9 +667,9 @@ contexts:
   fstring-fnorm-quoted-single-line:
     - match: "\\b([Ff])([BUbu])?(([\"']))"
       captures:
-        3: punctuation.definition.string.begin.python string.interpolated.python string.quoted.single.python
-        2: invalid.illegal.prefix.python
         1: string.interpolated.python string.quoted.single.python storage.type.string.python
+        2: invalid.illegal.prefix.python
+        3: punctuation.definition.string.begin.python string.interpolated.python string.quoted.single.python
       push: begin-end-body-38
   fstring-formatting:
     - include: fstring-formatting-braces
@@ -678,8 +678,8 @@ contexts:
     - match: "(\\{)(\\s*?)(})"
       captures:
         1: constant.character.format.placeholder.other.python
-        3: constant.character.format.placeholder.other.python
         2: invalid.illegal.brace.python
+        3: constant.character.format.placeholder.other.python
     - match: "(\\{\\{|}})"
       scope: constant.character.escape.python
   fstring-formatting-singe-brace:
@@ -723,8 +723,8 @@ contexts:
     - meta_scope: meta.fstring.python
     - match: "(\\3)"
       captures:
-        2: invalid.illegal.newline.python
         1: punctuation.definition.string.end.python string.interpolated.python string.quoted.multi.python
+        2: invalid.illegal.newline.python
       pop: true
     - include: fstring-guts
     - include: fstring-illegal-multi-brace
@@ -733,16 +733,16 @@ contexts:
   fstring-normf-quoted-multi-line:
     - match: "\\b([BUbu])([Ff])('''|\"\"\")"
       captures:
-        2: string.interpolated.python string.quoted.multi.python storage.type.string.python
         1: invalid.illegal.prefix.python
+        2: string.interpolated.python string.quoted.multi.python storage.type.string.python
         3: punctuation.definition.string.begin.python string.quoted.multi.python
       push: begin-end-body-41
   begin-end-body-42:
     - meta_scope: meta.fstring.python
     - match: "(\\3)|((?<!\\\\)\\n)"
       captures:
-        2: invalid.illegal.newline.python
         1: punctuation.definition.string.end.python string.interpolated.python string.quoted.single.python
+        2: invalid.illegal.newline.python
       pop: true
     - include: fstring-guts
     - include: fstring-illegal-single-brace
@@ -751,8 +751,8 @@ contexts:
   fstring-normf-quoted-single-line:
     - match: "\\b([BUbu])([Ff])(([\"']))"
       captures:
-        2: string.interpolated.python string.quoted.single.python storage.type.string.python
         1: invalid.illegal.prefix.python
+        2: string.interpolated.python string.quoted.single.python storage.type.string.python
         3: punctuation.definition.string.begin.python string.quoted.single.python
       push: begin-end-body-42
   fstring-raw-guts:
@@ -820,8 +820,8 @@ contexts:
       scope: storage.type.format.python
     - match: "(=?(?:![ars])?)(:\\w?[<=>^]?[- +]?#?\\d*,?(\\.\\d+)?[%EFGXb-gnosx]?)(?=})"
       captures:
-        2: storage.type.format.python
         1: storage.type.format.python
+        2: storage.type.format.python
     - include: fstring-terminator-multi-tail
   begin-end-body-46:
     - match: "(?=})"
@@ -857,8 +857,8 @@ contexts:
       scope: storage.type.format.python
     - match: "(=?(?:![ars])?)(:\\w?[<=>^]?[- +]?#?\\d*,?(\\.\\d+)?[%EFGXb-gnosx]?)(?=})"
       captures:
-        2: storage.type.format.python
         1: storage.type.format.python
+        2: storage.type.format.python
     - include: fstring-terminator-single-tail
   begin-end-body-47:
     - match: "(?=})|(?=\\n)"
@@ -884,8 +884,8 @@ contexts:
   fstring-terminator-single-tail:
     - match: "(=?(?:![ars])?)(:)(?=.*?\\{)"
       captures:
-        2: storage.type.format.python
         1: storage.type.format.python
+        2: storage.type.format.python
       push: begin-end-body-47
   begin-end-body-48:
     - meta_content_scope: meta.function-call.arguments.python
@@ -939,8 +939,8 @@ contexts:
   function-declaration:
     - match: "\\s*(?:\\b(async)\\s+)?\\b(def)\\s+(?=[_[:alpha:]][[:word:]]*\\s*\\()"
       captures:
-        2: storage.type.function.python
         1: storage.type.function.async.python
+        2: storage.type.function.python
       push: begin-end-body-50
   function-def-name:
     - include: illegal-object-name
@@ -968,8 +968,8 @@ contexts:
   illegal-names:
     - match: "\\b(?:(and|assert|async|await|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|in|is|(?<=\\.)lambda|lambda(?=\\s*[.=])|nonlocal|not|or|pass|raise|return|try|while|with|yield)|(as|import))\\b"
       captures:
-        2: keyword.control.import.python
         1: keyword.control.flow.python
+        2: keyword.control.import.python
   illegal-object-name:
     - match: "\\b(True|False|None)\\b"
       scope: keyword.illegal.name.python
@@ -1230,19 +1230,19 @@ contexts:
   operator:
     - match: "\\b(?<!\\.)(?:(and|or|not|in|is)|(for|if|else|await|yield(?:\\s+from)?))(?!\\s*:)\\b|(<<|>>|[\\&^|~])|(\\*\\*|[-%*+]|//|[/@])|(!=|==|>=|<=|[<>])|(:=)"
       captures:
+        1: keyword.operator.logical.python
+        2: keyword.control.flow.python
+        3: keyword.operator.bitwise.python
+        4: keyword.operator.arithmetic.python
         5: keyword.operator.comparison.python
         6: keyword.operator.assignment.python
-        2: keyword.control.flow.python
-        4: keyword.operator.arithmetic.python
-        1: keyword.operator.logical.python
-        3: keyword.operator.bitwise.python
   parameter-special:
     - match: "\\b((self)|(cls))\\b\\s*(?:(,)|(?=\\)))"
       captures:
-        4: punctuation.separator.parameters.python
+        1: variable.parameter.function.language.python
         2: variable.parameter.function.language.special.self.python
         3: variable.parameter.function.language.special.cls.python
-        1: variable.parameter.function.language.python
+        4: punctuation.separator.parameters.python
   begin-end-body-64:
     - meta_scope: meta.function.parameters.python
     - match: "(\\))"
@@ -1283,9 +1283,9 @@ contexts:
     - match: "(\\()(\\?P=\\w+(?:\\s+[[:alnum:]]+)?)(\\))"
       scope: meta.backreference.named.regexp
       captures:
-        3: support.other.parenthesis.regexp punctuation.parenthesis.backreference.named.end.regexp
         1: support.other.parenthesis.regexp punctuation.parenthesis.backreference.named.begin.regexp
         2: entity.name.tag.named.backreference.regexp
+        3: support.other.parenthesis.regexp punctuation.parenthesis.backreference.named.end.regexp
   regexp-backreference-number:
     - match: "(\\\\[1-9]\\d?)"
       scope: meta.backreference.regexp
@@ -1327,25 +1327,25 @@ contexts:
     - match: "\\b(([Uu]r)|([Bb]r)|(r[Bb]?))(\")"
       captures:
         2: invalid.deprecated.prefix.python
-        5: punctuation.definition.string.begin.python
         3: storage.type.string.python
         4: storage.type.string.python
+        5: punctuation.definition.string.begin.python
       push: begin-end-body-65
   begin-end-body-66:
     - meta_scope: string.regexp.quoted.multi.python
     - match: "(\"\"\")"
       captures:
-        2: invalid.illegal.newline.python
         1: punctuation.definition.string.end.python
+        2: invalid.illegal.newline.python
       pop: true
     - include: double-three-regexp-expression
   regexp-double-three-line:
     - match: "\\b(([Uu]r)|([Bb]r)|(r[Bb]?))(\"\"\")"
       captures:
-        5: punctuation.definition.string.begin.python
+        2: invalid.deprecated.prefix.python
         3: storage.type.string.python
         4: storage.type.string.python
-        2: invalid.deprecated.prefix.python
+        5: punctuation.definition.string.begin.python
       push: begin-end-body-66
   regexp-escape-catchall:
     - match: "\\\\(.|\\n)"
@@ -1382,10 +1382,10 @@ contexts:
   regexp-single-one-line:
     - match: "\\b(([Uu]r)|([Bb]r)|(r[Bb]?))(')"
       captures:
-        4: storage.type.string.python
         2: invalid.deprecated.prefix.python
-        5: punctuation.definition.string.begin.python
         3: storage.type.string.python
+        4: storage.type.string.python
+        5: punctuation.definition.string.begin.python
       push: begin-end-body-67
   begin-end-body-68:
     - meta_scope: string.regexp.quoted.multi.python
@@ -1398,10 +1398,10 @@ contexts:
   regexp-single-three-line:
     - match: "\\b(([Uu]r)|([Bb]r)|(r[Bb]?))(''')"
       captures:
-        4: storage.type.string.python
-        5: punctuation.definition.string.begin.python
         2: invalid.deprecated.prefix.python
         3: storage.type.string.python
+        4: storage.type.string.python
+        5: punctuation.definition.string.begin.python
       push: begin-end-body-68
   begin-end-body-69:
     - match: "(?=:)"
@@ -1440,9 +1440,9 @@ contexts:
     - match: "\\[\\^?](?!.*?])"
     - match: "(\\[)(\\^)?(])?"
       captures:
-        3: constant.character.set.regexp
-        2: keyword.operator.negation.regexp
         1: punctuation.character.set.begin.regexp constant.other.set.regexp
+        2: keyword.operator.negation.regexp
+        3: constant.character.set.regexp
       push: begin-end-body-71
   begin-end-body-72:
     - meta_scope: comment.regexp
@@ -1467,8 +1467,8 @@ contexts:
   single-one-regexp-conditional:
     - match: "(\\()\\?\\((\\w+(?:\\s+[[:alnum:]]+)?|\\d+)\\)"
       captures:
-        1: punctuation.parenthesis.conditional.begin.regexp
         0: keyword.operator.conditional.regexp
+        1: punctuation.parenthesis.conditional.begin.regexp
       push: begin-end-body-73
   single-one-regexp-expression:
     - include: regexp-base-expression
@@ -1487,8 +1487,8 @@ contexts:
   begin-end-body-74:
     - match: "(\\)|(?='))|((?=(?<!\\\\)\\n))"
       captures:
-        2: invalid.illegal.newline.python
         1: keyword.operator.lookahead.regexp punctuation.parenthesis.lookahead.end.regexp
+        2: invalid.illegal.newline.python
       pop: true
     - include: single-one-regexp-expression
   single-one-regexp-lookahead:
@@ -1507,8 +1507,8 @@ contexts:
   single-one-regexp-lookahead-negative:
     - match: "(\\()\\?!"
       captures:
-        1: punctuation.parenthesis.lookahead.begin.regexp
         0: keyword.operator.lookahead.negative.regexp
+        1: punctuation.parenthesis.lookahead.begin.regexp
       push: begin-end-body-75
   begin-end-body-76:
     - match: "(\\)|(?='))|((?=(?<!\\\\)\\n))"
@@ -1526,15 +1526,15 @@ contexts:
   begin-end-body-77:
     - match: "(\\)|(?='))|((?=(?<!\\\\)\\n))"
       captures:
-        2: invalid.illegal.newline.python
         1: keyword.operator.lookbehind.negative.regexp punctuation.parenthesis.lookbehind.end.regexp
+        2: invalid.illegal.newline.python
       pop: true
     - include: single-one-regexp-expression
   single-one-regexp-lookbehind-negative:
     - match: "(\\()\\?<!"
       captures:
-        1: punctuation.parenthesis.lookbehind.begin.regexp
         0: keyword.operator.lookbehind.negative.regexp
+        1: punctuation.parenthesis.lookbehind.begin.regexp
       push: begin-end-body-77
   begin-end-body-78:
     - meta_scope: meta.named.regexp
@@ -1589,8 +1589,8 @@ contexts:
     - match: "(\\[)(\\^)?(])?"
       captures:
         1: punctuation.character.set.begin.regexp constant.other.set.regexp
-        3: constant.character.set.regexp
         2: keyword.operator.negation.regexp
+        3: constant.character.set.regexp
       push: begin-end-body-81
   begin-end-body-82:
     - meta_scope: comment.regexp
@@ -1637,8 +1637,8 @@ contexts:
   begin-end-body-84:
     - match: "(\\)|(?='''))"
       captures:
-        2: invalid.illegal.newline.python
         1: keyword.operator.lookahead.regexp punctuation.parenthesis.lookahead.end.regexp
+        2: invalid.illegal.newline.python
       pop: true
     - include: single-three-regexp-expression
     - include: comments-string-single-three
@@ -1651,16 +1651,16 @@ contexts:
   begin-end-body-85:
     - match: "(\\)|(?='''))"
       captures:
-        2: invalid.illegal.newline.python
         1: keyword.operator.lookahead.negative.regexp punctuation.parenthesis.lookahead.end.regexp
+        2: invalid.illegal.newline.python
       pop: true
     - include: single-three-regexp-expression
     - include: comments-string-single-three
   single-three-regexp-lookahead-negative:
     - match: "(\\()\\?!"
       captures:
-        1: punctuation.parenthesis.lookahead.begin.regexp
         0: keyword.operator.lookahead.negative.regexp
+        1: punctuation.parenthesis.lookahead.begin.regexp
       push: begin-end-body-85
   begin-end-body-86:
     - match: "(\\)|(?='''))"
@@ -1679,8 +1679,8 @@ contexts:
   begin-end-body-87:
     - match: "(\\)|(?='''))"
       captures:
-        2: invalid.illegal.newline.python
         1: keyword.operator.lookbehind.negative.regexp punctuation.parenthesis.lookbehind.end.regexp
+        2: invalid.illegal.newline.python
       pop: true
     - include: single-three-regexp-expression
     - include: comments-string-single-three
@@ -1721,8 +1721,8 @@ contexts:
   begin-end-body-90:
     - match: "(\\)|(?='''))"
       captures:
-        2: invalid.illegal.newline.python
         1: support.other.parenthesis.regexp punctuation.parenthesis.non-capturing.end.regexp
+        2: invalid.illegal.newline.python
       pop: true
     - include: single-three-regexp-expression
     - include: comments-string-single-three
@@ -1784,8 +1784,8 @@ contexts:
     - meta_scope: string.quoted.binary.multi.python
     - match: "(\\2)"
       captures:
-        2: invalid.illegal.newline.python
         1: punctuation.definition.string.end.python
+        2: invalid.illegal.newline.python
       pop: true
     - include: string-entity
   string-bin-quoted-multi-line:
@@ -1798,8 +1798,8 @@ contexts:
     - meta_scope: string.quoted.binary.single.python
     - match: "(\\2)|((?<!\\\\)\\n)"
       captures:
-        2: invalid.illegal.newline.python
         1: punctuation.definition.string.end.python
+        2: invalid.illegal.newline.python
       pop: true
     - include: string-entity
   string-bin-quoted-single-line:
@@ -1812,15 +1812,15 @@ contexts:
     - match: "(\\{\\{|}}|\\{\\w*(\\.[_[:alpha:]]\\w*|\\[[^]\"']+])*(![ars])?(:\\w?[<=>^]?[- +]?#?\\d*,?(\\.\\d+)?[%EFGXb-gnosx]?)?})"
       scope: meta.format.brace.python
       captures:
-        3: storage.type.format.python
         1: constant.character.format.placeholder.other.python
+        3: storage.type.format.python
         4: storage.type.format.python
     - match: "(\\{\\w*(\\.[_[:alpha:]]\\w*|\\[[^]\"']+])*(![ars])?(:)[^\\n\"'{}]*(?:\\{[^\\n\"'}]*?}[^\\n\"'{}]*)*})"
       scope: meta.format.brace.python
       captures:
-        4: storage.type.format.python
         1: constant.character.format.placeholder.other.python
         3: storage.type.format.python
+        4: storage.type.format.python
   string-consume-escape:
     - match: "\\\\[\\n\"'\\\\]"
   string-entity:
@@ -1888,8 +1888,8 @@ contexts:
     - meta_scope: string.quoted.single.python
     - match: "(\\3)|((?<!\\\\)\\n)"
       captures:
-        2: invalid.illegal.newline.python
         1: punctuation.definition.string.end.python
+        2: invalid.illegal.newline.python
       pop: true
     - include: string-single-bad-brace1-formatting-unicode
     - include: string-single-bad-brace2-formatting-unicode
@@ -1897,9 +1897,9 @@ contexts:
   string-quoted-single-line:
     - match: "(?:\\b([Rr])(?=[Uu]))?([Uu])?(([\"']))"
       captures:
-        3: punctuation.definition.string.begin.python
         1: invalid.illegal.prefix.python
         2: storage.type.string.python
+        3: punctuation.definition.string.begin.python
       push: begin-end-body-98
   string-raw-bin-guts:
     - include: string-consume-escape
@@ -1908,22 +1908,22 @@ contexts:
     - meta_scope: string.quoted.raw.binary.multi.python
     - match: "(\\2)"
       captures:
-        2: invalid.illegal.newline.python
         1: punctuation.definition.string.end.python
+        2: invalid.illegal.newline.python
       pop: true
     - include: string-raw-bin-guts
   string-raw-bin-quoted-multi-line:
     - match: "\\b(R[Bb]|[Bb]R)('''|\"\"\")"
       captures:
-        2: punctuation.definition.string.begin.python
         1: storage.type.string.python
+        2: punctuation.definition.string.begin.python
       push: begin-end-body-99
   begin-end-body-100:
     - meta_scope: string.quoted.raw.binary.single.python
     - match: "(\\2)|((?<!\\\\)\\n)"
       captures:
-        2: invalid.illegal.newline.python
         1: punctuation.definition.string.end.python
+        2: invalid.illegal.newline.python
       pop: true
     - include: string-raw-bin-guts
   string-raw-bin-quoted-single-line:
@@ -1949,9 +1949,9 @@ contexts:
   string-raw-quoted-multi-line:
     - match: "\\b(([Uu]R)|(R))('''|\"\"\")"
       captures:
-        4: punctuation.definition.string.begin.python
-        3: storage.type.string.python
         2: invalid.deprecated.prefix.python
+        3: storage.type.string.python
+        4: punctuation.definition.string.begin.python
       push: begin-end-body-101
   begin-end-body-102:
     - meta_scope: string.quoted.raw.single.python
@@ -1966,9 +1966,9 @@ contexts:
   string-raw-quoted-single-line:
     - match: "\\b(([Uu]R)|(R))(([\"']))"
       captures:
+        2: invalid.deprecated.prefix.python
         3: storage.type.string.python
         4: punctuation.definition.string.begin.python
-        2: invalid.deprecated.prefix.python
       push: begin-end-body-102
   begin-end-body-103:
     - match: "(?=([\"'])|((?<!\\\\)\\n))"

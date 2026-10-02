@@ -72,11 +72,29 @@
 		</dict>
 		<dict>
 			<key>scope</key>
+			<string>keyword.operator.logical.and.shell, keyword.operator.logical.or.shell, keyword.operator.logical.continue.shell, keyword.operator.logical.pipe.shell, keyword.operator.logical.job.shell</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#636363</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>scope</key>
+			<string>keyword.operator.assignment.redirection.shell</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#636363</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>scope</key>
 			<string>constant.numeric.integer.decimal.file-descriptor.shell</string>
 			<key>settings</key>
 			<dict>
 				<key>foreground</key>
-				<string>#68cdf2</string>
+				<string>#636363</string>
 			</dict>
 		</dict>
 		<dict>

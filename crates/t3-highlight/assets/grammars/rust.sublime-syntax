@@ -48,33 +48,33 @@ contexts:
     - match: "(\\$)((crate)|([A-Z]\\w*))(\\s*(:)\\s*(block|expr(?:_2021)?|ident|item|lifetime|literal|meta|pat(?:_param)?|path|stmt|tt|ty|vis)\\b)?"
       scope: meta.macro.metavariable.type.rust
       captures:
-        6: keyword.operator.key-value.rust
         1: keyword.operator.macro.dollar.rust
-        7: variable.other.metavariable.specifier.rust
         3: keyword.other.crate.rust
         4: entity.name.type.metavariable.rust
+        6: keyword.operator.key-value.rust
+        7: variable.other.metavariable.specifier.rust
     - match: "(\\$)([a-z]\\w*)(\\s*(:)\\s*(block|expr(?:_2021)?|ident|item|lifetime|literal|meta|pat(?:_param)?|path|stmt|tt|ty|vis)\\b)?"
       scope: meta.macro.metavariable.rust
       captures:
-        4: keyword.operator.key-value.rust
         1: keyword.operator.macro.dollar.rust
         2: variable.other.metavariable.name.rust
+        4: keyword.operator.key-value.rust
         5: variable.other.metavariable.specifier.rust
     - match: "\\b(macro_rules!)\\s+(([0-9_a-z]+)|([A-Z][0-9_a-z]*))\\s+(\\{)"
       scope: meta.macro.rules.rust
       captures:
-        5: punctuation.brackets.curly.rust
         1: entity.name.function.macro.rules.rust
-        4: entity.name.type.macro.rust
         3: entity.name.function.macro.rust
+        4: entity.name.type.macro.rust
+        5: punctuation.brackets.curly.rust
     - match: "(mod)\\s+((?:r#(?!crate|[Ss]elf|super))?[a-z][0-9A-Z_a-z]*)"
       captures:
         1: storage.type.rust
         2: entity.name.module.rust
     - match: "\\b(extern)\\s+(crate)"
       captures:
-        2: keyword.other.crate.rust
         1: storage.type.rust
+        2: keyword.other.crate.rust
       push: begin-end-body-2
     - match: "\\b(use)\\s"
       captures:
@@ -112,8 +112,8 @@ contexts:
   attributes:
     - match: "(#)(!?)(\\[)"
       captures:
-        3: punctuation.brackets.attribute.rust
         1: punctuation.definition.attribute.rust
+        3: punctuation.brackets.attribute.rust
       push: begin-end-body-4
   begin-end-body-5:
     - meta_scope: comment.block.documentation.rust
@@ -146,15 +146,15 @@ contexts:
       scope: constant.other.caps.rust
     - match: "\\b(const)\\s+([A-Z][0-9A-Z_a-z]*)\\b"
       captures:
-        2: constant.other.caps.rust
         1: storage.type.rust
+        2: constant.other.caps.rust
     - match: "\\b\\d[_\\d]*(\\.?)[_\\d]*(?:([Ee])([-+]?)([_\\d]+))?(f32|f64|i128|i16|i32|i64|i8|isize|u128|u16|u32|u64|u8|usize)?\\b"
       scope: constant.numeric.decimal.rust
       captures:
-        4: constant.numeric.decimal.exponent.mantissa.rust
+        1: punctuation.separator.dot.decimal.rust
         2: keyword.operator.exponent.rust
         3: keyword.operator.exponent.sign.rust
-        1: punctuation.separator.dot.decimal.rust
+        4: constant.numeric.decimal.exponent.mantissa.rust
         5: entity.name.type.numeric.rust
     - match: "\\b0x[A-F_a-f\\d]+(i128|i16|i32|i64|i8|isize|u128|u16|u32|u64|u8|usize)?\\b"
       scope: constant.numeric.hex.rust
@@ -177,14 +177,14 @@ contexts:
         1: constant.character.escape.backslash.rust
         2: constant.character.escape.bit.rust
         3: constant.character.escape.unicode.rust
-        5: constant.character.escape.unicode.punctuation.rust
         4: constant.character.escape.unicode.punctuation.rust
+        5: constant.character.escape.unicode.punctuation.rust
   begin-end-body-7:
     - meta_scope: meta.function.definition.rust
     - match: "(\\{)|(;)"
       captures:
-        2: punctuation.semi.rust
         1: punctuation.brackets.curly.rust
+        2: punctuation.semi.rust
       pop: true
     - include: block-comments
     - include: comments
@@ -313,13 +313,13 @@ contexts:
       scope: keyword.operator.math.rust
     - match: "(?:\\b|(?:(\\))|(])|(})))[\\t ]+([<>])[\\t ]+(?:\\b|(?:(\\()|(\\[)|(\\{)))"
       captures:
+        1: punctuation.brackets.round.rust
         2: punctuation.brackets.square.rust
-        7: punctuation.brackets.curly.rust
         3: punctuation.brackets.curly.rust
         4: keyword.operator.comparison.rust
         5: punctuation.brackets.round.rust
-        1: punctuation.brackets.round.rust
         6: punctuation.brackets.square.rust
+        7: punctuation.brackets.curly.rust
     - match: "::"
       scope: keyword.operator.namespace.rust
     - match: "(\\*)(?=\\w+)"
@@ -344,13 +344,13 @@ contexts:
   lifetimes:
     - match: "(')([A-Z_a-z][0-9A-Z_a-z]*)(?!')\\b"
       captures:
-        2: entity.name.type.lifetime.rust
         1: punctuation.definition.lifetime.rust
+        2: entity.name.type.lifetime.rust
     - match: "(&)(')([A-Z_a-z][0-9A-Z_a-z]*)(?!')\\b"
       captures:
-        3: entity.name.type.lifetime.rust
         1: keyword.operator.borrow.rust
         2: punctuation.definition.lifetime.rust
+        3: entity.name.type.lifetime.rust
   lvariables:
     - match: "\\b[Ss]elf\\b"
       scope: variable.language.self.rust
@@ -360,13 +360,13 @@ contexts:
     - match: "(([_a-z][0-9A-Z_a-z]*!)|([A-Z_][0-9A-Z_a-z]*!))"
       scope: meta.macro.rust
       captures:
-        3: entity.name.type.macro.rust
         2: entity.name.function.macro.rust
+        3: entity.name.type.macro.rust
   namespaces:
     - match: "(?<![0-9A-Z_a-z])([0-9A-Z_a-z]+)((?<!super)(?<!self)::)"
       captures:
-        2: keyword.operator.namespace.rust
         1: entity.name.namespace.rust
+        2: keyword.operator.namespace.rust
   punctuation:
     - match: ","
       scope: punctuation.comma.rust
@@ -405,19 +405,19 @@ contexts:
   strings:
     - match: "(b?)(\")"
       captures:
-        2: punctuation.definition.string.rust
         1: string.quoted.byte.raw.rust
+        2: punctuation.definition.string.rust
       push: begin-end-body-10
     - match: "(b?r)(#*)(\")"
       captures:
-        3: punctuation.definition.string.rust
-        2: punctuation.definition.string.raw.rust
         1: string.quoted.byte.raw.rust
+        2: punctuation.definition.string.raw.rust
+        3: punctuation.definition.string.rust
       push: begin-end-body-11
     - match: "(b)?(')"
       captures:
-        2: punctuation.definition.char.rust
         1: string.quoted.byte.raw.rust
+        2: punctuation.definition.char.rust
       push: begin-end-body-12
   begin-end-body-13:
     - match: ">"
@@ -438,8 +438,8 @@ contexts:
         1: entity.name.type.numeric.rust
     - match: "\\b(_?[A-Z][0-9A-Z_a-z]*)(<)"
       captures:
-        2: punctuation.brackets.angle.rust
         1: entity.name.type.rust
+        2: punctuation.brackets.angle.rust
       push: begin-end-body-13
     - match: "\\b(bool|char|str)\\b"
       scope: entity.name.type.primitive.rust

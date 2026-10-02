@@ -193,10 +193,7 @@ impl TextLayout {
     ) -> Self {
         let text = content.text.as_ref();
         let text_system = cx.text_system().clone();
-        let metrics = |font: &Font, size: Pixels| {
-            let id = text_system.resolve_font(font);
-            (text_system.ascent(id, size), text_system.descent(id, size))
-        };
+        let metrics = |font: &Font, size: Pixels| font_metrics(&text_system, font, size);
         let (ascent, descent) = metrics(&content.strut_font, content.strut_size);
         let line_height = content.line_height;
         let baseline = (line_height - ascent - descent) / 2. + ascent;
@@ -476,6 +473,19 @@ fn atom_advance(content: &TextContent, offset: usize) -> f32 {
         })
 }
 
+/// A font's ascent and descent (both positive) at `size`, rounded to whole pixels like Blink
+/// does for line layout. font-kit reports descent as a negative distance.
+pub(crate) fn font_metrics(
+    text_system: &gpui_kit::TextSystem,
+    font: &Font,
+    size: Pixels,
+) -> (Pixels, Pixels) {
+    let id = text_system.resolve_font(font);
+    let ascent = f32::from(text_system.ascent(id, size)).round();
+    let descent = f32::from(text_system.descent(id, size)).abs().round();
+    (px(ascent), px(descent))
+}
+
 /// Splits the text into shaping pieces: maximal ranges inside one run without `\n` or atoms.
 /// Adjacent runs of the same size and shift are shaped together so kerning matches.
 fn pieces(content: &TextContent, window: &mut Window) -> Vec<Piece> {
@@ -573,6 +583,15 @@ fn break_opportunities(content: &TextContent) -> Vec<(usize, bool)> {
             })
             .collect(),
     };
+    if matches!(content.wrap, TextWrap::Normal | TextWrap::PreWrap) {
+        // Blink's ASCII line breaker never breaks after `/` (long paths and URLs stay whole
+        // unless `overflow-wrap` splits them); UAX #14 alone would.
+        breaks.retain(|(index, mandatory)| {
+            *mandatory
+                || !text[..*index].ends_with('/')
+                || text[*index..].starts_with(char::is_whitespace)
+        });
+    }
     if content.wrap == TextWrap::Normal {
         for link in &content.links {
             let Some(lead_end) = link.nowrap_until else {
@@ -954,13 +973,21 @@ impl Element for InlineText {
             }
         }
 
+        // Only lines inside the visible area are painted (long code blocks, scrolled views).
+        let mask = window.content_mask().bounds;
+        let line_height = layout.line_height();
+        let visible = |line: &&LineBox| {
+            let top = bounds.origin.y + line.top;
+            top + line_height >= mask.origin.y && top <= mask.origin.y + mask.size.height
+        };
+
         // Inline-code boxes.
-        for line in &layout.lines {
+        for line in layout.lines.iter().filter(visible) {
             paint_code_boxes(&content, &layout, line, bounds, window);
         }
 
         // Glyphs.
-        for line in &layout.lines {
+        for line in layout.lines.iter().filter(visible) {
             for fragment in &line.fragments {
                 let FragmentKind::Text { run } = fragment.kind else {
                     continue;

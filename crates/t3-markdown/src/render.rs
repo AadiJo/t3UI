@@ -9,7 +9,8 @@ use std::{collections::HashMap, rc::Rc};
 use gpui_kit::{
     AnyElement, Context, Div, FontStyle, FontWeight, Hsla, InteractiveElement as _, IntoElement,
     ParentElement as _, Pixels, SharedString, StatefulInteractiveElement as _, Styled as _,
-    TextAlign, Window, div, font, img, prelude::FluentBuilder as _, px, relative, size,
+    StyledImage as _, TextAlign, Window, div, font, img, prelude::FluentBuilder as _, px, relative,
+    size,
 };
 use t3_highlight::{Highlighted, Theme};
 use t3_ui::{Icon, IconName};
@@ -372,6 +373,8 @@ enum TextKind {
     },
     /// A list marker (`::marker` is not selectable).
     Marker,
+    /// A `<details>` summary (`font-medium`).
+    Summary,
 }
 
 /// Builds the [`InlineText`] for inline content in the current context.
@@ -402,6 +405,7 @@ fn aligned_inline(
     let colors = &ctx.style.colors;
     let base_weight = match kind {
         TextKind::Heading | TextKind::Cell { header: true, .. } => FontWeight::SEMIBOLD,
+        TextKind::Summary => FontWeight::MEDIUM,
         _ => FontWeight::NORMAL,
     };
     let wrap = match kind {
@@ -564,9 +568,10 @@ fn atom_element(
         copy_text: copy,
     };
     match &atom.kind {
-        AtomKind::Favicon { .. } => {
+        AtomKind::Favicon { host } => {
             // `.chat-markdown-link-favicon`: 14px, margin-inline 0.25em 0.2em, vertical-align
-            // -0.125em (the icon's bottom sits 0.125em below the baseline).
+            // -0.125em (the icon's bottom sits 0.125em below the baseline). Google's favicon
+            // service, with the globe while loading or when the host has no favicon.
             let mut favicon = slot(
                 px(metrics::FAVICON),
                 px(metrics::FAVICON),
@@ -580,10 +585,19 @@ fn atom_element(
             } else {
                 ctx.color
             };
-            (
-                favicon,
-                icon(IconName::Globe, px(metrics::FAVICON), color).into_any_element(),
-            )
+            let source = format!(
+                "https://www.google.com/s2/favicons?domain={}&sz=32",
+                url_encode(host)
+            );
+            let globe =
+                move || icon(IconName::Globe, px(metrics::FAVICON), color).into_any_element();
+            let element = img(SharedString::from(source))
+                .size(px(metrics::FAVICON))
+                .rounded(px(6.))
+                .with_loading(globe)
+                .with_fallback(globe)
+                .into_any_element();
+            (favicon, element)
         }
         AtomKind::FileChip { link, .. } => {
             let mut label = link.basename.clone();
@@ -661,9 +675,8 @@ fn atom_element(
             } else {
                 Pixels::ZERO
             };
-            let font_id = cx.text_system().resolve_font(&label_font);
-            let ascent = cx.text_system().ascent(font_id, text_size);
-            let descent = cx.text_system().descent(font_id, text_size);
+            let (ascent, descent) =
+                crate::inline_text::font_metrics(cx.text_system(), &label_font, text_size);
             let top = -raise - ascent - (line - ascent - descent) / 2.;
             let element = div()
                 .flex()
@@ -691,21 +704,24 @@ fn atom_element(
             );
             checkbox.margin_left = px(-metrics::LIST_INDENT);
             checkbox.margin_right = ctx.size * 0.35;
+            // Chromium's disabled native checkbox under the page's `color-scheme`.
+            let (fill, border, mark) = match (colors.is_dark, *checked) {
+                (true, true) => (0x757575ff, 0x757575ff, 0x3b3b3bff),
+                (true, false) => (0x3b3b3bff, 0x626262ff, 0),
+                (false, true) => (0xd1d1d1ff, 0xd1d1d1ff, 0xedededff),
+                (false, false) => (0xf8f8f8ff, 0xd1d1d1ff, 0),
+            };
             let element = div()
                 .flex()
                 .items_center()
                 .justify_center()
                 .size(box_size)
-                .rounded(px(3.))
+                .rounded(px(2.))
                 .border_1()
-                .border_color(colors.foreground.opacity(0.14))
-                .bg(colors.foreground.opacity(0.06))
+                .border_color(gpui_kit::rgba(border))
+                .bg(gpui_kit::rgba(fill))
                 .when(*checked, |this| {
-                    this.child(icon(
-                        IconName::Check,
-                        px(10.),
-                        colors.foreground.opacity(0.45),
-                    ))
+                    this.child(icon(IconName::Check, px(11.), gpui_kit::rgba(mark).into()))
                 })
                 .into_any_element();
             (checkbox, element)
@@ -720,6 +736,19 @@ fn atom_element(
             div().into_any_element(),
         ),
     }
+}
+
+/// `encodeURIComponent` for a host name.
+fn url_encode(value: &str) -> String {
+    value
+        .bytes()
+        .map(|byte| match byte {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                (byte as char).to_string()
+            }
+            _ => format!("%{byte:02X}"),
+        })
+        .collect()
 }
 
 /// Shaped width of a single-style string.
@@ -773,38 +802,15 @@ fn render_list(
         for block in &item_blocks {
             blocks.push(render_block(this, &nested, ids, block, window, cx));
         }
-        let marker = (item.task.is_none()).then(|| {
-            let number = list.start.unwrap_or(1) + index as u64;
-            marker_text(ctx, ordered, number)
-        });
         let mut li = div().relative().flex().flex_col().w_full();
-        if let Some(marker) = marker {
-            let marker_ctx = Ctx { ..ctx.clone() };
-            let marker_inline = Inline {
-                text: marker.clone(),
-                spans: vec![Span {
-                    range: 0..marker.len(),
-                    style: InlineStyle::default(),
-                }],
-                ..Inline::default()
+        if item.task.is_none() {
+            let marker = if ordered {
+                let number = list.start.unwrap_or(1) + index as u64;
+                ordered_marker(this, ctx, ids, number, window, cx)
+            } else {
+                bullet_marker(ctx, cx)
             };
-            let element = inline(
-                this,
-                &marker_ctx,
-                ids,
-                &marker_inline,
-                TextKind::Marker,
-                window,
-                cx,
-            );
-            li = li.child(
-                div()
-                    .absolute()
-                    .top_0()
-                    .right(relative(1.))
-                    .whitespace_nowrap()
-                    .child(element),
-            );
+            li = li.child(marker);
         }
         let mut laid = collapsing(li, blocks, (0., 0.));
         if index > 0 {
@@ -819,22 +825,70 @@ fn render_list(
     )
 }
 
-/// The `::marker` text: `• ` / `◦ ` / `▪ ` by `ul` depth, or `1. ` / `a. ` / `i. ` by `ol` depth.
-fn marker_text(ctx: &Ctx, ordered: bool, number: u64) -> String {
-    if !ordered {
-        let bullet = match ctx.ul_depth {
-            0 => '•',
-            1 => '◦',
-            _ => '▪',
-        };
-        return format!("{bullet}\u{a0}");
-    }
+/// An ordered `::marker` (`1. ` / `a. ` / `i. ` by `ol` depth), right-aligned to the item's
+/// content edge on its first line.
+fn ordered_marker(
+    this: &mut Markdown,
+    ctx: &Ctx,
+    ids: &mut Ids,
+    number: u64,
+    window: &mut Window,
+    cx: &mut Context<Markdown>,
+) -> AnyElement {
     let label = match ctx.ol_depth {
         0 => number.to_string(),
         1 => alpha(number),
         _ => roman(number),
     };
-    format!("{label}.\u{a0}")
+    let text = format!("{label}.\u{a0}");
+    let marker = Inline {
+        spans: vec![Span {
+            range: 0..text.len(),
+            style: InlineStyle::default(),
+        }],
+        text,
+        ..Inline::default()
+    };
+    let element = inline(this, ctx, ids, &marker, TextKind::Marker, window, cx);
+    div()
+        .absolute()
+        .top_0()
+        .right(relative(1.))
+        .whitespace_nowrap()
+        .child(element)
+        .into_any_element()
+}
+
+/// A `disc` / `circle` / `square` marker by `ul` depth. Chromium paints these as shapes, not
+/// glyphs: `size = (ascent * 2/3 + 1) / 2` px, top at `ascent / 2` below the line's ascent line,
+/// right edge 8px before the content (measured against the fork).
+fn bullet_marker(ctx: &Ctx, cx: &mut Context<Markdown>) -> AnyElement {
+    let (ascent, descent) = crate::inline_text::font_metrics(
+        cx.text_system(),
+        &font(ctx.style.sans_family.clone()),
+        ctx.size,
+    );
+    let ascent = f32::from(ascent) as i32;
+    let size = (ascent * 2 / 3 + 1) / 2;
+    let offset = 3 * (ascent - ascent * 2 / 3) / 2;
+    let baseline = (ctx.line_height - px(ascent as f32) - descent) / 2. + px(ascent as f32);
+    let top = baseline - px((ascent - offset) as f32);
+    let size = px(size as f32);
+    let shape = div().absolute().left(-(size + px(8.))).top(top).size(size);
+    match ctx.ul_depth {
+        0 => shape.rounded_full().bg(ctx.color),
+        // `circle` is a 1px stroke centered on the shape's edge.
+        1 => div()
+            .absolute()
+            .left(-(size + px(8.5)))
+            .top(top - px(0.5))
+            .size(size + px(1.))
+            .rounded_full()
+            .border_1()
+            .border_color(ctx.color),
+        _ => shape.bg(ctx.color),
+    }
+    .into_any_element()
 }
 
 fn alpha(mut number: u64) -> String {
@@ -1420,7 +1474,15 @@ fn render_details(
                 line_height: px(20.),
                 ..ctx.clone()
             };
-            inline(this, &summary_ctx, ids, summary, TextKind::Body, window, cx)
+            inline(
+                this,
+                &summary_ctx,
+                ids,
+                summary,
+                TextKind::Summary,
+                window,
+                cx,
+            )
         }
         None => div().child("Details").into_any_element(),
     };

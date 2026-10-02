@@ -51,7 +51,13 @@ const SCOPE_ALIASES = [
   ["support.function.double-brace.begin.shell, support.function.double-brace.end.shell", "punctuation.definition.logical-expression.shell"],
   ["meta.group.expansion.parameter.shell keyword.operator.assignment.shell", "punctuation.section.parameter.shell"],
   ["meta.group.expansion.parameter.shell", "variable.other.normal.shell"],
-  ["constant.numeric.integer.decimal.file-descriptor.shell", "constant.numeric.file-descriptor.shell"],
+  // Control operators and redirections (`&&`, `|`, `;`, `2>&1`) are plain operator gray.
+  [
+    "keyword.operator.logical.and.shell, keyword.operator.logical.or.shell, keyword.operator.logical.continue.shell, keyword.operator.logical.pipe.shell, keyword.operator.logical.job.shell",
+    "keyword.operator.pipe.shell",
+  ],
+  ["keyword.operator.assignment.redirection.shell", "keyword.operator.redirect.shell"],
+  ["constant.numeric.integer.decimal.file-descriptor.shell", "keyword.operator.redirect.shell"],
 ];
 
 // The settings VS Code would resolve for a single scope: the longest matching single-scope
