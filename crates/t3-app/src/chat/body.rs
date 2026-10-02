@@ -1,24 +1,46 @@
-//! The chat body under the header (spec 2.2-2.3): the timeline viewport, the scroll-to-end
-//! pill, and the composer overlay whose measured size sets the timeline's insets. Also the
+//! The chat body under the header: the timeline (full height under the composer overlay,
+//! reserving the overlay with end padding), the scroll-to-end pill, the composer overlay whose
+//! measured height sets that padding, and the file drop overlay (`chat.md` 2, 6, 8). Also the
 //! actions rows trigger (folds, groups, entries, revert).
 
+use std::time::{Duration, Instant};
+
 use gpui_kit::{
-    AnyElement, Bounds, Context, InteractiveElement as _, IntoElement, ParentElement as _, Pixels,
-    PromptLevel, StatefulInteractiveElement as _, Styled as _, Window,
-    component::scroll::ScrollableElement as _, div, list, prelude::FluentBuilder as _, px,
+    AnyElement, Bounds, Context, ExternalPaths, InteractiveElement as _, IntoElement,
+    ParentElement as _, Pixels, PromptLevel, ScrollWheelEvent, StatefulInteractiveElement as _,
+    Styled as _, Window, component::scroll::ScrollableElement as _, div, list,
+    prelude::FluentBuilder as _, px,
 };
 use t3_protocol::TurnId;
 use t3_ui::{ActiveColors as _, Icon, IconName};
 
-use super::{ChatTarget, ChatView, OverlayGeometry};
+use super::{ChatEvent, ChatTarget, ChatView};
 use crate::toast::Toast;
 
-/// The list's top and bottom spacer (`h-3 sm:h-4`).
+/// The list's top spacer (`TIMELINE_LIST_HEADER`, `h-3 sm:h-4`) and the end padding added to
+/// the composer inset (`MessagesTimeline.tsx:978`).
 const LIST_SPACER: f32 = 16.;
-/// The composer slot's stand-in: the 1px frame around a 110px single-line surface.
+/// The composer slot's stand-in until the composer registers: the 1px frame around a 110px
+/// single-line surface.
 const COMPOSER_PLACEHOLDER_HEIGHT: f32 = 112.;
-/// The branch toolbar's stand-in: an xs row with 4px above and 12px below.
-const TOOLBAR_PLACEHOLDER_HEIGHT: f32 = 40.;
+/// `--chat-max-width` at the default `chatWidth` ("comfortable").
+pub(super) const CHAT_MAX_WIDTH: f32 = 768.;
+/// `--workspace-gutter` on desktop widths.
+const WORKSPACE_GUTTER: f32 = 20.;
+/// A wheel gesture this far away from the end rests the composer (`composerScrollGesture.ts`).
+const COLLAPSE_GESTURE_PX: f32 = 24.;
+/// A wheel gesture ends after this long without events.
+const COLLAPSE_GESTURE_GAP: Duration = Duration::from_millis(120);
+/// The end band that re-arms following (`TIMELINE_FOLLOW_REARM_THRESHOLD_PX`).
+pub(super) const FOLLOW_REARM_PX: f32 = 40.;
+
+/// One wheel gesture over the timeline, for [`ChatEvent::CollapseComposer`].
+#[derive(Clone, Copy, Debug)]
+pub(super) struct WheelGesture {
+    last: Instant,
+    accumulated: f32,
+    fired: bool,
+}
 
 impl ChatView {
     pub(super) fn render_body(
@@ -27,28 +49,14 @@ impl ChatView {
         cx: &mut Context<Self>,
     ) -> impl IntoElement {
         let colors = cx.colors();
-        let overlay = self.overlay;
         let empty = self.timeline.rows().is_empty() && !self.is_working();
         let timeline: AnyElement = if empty {
-            div()
-                .size_full()
-                .flex()
-                .items_center()
-                .justify_center()
-                .text_size(px(14.))
-                .line_height(px(20.))
-                .text_color(colors.muted_foreground.opacity(0.3))
-                .child("Send a message to start the conversation.")
-                .into_any_element()
+            // An empty timeline (a draft, or a thread without messages yet).
+            div().size_full().into_any_element()
         } else {
-            // `height: calc(100% - viewportBottomInset)`; the end padding lets the last row
-            // scroll above the composer.
             div()
                 .absolute()
-                .top_0()
-                .left_0()
-                .right_0()
-                .bottom(overlay.viewport_bottom_inset)
+                .inset_0()
                 .child(
                     list(
                         self.timeline.list.clone(),
@@ -58,21 +66,29 @@ impl ChatView {
                     )
                     .size_full()
                     .pt(px(LIST_SPACER))
-                    .pb(px(LIST_SPACER) + overlay.content_inset_end),
+                    .pb(self.timeline_inset + px(LIST_SPACER)),
                 )
+                .on_scroll_wheel(cx.listener(Self::on_timeline_wheel))
                 // The 6px overlay scrollbar; dragging it stops following the end.
                 .id("timeline-viewport")
                 .vertical_scrollbar(&self.timeline.list)
                 .into_any_element()
         };
         let show_pill = !empty && self.timeline.show_scroll_to_end();
+        self.notice_timeline_end(cx);
 
         div()
+            .id("chat-column")
+            .group("chat-column")
             .relative()
             .flex()
             .flex_col()
             .flex_1()
             .min_h_0()
+            .bg(colors.background)
+            .on_drop(cx.listener(|_, paths: &ExternalPaths, _, cx| {
+                cx.emit(ChatEvent::FilesDropped(paths.paths().to_vec()));
+            }))
             .child(
                 div()
                     .relative()
@@ -81,49 +97,98 @@ impl ChatView {
                     .flex_1()
                     .min_h_0()
                     .child(timeline)
-                    .when(show_pill, |this| {
-                        this.child(self.render_scroll_pill(overlay.height, cx))
-                    }),
+                    .when(show_pill, |this| this.child(self.render_scroll_pill(cx))),
             )
             .child(self.render_composer_overlay(window, cx))
+            .child(self.render_drop_overlay(cx))
     }
 
-    /// "Scroll to end", centered 4px above the composer overlay.
-    fn render_scroll_pill(&self, overlay_height: Pixels, cx: &mut Context<Self>) -> AnyElement {
+    /// Wheel events over the timeline: a gesture away from the end rests the composer.
+    fn on_timeline_wheel(
+        &mut self,
+        event: &ScrollWheelEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let delta = event.delta.pixel_delta(window.line_height()).y;
+        let now = Instant::now();
+        // Positive y scrolls toward the start, away from the end.
+        let can_scroll_up = -self.timeline.list.scroll_px_offset_for_scrollbar().y > px(1.);
+        if delta <= px(0.) || !can_scroll_up {
+            self.wheel_gesture = None;
+            return;
+        }
+        let gesture = match self.wheel_gesture {
+            Some(gesture) if now - gesture.last <= COLLAPSE_GESTURE_GAP => gesture,
+            _ => WheelGesture {
+                last: now,
+                accumulated: 0.,
+                fired: false,
+            },
+        };
+        let mut gesture = WheelGesture {
+            last: now,
+            accumulated: gesture.accumulated + f32::from(delta),
+            ..gesture
+        };
+        if !gesture.fired && gesture.accumulated >= COLLAPSE_GESTURE_PX {
+            gesture.fired = true;
+            cx.emit(ChatEvent::CollapseComposer);
+        }
+        self.wheel_gesture = Some(gesture);
+    }
+
+    /// Emits [`ChatEvent::RestoreComposer`] when the timeline comes back within the 40px end
+    /// band after the user left it.
+    fn notice_timeline_end(&mut self, cx: &mut Context<Self>) {
+        let list = &self.timeline.list;
+        let distance = list.max_offset_for_scrollbar().y + list.scroll_px_offset_for_scrollbar().y;
+        let at_end = distance <= px(FOLLOW_REARM_PX);
+        if at_end && !self.timeline_at_end {
+            cx.emit(ChatEvent::RestoreComposer);
+        }
+        self.timeline_at_end = at_end;
+    }
+
+    /// "Scroll to end" (`chat.md` 6.4): centered, 4px + 6px above the composer overlay.
+    fn render_scroll_pill(&self, cx: &mut Context<Self>) -> AnyElement {
         let colors = cx.colors();
         div()
             .absolute()
             .left_0()
             .right_0()
-            .bottom(overlay_height + px(4.))
+            .bottom(self.overlay_height + px(4.))
             .py(px(6.))
             .flex()
             .justify_center()
             .child(
                 div()
                     .id("scroll-to-end")
+                    .h(px(24.))
                     .flex()
                     .items_center()
-                    .gap(px(6.))
+                    .gap(px(4.))
                     .rounded_full()
                     .border_1()
                     .border_color(colors.border.opacity(0.6))
-                    .bg(colors.card)
-                    .px(px(12.))
-                    .py(px(4.))
+                    // `surface-glass`: solid background without backdrop blur.
+                    .bg(colors.background)
+                    .px(px(7.))
                     .text_size(px(12.))
                     .line_height(px(16.))
-                    .text_color(colors.muted_foreground)
+                    .font_weight(gpui_kit::FontWeight::MEDIUM)
+                    .text_color(colors.foreground)
                     .shadow_sm()
                     .cursor_pointer()
-                    .hover(|style| {
-                        style
-                            .border_color(colors.border)
-                            .text_color(colors.foreground)
-                    })
-                    .child(Icon::new(IconName::ChevronDown).size(px(14.)))
+                    .hover(|style| style.border_color(colors.border))
+                    .child(
+                        Icon::new(IconName::ChevronDown)
+                            .size(px(14.))
+                            .text_color(colors.muted_foreground),
+                    )
                     .child("Scroll to end")
                     .on_click(cx.listener(|this, _, _, cx| {
+                        cx.emit(ChatEvent::RestoreComposer);
                         this.timeline.follow_end();
                         cx.notify();
                     })),
@@ -131,8 +196,9 @@ impl ChatView {
             .into_any_element()
     }
 
-    /// The overlay pinned to the bottom: the composer slot (max 768px) and the lower chrome
-    /// strip with the branch toolbar. Its measured size feeds [`OverlayGeometry`].
+    /// The overlay pinned to the bottom (`composer.md` 1): 8px top padding, the 20px gutter,
+    /// the composer stack in the chat column, and a 20px spacer. Its measured height sets the
+    /// timeline's end inset.
     fn render_composer_overlay(
         &mut self,
         _window: &mut Window,
@@ -154,15 +220,10 @@ impl ChatView {
                             .rounded(px(20.))
                             .border_1()
                             .border_color(colors.border)
-                            // GPUI has no backdrop blur: the glass's solid `card` fallback.
                             .bg(colors.card),
                     )
                     .into_any_element()
             }
-        };
-        let toolbar = match &self.branch_toolbar {
-            Some(view) => view.clone().into_any_element(),
-            None => div().h(px(TOOLBAR_PLACEHOLDER_HEIGHT)).into_any_element(),
         };
         let view = cx.weak_entity();
         div()
@@ -170,41 +231,68 @@ impl ChatView {
             .left_0()
             .right_0()
             .bottom_0()
-            .pt(px(8.))
-            .flex()
-            .flex_col()
             .on_children_prepainted(move |bounds: Vec<Bounds<Pixels>>, _, cx| {
-                let [composer, chrome] = bounds[..] else {
+                let Some(overlay) = bounds.first() else {
                     return;
                 };
-                let overlay = Bounds::from_corners(
-                    gpui_kit::point(composer.left(), composer.top() - px(8.)),
-                    chrome.bottom_right(),
-                );
-                let geometry = OverlayGeometry::measure(overlay, composer);
-                view.update(cx, |this, cx| this.set_overlay(geometry, cx))
+                let height = overlay.size.height;
+                view.update(cx, |this, cx| this.set_overlay_height(height, cx))
                     .ok();
             })
             .child(
-                div().px(px(20.)).child(
+                div().w_full().pt(px(8.)).px(px(WORKSPACE_GUTTER)).child(
                     div()
                         .relative()
                         .mx_auto()
                         .w_full()
-                        .max_w(px(768.))
-                        .child(composer),
+                        .max_w(px(CHAT_MAX_WIDTH))
+                        .child(composer)
+                        .when_some(self.branch_toolbar.clone(), |this, toolbar| {
+                            this.child(toolbar)
+                        })
+                        .child(div().h(px(20.))),
                 ),
             )
-            // `.chat-composer-lower-chrome`: card at 45% (light 20%), clear of the scrollbar.
+    }
+
+    /// "Drop files to attach" while files are dragged over the chat column (`chat.md` 8).
+    fn render_drop_overlay(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        let colors = cx.colors();
+        div()
+            .absolute()
+            .inset(px(8.))
+            .flex()
+            .items_center()
+            .justify_center()
+            .rounded(px(18.))
+            .border_2()
+            .border_dashed()
+            .border_color(colors.primary.opacity(0.6))
+            .bg(colors.primary.opacity(0.035))
+            .opacity(0.)
+            .group_drag_over::<ExternalPaths>("chat-column", |style| style.opacity(1.))
             .child(
                 div()
-                    .mt(px(-1.))
-                    .mr(px(6.))
-                    .pt(px(1.))
-                    .pb(px(4.))
-                    .px(px(20.))
-                    .bg(colors.card.opacity(if colors.is_dark { 0.45 } else { 0.2 }))
-                    .child(toolbar),
+                    .flex()
+                    .items_center()
+                    .gap(px(8.))
+                    .rounded_full()
+                    .border_1()
+                    .border_color(colors.primary.opacity(0.25))
+                    .bg(colors.background.opacity(0.95))
+                    .px(px(16.))
+                    .py(px(10.))
+                    .text_size(px(14.))
+                    .line_height(px(20.))
+                    .font_weight(gpui_kit::FontWeight::MEDIUM)
+                    .text_color(colors.foreground)
+                    .shadow_lg()
+                    .child(
+                        Icon::new(IconName::Paperclip)
+                            .size(px(16.))
+                            .text_color(colors.primary),
+                    )
+                    .child("Drop files to attach"),
             )
     }
 

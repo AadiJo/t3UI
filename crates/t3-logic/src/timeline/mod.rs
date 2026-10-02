@@ -13,6 +13,7 @@
 
 mod format;
 pub mod plan;
+mod queued;
 mod rows;
 mod text;
 mod work_log;
@@ -34,6 +35,7 @@ pub use format::{
     elapsed_millis, format_duration, format_short_timestamp, format_timestamp_tooltip,
     format_working_timer, format_workspace_relative_path,
 };
+pub use queued::QueuedMessage;
 pub use rows::{
     EntryKind, MessageRow, RowKind, RowsDiff, RowsInput, TimelineEntry, TimelineRow, derive_rows,
     derive_timeline_entries, diff_rows, share_rows,

@@ -1,5 +1,5 @@
-//! The chat view of one thread or draft (`ChatView.tsx`, spec `chat.md` sections 1-3): the
-//! 52px header, the error banner, the message timeline, and the composer overlay.
+//! The chat view of one thread or draft (`ChatView.tsx`, spec `chat.md`): the 52px header,
+//! the banners, the message timeline, and the composer overlay.
 //!
 //! Mounting (the shell does this in `workspace::build_main_view`):
 //!
@@ -7,18 +7,22 @@
 //! cx.new(|cx| ChatView::new(ChatTarget::Thread(thread_ref), app_state, window, cx)).into()
 //! ```
 //!
-//! Slots: other modules provide the composer, the branch toolbar under it, and the header
-//! actions (scripts / Open in / Git) by registering builders once at startup with
-//! [`register_slot`]; each chat view builds its slot views once, in [`ChatView::new`]. Until a
-//! slot is registered the view draws a static stand-in of the right size. Builders get a
-//! [`SlotContext`] with the target and a weak handle to the view. Through it a slot reads the
-//! thread ([`ChatView::thread`], re-read on `cx.observe(&chat, ..)`) and reports local sends
-//! ([`ChatView::begin_local_dispatch`] / [`ChatView::end_local_dispatch`]), which drive the
-//! optimistic user message, the "Working" row, and the error banner.
+//! Slots: other modules provide the composer and the header actions (scripts / Open in / Git)
+//! by registering builders once at startup with [`register_slot`]; each chat view builds its
+//! slot views once, in [`ChatView::new`]. Builders get a [`SlotContext`] with the target and a
+//! weak handle to the view.
 //!
-//! The composer slot is laid out in a 768px column with the 20px side inset already applied;
-//! its measured height sets the timeline's bottom insets (the list scrolls under the top 75%
-//! of it, `composerTimelineGeometry.ts`), so it should be just the card (banners included).
+//! The composer slot is the whole composer stack (attached drawers, card, context strip). The
+//! chat view lays it out in the overlay (`composer.md` 1): 8px top padding, the 20px gutter,
+//! the 768px chat column, and a 20px spacer under it. It measures the overlay itself and turns
+//! the height into the timeline's end inset (`resolveComposerTimelineInset`).
+//!
+//! Between the composer and the chat view:
+//! - composer -> chat: [`ChatView::thread`] (re-read on `cx.observe(&chat, ..)`),
+//!   [`ChatView::begin_local_dispatch`] / [`ChatView::end_local_dispatch`] around sends,
+//!   [`ChatView::set_thread_error`], [`ChatView::set_composer_resting`],
+//!   [`ChatView::set_queued_messages`], [`ChatView::scroll_timeline_page`].
+//! - chat -> composer: [`ChatEvent`]s (`cx.subscribe(&chat, ..)`).
 
 mod banners;
 mod body;
@@ -29,19 +33,21 @@ mod markdown;
 mod rows;
 mod timeline;
 
-use std::{rc::Rc, sync::Arc, time::Duration};
+use std::{path::PathBuf, rc::Rc, sync::Arc, time::Duration};
 
 use gpui_kit::{
-    AnyView, App, Bounds, Context, Entity, Global, IntoElement, ParentElement as _, Pixels, Render,
-    Styled as _, Subscription, Task, WeakEntity, Window, div, prelude::FluentBuilder as _, px,
+    AnyView, App, Context, Entity, EventEmitter, Global, IntoElement, ParentElement as _, Pixels,
+    Render, Styled as _, Subscription, Task, WeakEntity, Window, div, prelude::FluentBuilder as _,
+    px,
 };
 use t3_client::ThreadState;
 use t3_logic::{
     ProjectRef, ThreadRef,
-    timeline::{SessionPhase, active_work_started_at, is_latest_turn_settled},
+    timeline::{QueuedMessage, SessionPhase, active_work_started_at, is_latest_turn_settled},
 };
 use t3_protocol::orchestration::{
-    OrchestrationLatestTurn, OrchestrationMessage, OrchestrationThread, SessionStatus,
+    ChatAttachment, OrchestrationLatestTurn, OrchestrationMessage, OrchestrationThread,
+    SessionStatus,
 };
 use t3_ui::ActiveColors as _;
 
@@ -62,12 +68,53 @@ pub enum ChatTarget {
 /// A view other modules provide inside the chat view.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Slot {
-    /// The composer card (and the banner stack above it), max 768px wide.
+    /// The composer stack (attached drawers, card, context strip), max 768px wide.
     Composer,
-    /// The branch toolbar in the strip under the composer.
+    /// Unused: the composer renders its context strip inside [`Slot::Composer`]. A builder
+    /// registered here is drawn under the composer.
     BranchToolbar,
     /// The header's right-side actions (scripts, Open in, Git).
     HeaderActions,
+}
+
+/// What the chat view tells the composer slot (`cx.subscribe(&chat, ..)`).
+#[derive(Clone, Debug, PartialEq)]
+pub enum ChatEvent {
+    /// A scroll gesture over the timeline moved away from its end: a wheel gesture of 24px or
+    /// more within 120ms, PageUp/Home off the top, or PageDown/End short of the end. The
+    /// composer rests if it is eligible (`composer.md` 3).
+    CollapseComposer,
+    /// The timeline reached its end (40px band) or the "Scroll to end" pill was clicked.
+    RestoreComposer,
+    /// A queued row's "Send now" (queue entry id).
+    SteerQueuedMessage(String),
+    /// A queued row's "Cancel and return to the composer" (queue entry id).
+    RemoveQueuedMessage(String),
+    /// "Edit from here" reverted the thread: append `text` to the draft after a blank line,
+    /// re-attach `attachments`, and focus the end.
+    RestorePrompt {
+        text: String,
+        attachments: Vec<ChatAttachment>,
+    },
+    /// Type-to-focus / paste-to-focus: insert at the end of the composer and focus it.
+    InsertText(String),
+    /// Files or folders dropped on the chat column.
+    FilesDropped(Vec<PathBuf>),
+}
+
+/// How much taller the empty expanded composer is than its resting row
+/// (`COMPOSER_RESTING_EXPANSION_MIN_PX`).
+const COMPOSER_RESTING_EXPANSION: f32 = 94.;
+
+/// The timeline's end inset for the composer overlay (`resolveComposerTimelineInset`): the
+/// overlay height while expanded; while resting, the held inset or the resting height plus
+/// the empty expansion, whichever is larger, so expanding again never covers rows.
+fn resolve_composer_timeline_inset(current: Pixels, overlay: Pixels, resting: bool) -> Pixels {
+    if resting {
+        current.max(overlay + px(COMPOSER_RESTING_EXPANSION))
+    } else {
+        overlay
+    }
 }
 
 /// What a slot builder receives.
@@ -161,34 +208,6 @@ impl LocalDispatch {
     }
 }
 
-/// Measured composer overlay, driving the timeline's insets (`composerTimelineGeometry.ts`).
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
-struct OverlayGeometry {
-    /// Overlay height (top padding + composer + lower chrome).
-    height: Pixels,
-    /// Extra end padding so the last row can scroll above the composer.
-    content_inset_end: Pixels,
-    /// How much the timeline viewport stops short of the bottom.
-    viewport_bottom_inset: Pixels,
-}
-
-impl OverlayGeometry {
-    /// `viewportEnd` = surface top + 75% of the surface: the list extends under the top three
-    /// quarters of the composer.
-    fn measure(overlay: Bounds<Pixels>, composer: Bounds<Pixels>) -> Self {
-        // The slot is the composer frame; its surface is inset by the frame's 1px padding.
-        let surface_top = composer.top() + px(1.) - overlay.top();
-        let surface_height = (composer.size.height - px(2.)).max(px(0.));
-        let height = overlay.size.height.ceil();
-        let viewport_end = (surface_top + surface_height * 0.75).clamp(px(0.), height);
-        Self {
-            height,
-            content_inset_end: viewport_end.ceil(),
-            viewport_bottom_inset: (height - viewport_end).ceil(),
-        }
-    }
-}
-
 /// The chat view. One per route; switching threads builds a new one.
 pub struct ChatView {
     app_state: Entity<AppState>,
@@ -203,7 +222,18 @@ pub struct ChatView {
     composer: Option<AnyView>,
     branch_toolbar: Option<AnyView>,
     header_actions: Option<AnyView>,
-    overlay: OverlayGeometry,
+    /// The composer overlay's measured height (8px top padding through the 20px spacer).
+    overlay_height: Pixels,
+    /// The end inset the timeline reserves for the overlay (`resolveComposerTimelineInset`).
+    timeline_inset: Pixels,
+    /// The composer reports its resting (one-line) layout.
+    composer_resting: bool,
+    /// The composer's queue for this thread, rendered after the live rows.
+    queued_messages: Vec<QueuedMessage>,
+    /// The wheel gesture in progress over the timeline.
+    wheel_gesture: Option<body::WheelGesture>,
+    /// The timeline was within the 40px end band at the last render.
+    timeline_at_end: bool,
     _tasks: Vec<Task<()>>,
     _subscriptions: Vec<Subscription>,
 }
@@ -297,7 +327,12 @@ impl ChatView {
             composer,
             branch_toolbar,
             header_actions,
-            overlay: OverlayGeometry::default(),
+            overlay_height: px(0.),
+            timeline_inset: px(0.),
+            composer_resting: false,
+            queued_messages: Vec::new(),
+            wheel_gesture: None,
+            timeline_at_end: true,
             _tasks: tasks,
             _subscriptions: subscriptions,
         };
@@ -499,13 +534,75 @@ impl ChatView {
         })
     }
 
-    fn set_overlay(&mut self, overlay: OverlayGeometry, cx: &mut Context<Self>) {
-        if self.overlay != overlay {
-            self.overlay = overlay;
+    /// The composer overlay measured `height` (ceiled): updates the timeline inset.
+    fn set_overlay_height(&mut self, height: Pixels, cx: &mut Context<Self>) {
+        let height = height.ceil();
+        if height <= px(0.) {
+            return;
+        }
+        self.overlay_height = height;
+        let inset =
+            resolve_composer_timeline_inset(self.timeline_inset, height, self.composer_resting);
+        if inset != self.timeline_inset {
+            self.timeline_inset = inset;
             cx.notify();
         }
     }
+
+    /// The composer entered (`true`) or left its resting layout. Only the flag is stored: the
+    /// next overlay measurement applies it.
+    pub fn set_composer_resting(&mut self, resting: bool, _cx: &mut Context<Self>) {
+        self.composer_resting = resting;
+    }
+
+    /// The composer's queued follow-ups for this thread, oldest first.
+    pub fn set_queued_messages(&mut self, queued: Vec<QueuedMessage>, cx: &mut Context<Self>) {
+        if self.queued_messages != queued {
+            self.queued_messages = queued;
+            self.refresh_rows(cx);
+        }
+    }
+
+    /// Shows `error` in the thread error banner (or clears it) without touching a send in
+    /// flight: attachment, stash, and interrupt failures.
+    pub fn set_thread_error(&mut self, error: Option<String>, cx: &mut Context<Self>) {
+        if self.local_error != error {
+            self.local_error = error;
+            cx.notify();
+        }
+    }
+
+    /// PageUp (`up`) / PageDown typed in the composer when its editor cannot scroll: scrolls
+    /// the timeline by one page (viewport minus the overlay minus 36px,
+    /// `pageScrollController.ts`). Returns whether the timeline could scroll that way.
+    pub fn scroll_timeline_page(&mut self, up: bool, cx: &mut Context<Self>) -> bool {
+        const ALIGNMENT_OFFSET: f32 = 36.;
+        let list = &self.timeline.list;
+        let viewport = list.viewport_bounds().size.height;
+        let scroll_top = -list.scroll_px_offset_for_scrollbar().y;
+        let max = list.max_offset_for_scrollbar().y;
+        let can_scroll = if up {
+            scroll_top > px(1.)
+        } else {
+            scroll_top < max - px(1.)
+        };
+        if !can_scroll {
+            return false;
+        }
+        let page = (viewport - px(ALIGNMENT_OFFSET) - self.overlay_height).max(px(0.));
+        if up {
+            self.timeline.manual_navigation = true;
+            list.scroll_by(-page);
+            cx.emit(ChatEvent::CollapseComposer);
+        } else {
+            list.scroll_by(page);
+        }
+        cx.notify();
+        true
+    }
 }
+
+impl EventEmitter<ChatEvent> for ChatView {}
 
 impl Render for ChatView {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
