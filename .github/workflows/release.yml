@@ -10,6 +10,10 @@ on:
       tag:
         description: Release tag to create or update (e.g. v0.1.0-alpha.1)
         required: true
+      dry_run:
+        description: Build and upload the DMG as a workflow artifact without publishing a release
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -37,12 +41,20 @@ jobs:
         run: T3UI_VERSION="${TAG#v}" script/bundle-macos.sh
       - name: Launch smoke test
         run: |
-          dist/T3UI.app/Contents/MacOS/t3ui > smoke.log 2>&1 &
+          "dist/T3 Code (GPUI).app/Contents/MacOS/t3ui" > smoke.log 2>&1 &
           PID=$!
           sleep 8
           if ! kill -0 "$PID"; then echo "app exited early"; cat smoke.log; exit 1; fi
           kill "$PID" || true
+      - name: Upload DMG artifact (dry run)
+        if: ${{ inputs.dry_run }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: T3-Code-GPUI-dmg
+          path: dist/*.dmg
+          if-no-files-found: error
       - name: Publish GitHub Release
+        if: ${{ !inputs.dry_run }}
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag || github.ref_name }}
@@ -51,5 +63,5 @@ jobs:
             gh release upload "$TAG" dist/*.dmg --clobber
           else
             gh release create "$TAG" dist/*.dmg --prerelease --target "$GITHUB_SHA" \
-              --title "T3UI $TAG" --notes "macOS arm64 build of $GITHUB_SHA. Ad-hoc signed: after copying to Applications, run \`xattr -dr com.apple.quarantine /Applications/T3UI.app\` once."
+              --title "T3 Code (GPUI) $TAG" --notes "macOS arm64 build of $GITHUB_SHA. Ad-hoc signed: after copying to Applications, run \`xattr -dr com.apple.quarantine \"/Applications/T3 Code (GPUI).app\"\` once."
           fi
