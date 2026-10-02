@@ -5,7 +5,7 @@
 
 use gpui_kit::{
     AnyView, App, AppContext as _, Context, Entity, IntoElement, ParentElement as _, Render,
-    Styled as _, Window, div, px,
+    Styled as _, Window, base::TextSelectionLayer, div, px,
 };
 use t3_app::{
     chat::{ChatTarget, ChatView, fixtures as chat_fixtures},
@@ -153,6 +153,7 @@ impl Render for Frame {
             .font_family(font::SANS)
             .bg(colors.background)
             .text_color(colors.foreground)
+            .child(TextSelectionLayer)
             .child(
                 div()
                     .w(px(256.))

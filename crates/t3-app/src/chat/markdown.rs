@@ -1,43 +1,62 @@
-//! The one place message text becomes elements. Until `t3-markdown` lands this draws plain
-//! paragraphs with `ChatMarkdown`'s root type (14px, `leading-relaxed`, 10.4px block gaps);
-//! swap these two functions for the markdown renderer.
+//! Message text as `t3_markdown::Markdown` views (the fork's `ChatMarkdown`), one per message
+//! or plan, kept across renders so streaming deltas only re-parse the live tail.
 
-use gpui_kit::{AnyElement, Hsla, IntoElement, ParentElement as _, Styled as _, div, px};
-use t3_ui::Colors;
+use std::collections::HashMap;
 
-/// Assistant replies and plan bodies (`ChatMarkdown`, root color `foreground/80`). Single
-/// newlines are soft breaks.
-pub(super) fn assistant_text(text: &str, _streaming: bool, colors: &Colors) -> AnyElement {
-    paragraphs(text, colors.foreground.opacity(0.8), false)
+use gpui_kit::{App, AppContext as _, Entity};
+use t3_markdown::{Markdown, MarkdownOptions};
+
+/// Markdown views by key (message id, or `plan:{id}` / `plan-preview:{id}`).
+#[derive(Default)]
+pub(super) struct MarkdownCache {
+    views: HashMap<String, Entity<Markdown>>,
 }
 
-/// User bubbles (`ChatMarkdown lineBreaks`, color `foreground`): single newlines break lines.
-pub(super) fn user_text(text: &str, colors: &Colors) -> AnyElement {
-    paragraphs(text, colors.foreground, true)
+/// How a piece of text renders.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum TextKind {
+    /// Assistant replies and plan bodies: `foreground/80`, soft line breaks.
+    Assistant,
+    /// User bubbles: full `foreground`, single newlines break lines.
+    User,
 }
 
-fn paragraphs(text: &str, color: Hsla, line_breaks: bool) -> AnyElement {
-    let blocks = text
-        .split("\n\n")
-        .map(str::trim)
-        .filter(|block| !block.is_empty())
-        .map(|block| {
-            let block = if line_breaks {
-                block.to_owned()
-            } else {
-                block.split('\n').collect::<Vec<_>>().join(" ")
-            };
-            div().child(block)
+impl MarkdownCache {
+    /// The view for `key`, created on first use and updated to `text`.
+    pub fn view(
+        &mut self,
+        key: &str,
+        text: &str,
+        streaming: bool,
+        kind: TextKind,
+        cwd: Option<&str>,
+        cx: &mut App,
+    ) -> Entity<Markdown> {
+        if let Some(view) = self.views.get(key) {
+            if view.read(cx).text().as_ref() != text || view.read(cx).is_streaming() != streaming {
+                let text = text.to_owned();
+                view.update(cx, |view, cx| view.set_text(text, streaming, cx));
+            }
+            return view.clone();
+        }
+        let options = MarkdownOptions {
+            cwd: cwd.map(str::to_owned),
+            line_breaks: kind == TextKind::User,
+            full_foreground: kind == TextKind::User,
+            ..MarkdownOptions::default()
+        };
+        let text = text.to_owned();
+        let view = cx.new(|cx| {
+            let mut view = Markdown::new(text, options, cx);
+            view.set_streaming(streaming, cx);
+            view
         });
-    div()
-        .w_full()
-        .min_w_0()
-        .flex()
-        .flex_col()
-        .gap(px(10.4))
-        .text_size(px(14.))
-        .line_height(px(22.75))
-        .text_color(color)
-        .children(blocks)
-        .into_any_element()
+        self.views.insert(key.to_owned(), view.clone());
+        view
+    }
+
+    /// Drops the views whose rows left the timeline.
+    pub fn retain(&mut self, alive: impl Fn(&str) -> bool) {
+        self.views.retain(|key, _| alive(key));
+    }
 }

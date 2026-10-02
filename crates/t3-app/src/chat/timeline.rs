@@ -25,7 +25,7 @@ use t3_protocol::{
     orchestration::{OrchestrationCheckpointSummary, OrchestrationMessage, OrchestrationThread},
 };
 
-use super::ChatView;
+use super::{ChatView, markdown::MarkdownCache};
 
 /// Rows rendered beyond the viewport so short scrolls never show blank space.
 const OVERDRAW: f32 = 600.;
@@ -54,6 +54,8 @@ pub(super) struct Timeline {
             Entity<ChangedFilesTree>,
         ),
     >,
+    /// Markdown views of messages and plans.
+    pub markdown: MarkdownCache,
     /// The copy button showing its check, by key, until the 1s reset.
     pub copied: Option<String>,
     /// Inputs of the last derivation, kept so local toggles can re-derive.
@@ -90,6 +92,7 @@ impl Timeline {
             expanded_plans: HashSet::new(),
             changed_files_expanded: HashMap::new(),
             trees: HashMap::new(),
+            markdown: MarkdownCache::default(),
             copied: None,
             last: None,
         }
@@ -139,13 +142,32 @@ impl Timeline {
             is_working: last.is_working,
             active_turn_started_at: last.started_at.as_deref(),
         });
-        if let Some(diff) = diff {
-            if diff.same_keys {
-                self.list.remeasure_items(diff.new);
-            } else {
-                self.list.splice(diff.old, diff.new.len());
+        let Some(diff) = diff else { return };
+        if diff.same_keys {
+            self.list.remeasure_items(diff.new);
+        } else {
+            self.list.splice(diff.old, diff.new.len());
+        }
+        // Forget views and trees of rows that are gone (a revert, a new thread state).
+        let mut alive: HashSet<String> = HashSet::new();
+        let mut turns: HashSet<&TurnId> = HashSet::new();
+        for row in self.model.rows() {
+            match &row.kind {
+                RowKind::Message(message) => {
+                    alive.insert(message.message.id.to_string());
+                }
+                RowKind::ProposedPlan(plan) => {
+                    alive.insert(format!("plan:{}", plan.id));
+                    alive.insert(format!("plan-preview:{}", plan.id));
+                }
+                RowKind::ChangedFiles(summary) => {
+                    turns.insert(&summary.turn_id);
+                }
+                _ => {}
             }
         }
+        self.markdown.retain(|key| alive.contains(key));
+        self.trees.retain(|turn, _| turns.contains(turn));
     }
 
     /// Remeasures the row with `id` after its own UI state changed height.

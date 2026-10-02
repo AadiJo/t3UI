@@ -27,7 +27,7 @@ use t3_ui::{
     IconName, Theme, TooltipExt as _,
 };
 
-use super::{ChatView, controls::small_icon, markdown};
+use super::{ChatView, controls::small_icon, markdown::TextKind};
 use crate::chrome::TypeScale as _;
 
 /// User messages longer than this collapse behind "Show full message".
@@ -158,11 +158,19 @@ impl ChatView {
         let expanded = self.timeline.expanded_messages.contains(&id);
         let collapsed = can_collapse && !expanded;
         let group = SharedString::from(format!("user-row:{id}"));
+        let markdown = self.timeline.markdown.view(
+            &id,
+            text,
+            false,
+            TextKind::User,
+            env.workspace_root.as_deref(),
+            cx,
+        );
 
         let body = div()
             .relative()
             .when(collapsed, |this| this.max_h(px(176.)).overflow_hidden())
-            .child(markdown::user_text(text, colors))
+            .child(markdown)
             .when(collapsed, |this| {
                 // The web masks the last 28px to transparent; fade into the bubble instead.
                 this.child(
@@ -284,7 +292,6 @@ impl ChatView {
         env: &RowEnv,
         cx: &mut Context<Self>,
     ) -> AnyElement {
-        let colors = env.colors;
         let source = &message.message;
         let id = source.id.to_string();
         let text = if source.text.is_empty() && !source.streaming {
@@ -294,13 +301,21 @@ impl ChatView {
         };
         let group = SharedString::from(format!("assistant-row:{id}"));
         let copy_visible = !message.assistant_copy_streaming && !source.text.trim().is_empty();
+        let markdown = self.timeline.markdown.view(
+            &id,
+            text,
+            source.streaming,
+            TextKind::Assistant,
+            env.workspace_root.as_deref(),
+            cx,
+        );
         div()
             .group(group.clone())
             .relative()
             .min_w_0()
             .px(px(4.))
             .py(px(2.))
-            .child(markdown::assistant_text(text, source.streaming, colors))
+            .child(markdown)
             .when(message.show_assistant_meta, |this| {
                 this.child(
                     div()
@@ -828,6 +843,14 @@ impl ChatView {
         } else {
             timeline::plan::displayed_plan_markdown(markdown_text)
         };
+        let markdown = self.timeline.markdown.view(
+            &format!("{}:{id}", if collapsed { "plan-preview" } else { "plan" }),
+            &body_text,
+            false,
+            TextKind::Assistant,
+            env.workspace_root.as_deref(),
+            cx,
+        );
         let toggle_id = id.clone();
         let row_id = id.clone();
         let card = div()
@@ -873,7 +896,7 @@ impl ChatView {
                         div()
                             .relative()
                             .when(collapsed, |this| this.max_h(px(416.)).overflow_hidden())
-                            .child(markdown::assistant_text(&body_text, false, colors))
+                            .child(markdown)
                             .when(collapsed, |this| {
                                 this.child(
                                     div()
