@@ -92,11 +92,6 @@ pub struct DiffPalette {
     pub appearance: Appearance,
     /// `.diff-panel-viewport`: `mix(srgb, background 94%, card)`.
     pub viewport: Rgba,
-    /// File card fill (`.diff-render-surface > diffs-container`): `mix(srgb, card 92%,
-    /// background)`. Mostly covered by the header and code, but it sits under the border.
-    pub card: Rgba,
-    /// File card border (`--border`, translucent).
-    pub card_border: Rgba,
     /// `--diffs-bg`: `mix(srgb, card 90%, background)`. Code, gutter and separator wrapper fill.
     pub surface: Rgba,
     /// Sticky file header: `mix(srgb, card 94%, foreground)`.
@@ -130,6 +125,8 @@ pub struct DiffPalette {
     pub buffer_stripe: Rgba,
     /// Gutter cell next to an empty split side (`--diffs-bg-context-gutter`).
     pub buffer_gutter: Rgba,
+    /// Centered placeholder text (`muted-foreground/70`).
+    pub placeholder: Rgba,
     /// Raw-patch fallback text (`muted-foreground/90`) and reason (`muted-foreground/75`).
     pub raw_text: Rgba,
     pub raw_reason: Rgba,
@@ -183,8 +180,6 @@ impl DiffPalette {
         Self {
             appearance,
             viewport: bg.mix_srgb(0.94, tokens.card),
-            card: tokens.card.mix_srgb(0.92, bg),
-            card_border: tokens.border,
             surface,
             header: tokens.card.mix_srgb(0.94, fg),
             header_border: tokens.border,
@@ -204,6 +199,7 @@ impl DiffPalette {
             deletion_emphasis: deletion.alpha(weight(0.15, 0.20)),
             buffer_stripe: host_bg.mix_lab(0.92, mixer),
             buffer_gutter: host_context.mix_lab(weight(0.90, 0.45), host_bg),
+            placeholder: tokens.muted_foreground.alpha(0.70),
             raw_text: tokens.muted_foreground.alpha(0.90),
             raw_reason: tokens.muted_foreground.alpha(0.75),
             raw_fill: bg.alpha(0.70),
@@ -305,7 +301,6 @@ mod tests {
         assert_close(palette.viewport, 0x171717ff);
         assert_close(palette.surface, 0x1a1a1aff);
         assert_close(palette.header, 0x282828ff);
-        assert_close(palette.card_border, 0xffffff0f);
         assert_close(palette.added.code, 0x191c1bff);
         assert_close(palette.added.number, 0x191d1cff);
         // Measured in Chromium (host-level variables).

@@ -10,6 +10,7 @@ description = "Renders app views headlessly to PNG (macOS Metal only) for visual
 t3-app = { path = "../t3-app" }
 t3-ui.workspace = true
 t3-terminal.workspace = true
+t3-diff = { workspace = true, features = ["gpui"] }
 gpui-kit = { workspace = true, features = ["test-support"] }
 image = { version = "0.25", default-features = false, features = ["png"] }
 anyhow.workspace = true

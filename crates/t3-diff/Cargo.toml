@@ -11,10 +11,12 @@ description = "Unified git patch parsing and the GPUI diff viewer + changed-file
 # without GPUI's system libraries.
 [features]
 default = ["gpui"]
-gpui = ["dep:gpui-kit"]
+gpui = ["dep:gpui-kit", "dep:t3-highlight", "dep:t3-ui"]
 
 [dependencies]
 gpui-kit = { workspace = true, optional = true }
+t3-highlight = { workspace = true, optional = true }
+t3-ui = { workspace = true, optional = true }
 
 [lints]
 workspace = true

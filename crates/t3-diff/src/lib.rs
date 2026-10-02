@@ -7,7 +7,8 @@
 //! - [`tree`]: the changed-files tree model and compact counts.
 //! - [`word_diff`]: word-level emphasis of paired changed lines (jsdiff + Pierre `word-alt`).
 //!
-//! GPUI views (default `gpui` feature) build on the core.
+//! GPUI views (default `gpui` feature) build on the core: [`DiffView`] for the diff panel body
+//! and [`ChangedFilesTree`] for the changed-files tree.
 
 pub mod color;
 pub mod palette;
@@ -15,3 +16,9 @@ pub mod patch;
 pub mod rows;
 pub mod tree;
 pub mod word_diff;
+
+#[cfg(feature = "gpui")]
+mod view;
+
+#[cfg(feature = "gpui")]
+pub use view::{ChangedFilesTree, ChangedFilesTreeEvent, DiffView, DiffViewEvent};

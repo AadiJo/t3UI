@@ -7135,6 +7135,8 @@ name = "t3-diff"
 version = "0.1.0"
 dependencies = [
  "gpui-kit",
+ "t3-highlight",
+ "t3-ui",
 ]
 
 [[package]]
@@ -7174,6 +7176,7 @@ dependencies = [
  "gpui-kit",
  "image",
  "t3-app",
+ "t3-diff",
  "t3-terminal",
  "t3-ui",
 ]
