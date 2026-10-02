@@ -6,8 +6,8 @@
 use std::{collections::HashMap, time::Instant};
 
 use gpui_kit::{
-    AnyElement, AnyView, App, AppContext as _, ClickEvent, Context, CursorStyle, Entity,
-    InteractiveElement as _, IntoElement, MouseButton, MouseDownEvent, MouseMoveEvent,
+    AnyElement, AnyView, App, AppContext as _, ClickEvent, ClipboardItem, Context, CursorStyle,
+    Entity, InteractiveElement as _, IntoElement, MouseButton, MouseDownEvent, MouseMoveEvent,
     ParentElement as _, Pixels, Render, SharedString, StatefulInteractiveElement as _, Styled as _,
     Subscription, Window, anchored, deferred, div, point, prelude::FluentBuilder as _, px,
 };
@@ -26,7 +26,10 @@ use super::{
     plan::PlanSurface,
     store::{INLINE_MIN_WINDOW, RightPanels, clamp_width},
 };
-use crate::state::{AppEvent, AppState, Route};
+use crate::{
+    state::{AppEvent, AppState, Route},
+    toast,
+};
 
 const TRANSITION_MS: f32 = 180.;
 /// The maximize button appears this long after opening starts.
@@ -421,7 +424,22 @@ impl RightPanel {
                             })
                         })
                     };
-                vec![
+                let mut items = Vec::new();
+                if let SurfaceId::File(path) = &id {
+                    let path = path.clone();
+                    items.push(
+                        MenuItem::new("tab-copy-path", "Copy path")
+                            .on_click(move |_, _, cx| {
+                                cx.write_to_clipboard(ClipboardItem::new_string(path.clone()));
+                                toast::show(
+                                    toast::Toast::success("Path copied").description(path.clone()),
+                                    cx,
+                                );
+                            })
+                            .into_any_element(),
+                    );
+                }
+                items.extend([
                     action("tab-close", "Close", |panel, id| panel.close_surface(id))
                         .into_any_element(),
                     action("tab-close-others", "Close others", |panel, id| {
@@ -438,7 +456,8 @@ impl RightPanel {
                     action("tab-close-all", "Close all", |panel, _| panel.close_all())
                         .disabled(count == 0)
                         .into_any_element(),
-                ]
+                ]);
+                items
             })
             .into_any_element()
     }
