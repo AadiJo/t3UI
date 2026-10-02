@@ -14,14 +14,14 @@
 use std::{rc::Rc, time::Duration};
 
 use gpui_kit::{
-    App, AppContext as _, Context, Entity, FontWeight, Global, InteractiveElement as _,
-    IntoElement, MouseButton, ParentElement as _, Render, SharedString,
+    App, AppContext as _, ClipboardItem, Context, Entity, FontWeight, Global,
+    InteractiveElement as _, IntoElement, MouseButton, ParentElement as _, Render, SharedString,
     StatefulInteractiveElement as _, Styled as _, Task, Window, div, prelude::FluentBuilder as _,
     px, relative,
 };
 use t3_logic::ThreadRef;
 use t3_ui::{
-    ActiveColors as _, Button, ButtonSize, ButtonVariant, Colors, Icon, IconName,
+    ActiveColors as _, Button, ButtonSize, ButtonVariant, Colors, Icon, IconName, TooltipExt as _,
     tokens::{motion, radius, shadow, text},
 };
 
@@ -151,6 +151,8 @@ pub struct ToastId(u64);
 struct Entry {
     id: ToastId,
     toast: Toast,
+    /// The error description was copied (the copy button shows a check).
+    copied: bool,
     _timer: Option<Task<()>>,
 }
 
@@ -195,6 +197,7 @@ impl ToastLayer {
         self.entries.push(Entry {
             id,
             toast,
+            copied: false,
             _timer: timer,
         });
         cx.notify();
@@ -239,7 +242,11 @@ impl ToastLayer {
         let id = entry.id;
         let toast = &entry.toast;
         let hidden_content = index > 0;
-        let has_actions = !toast.actions.is_empty();
+        // Error toasts with a description get a "Copy error" button among the trailing controls.
+        let copy_text = (toast.kind == ToastKind::Error)
+            .then(|| toast.description.clone())
+            .flatten();
+        let has_actions = !toast.actions.is_empty() || copy_text.is_some();
         let body = div()
             .flex()
             .min_w_0()
@@ -281,6 +288,38 @@ impl ToastLayer {
                 } else {
                     this.flex_shrink_0()
                 }
+            })
+            .when_some(copy_text, |this, text| {
+                let copied = entry.copied;
+                this.child(
+                    div()
+                        .id(SharedString::from(format!("toast-{}-copy", id.0)))
+                        .size_5()
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .rounded(radius::MD)
+                        .cursor_pointer()
+                        .text_color(colors.muted_foreground_80)
+                        .hover(|style| style.text_color(colors.muted_foreground))
+                        .tooltip_text(if copied { "Copied error" } else { "Copy error" })
+                        .on_click(cx.listener(move |this, _, _, cx| {
+                            cx.write_to_clipboard(ClipboardItem::new_string(text.to_string()));
+                            if let Some(entry) =
+                                this.entries.iter_mut().find(|entry| entry.id == id)
+                            {
+                                entry.copied = true;
+                                cx.notify();
+                            }
+                        }))
+                        .child(if copied {
+                            Icon::new(IconName::Check)
+                                .size(px(12.))
+                                .color(colors.success)
+                        } else {
+                            Icon::new(IconName::Copy).size(px(12.))
+                        }),
+                )
             })
             .children(
                 toast
