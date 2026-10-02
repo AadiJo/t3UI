@@ -8,7 +8,11 @@
 //! npx -y t3@nightly serve --port 4810 --host 127.0.0.1 --base-dir /tmp/t3ui-client/t3
 //! cargo run -p t3-client --example probe -- 'http://127.0.0.1:4810/pair#token=XXXX' \
 //!     [--turn "hello"] [--workspace /abs/repo] [--record path.jsonl] [--follow-secs 60]
+//!     [--watch-secs 90]
 //! ```
+//!
+//! `--watch-secs` keeps the connection and thread open at the end and prints every status and
+//! sequence change: restart the server meanwhile to watch backoff, reconnect, and resume.
 //!
 //! The first argument is anything `t3 serve`, `t3 pair`, or `t3 auth pairing create` prints
 //! (`-` reads it from stdin). `--record` writes every non-keepalive frame (`{"ms","dir":
@@ -42,6 +46,7 @@ struct Args {
     turn: Option<String>,
     model: Option<String>,
     follow: Duration,
+    watch: Option<Duration>,
 }
 
 fn parse_args() -> Result<Args> {
@@ -53,6 +58,7 @@ fn parse_args() -> Result<Args> {
         turn: None,
         model: None,
         follow: Duration::from_secs(45),
+        watch: None,
     };
     while let Some(arg) = args.next() {
         let mut value = || args.next().context(format!("{arg} needs a value"));
@@ -62,6 +68,7 @@ fn parse_args() -> Result<Args> {
             "--turn" => parsed.turn = Some(value()?),
             "--model" => parsed.model = Some(value()?),
             "--follow-secs" => parsed.follow = Duration::from_secs(value()?.parse()?),
+            "--watch-secs" => parsed.watch = Some(Duration::from_secs(value()?.parse()?)),
             "-" => std::io::stdin().read_to_string(&mut parsed.pairing).map(drop)?,
             _ if parsed.pairing.is_empty() => parsed.pairing = arg,
             _ => bail!("unexpected argument {arg}"),
@@ -175,12 +182,15 @@ async fn run(args: &Args) -> Result<String> {
     FileSecretStore::new().set(&paired.secret_key(), &paired.bearer_token)?;
     println!("saved to {}", data_dir().display());
 
-    // 2. Connect.
-    let mut options = EnvironmentOptions::new(
-        descriptor.environment_id.clone(),
-        descriptor.label.clone(),
-        paired.endpoint(),
-    );
+    // 2. Connect the way the app does at startup: catalog entry + token from the secret store.
+    let saved = CatalogStore::new()
+        .load()?
+        .get(&descriptor.environment_id)
+        .cloned()
+        .context("paired environment missing from the catalog")?;
+    let endpoint = t3_client::saved_bearer_endpoint(&saved, &FileSecretStore::new())?
+        .context("no bearer token in the secret store")?;
+    let mut options = EnvironmentOptions::from_saved(&saved, endpoint);
     options.client = client;
     let env = Environment::start(options);
     let session = env.wait_connected().await?;
@@ -210,6 +220,26 @@ async fn run(args: &Args) -> Result<String> {
             provider.models.len()
         );
     }
+
+    // A wrong credential must block (no retry loop) with upstream's copy.
+    let bad = Environment::start(EnvironmentOptions::new(
+        descriptor.environment_id.clone(),
+        descriptor.label.clone(),
+        std::sync::Arc::new(t3_client::BearerEndpoint::new(
+            paired.http_base.clone(),
+            paired.ws_base.clone(),
+            "not-a-token".into(),
+        )),
+    ));
+    match bad.wait_connected().await {
+        Ok(_) => bail!("a bad credential connected"),
+        Err(failure) => println!(
+            "bad credential: {:?} -> {}",
+            failure.kind,
+            bad.status().borrow().status_text()
+        ),
+    }
+    drop(bad);
 
     // 3. Shell.
     let mut shell = env.shell();
@@ -352,6 +382,9 @@ async fn run(args: &Args) -> Result<String> {
             row.has_pending_user_input,
         );
     }
+    if let Some(limit) = args.watch {
+        watch_connection(&env, &mut shell, &mut thread, limit).await;
+    }
     drop(handle);
     drop(env);
     tokio::time::sleep(Duration::from_millis(200)).await;
@@ -432,6 +465,39 @@ async fn follow_thread(
                 println!("  stopped following after {}s", limit.as_secs());
                 return;
             }
+        }
+    }
+}
+
+/// Prints connection status, shell, and thread sequence changes for `limit`.
+async fn watch_connection(
+    env: &Environment,
+    shell: &mut tokio::sync::watch::Receiver<Arc<t3_client::ShellState>>,
+    thread: &mut tokio::sync::watch::Receiver<Arc<t3_client::ThreadState>>,
+    limit: Duration,
+) {
+    println!("watching for {}s (restart the server now)", limit.as_secs());
+    let started = Instant::now();
+    let deadline = tokio::time::Instant::now() + limit;
+    let mut status = env.status();
+    loop {
+        let shell_state = shell.borrow_and_update().clone();
+        let thread_state = thread.borrow_and_update().clone();
+        let line = format!(
+            "[{:>5.1}s] {} | shell {:?} @{} | thread {:?} @{}",
+            started.elapsed().as_secs_f32(),
+            status.borrow_and_update().status_text(),
+            shell_state.status,
+            shell_state.snapshot_sequence,
+            thread_state.status,
+            thread_state.last_sequence,
+        );
+        println!("  {line}");
+        tokio::select! {
+            _ = status.changed() => {}
+            _ = shell.changed() => {}
+            _ = thread.changed() => {}
+            _ = tokio::time::sleep_until(deadline) => return,
         }
     }
 }
