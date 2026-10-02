@@ -68,6 +68,11 @@ def main() -> None:
         w(f"    /// {doc}\n    {variant},\n")
     w("}\n\n")
     w("impl IconName {\n")
+    w("    /// Every icon, in file-name order.\n")
+    w("    pub const ALL: &[IconName] = &[\n")
+    for variant, _, _ in variants:
+        w(f"        Self::{variant},\n")
+    w("    ];\n\n")
     w("    /// Asset path served by [`crate::Assets`].\n")
     w("    pub const fn path(self) -> &'static str {\n        match self {\n")
     for variant, path, _ in variants:
@@ -89,6 +94,11 @@ def main() -> None:
         w(f"    /// `{base}`\n    {camel(base)},\n")
     w("}\n\n")
     w("impl Logo {\n")
+    w("    /// Every logo, in file-name order.\n")
+    w("    pub const ALL: &[Logo] = &[\n")
+    for base in logos:
+        w(f"        Self::{camel(base)},\n")
+    w("    ];\n\n")
     w("    /// Asset path for the given appearance.\n")
     w("    pub const fn path(self, dark: bool) -> &'static str {\n        match self {\n")
     for base, files in logos.items():

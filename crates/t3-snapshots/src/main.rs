@@ -1,66 +1,70 @@
 //! Renders named scenes of the real app views to PNG files without a display.
 //!
 //! Usage: `cargo run -p t3-snapshots -- <out-dir> [scene ...]`. Only macOS has GPUI's headless
-//! Metal renderer; elsewhere this exits with a message. CI uploads the PNGs as an artifact.
+//! Metal renderer; elsewhere this lists the scenes and exits. CI uploads the PNGs as an
+//! artifact. Scenes live in `src/scenes/<name>.rs` and are registered in `scenes::all`.
+
+mod scenes;
+
+use std::path::PathBuf;
 
 fn main() -> anyhow::Result<()> {
+    let mut args = std::env::args().skip(1);
+    let out_dir = PathBuf::from(args.next().unwrap_or_else(|| "snapshots".into()));
+    let only: Vec<String> = args.collect();
+    let scenes: Vec<scenes::Scene> = scenes::all()
+        .into_iter()
+        .filter(|scene| only.is_empty() || only.iter().any(|name| name == scene.name))
+        .collect();
+
     #[cfg(target_os = "macos")]
-    return macos::run();
+    return macos::run(&out_dir, scenes);
+
     #[cfg(not(target_os = "macos"))]
     {
-        eprintln!("t3-snapshots: GPUI has no headless renderer on this platform");
+        eprintln!(
+            "t3-snapshots: GPUI has no headless renderer on this platform; would write {} scenes to {}:",
+            scenes.len(),
+            out_dir.display()
+        );
+        for scene in scenes {
+            eprintln!("  {}", scene.name);
+        }
         Ok(())
     }
 }
 
 #[cfg(target_os = "macos")]
 mod macos {
-    use std::{path::PathBuf, sync::Arc};
+    use std::{path::Path, sync::Arc};
 
     use gpui_kit::{
         AppContext as _, Bounds, HeadlessAppContext, WindowBounds, WindowOptions, px, size,
         test::TestWindowExt as _,
     };
 
-    /// Window size of every scene, matching the web reference captures.
-    const WIDTH: f32 = 1440.;
-    const HEIGHT: f32 = 900.;
+    use crate::scenes::Scene;
 
-    struct Scene {
-        name: &'static str,
-        build: fn(&mut gpui_kit::Window, &mut gpui_kit::App) -> gpui_kit::AnyView,
-    }
-
-    fn scenes() -> Vec<Scene> {
-        vec![Scene {
-            name: "workspace-empty-dark",
-            build: |window, cx| cx.new(|cx| t3_app::Workspace::new(window, cx)).into(),
-        }]
-    }
-
-    pub fn run() -> anyhow::Result<()> {
-        let mut args = std::env::args().skip(1);
-        let out_dir = PathBuf::from(args.next().unwrap_or_else(|| "snapshots".into()));
-        let only: Vec<String> = args.collect();
-        std::fs::create_dir_all(&out_dir)?;
-
-        for scene in scenes() {
-            if !only.is_empty() && !only.iter().any(|name| name == scene.name) {
-                continue;
-            }
+    pub fn run(out_dir: &Path, scenes: Vec<Scene>) -> anyhow::Result<()> {
+        std::fs::create_dir_all(out_dir)?;
+        for scene in scenes {
             let mut cx = HeadlessAppContext::with_platform(
                 gpui_kit::platform::current_platform(true).text_system(),
-                Arc::new(gpui_kit::assets::Assets),
+                Arc::new(t3_ui::Assets),
                 gpui_kit::platform::current_headless_renderer,
             );
-            cx.update(gpui_kit::init);
+            cx.update(|cx| {
+                gpui_kit::init(cx);
+                t3_ui::init(scene.theme, cx);
+            });
             let build = scene.build;
+            let (width, height) = scene.size;
             let (handle, _) = cx.update(|cx| {
                 gpui_kit::open_window(
                     WindowOptions {
                         window_bounds: Some(WindowBounds::Windowed(Bounds {
                             origin: Default::default(),
-                            size: size(px(WIDTH), px(HEIGHT)),
+                            size: size(px(width), px(height)),
                         })),
                         focus: false,
                         show: false,
@@ -73,7 +77,14 @@ mod macos {
                     },
                 )
             })?;
+            // Images (logos, the noise tile) decode on the background executor: draw, let
+            // them load, then draw again so they are in the capture.
             cx.update_window(handle, |_, window, cx| window.render_frame(cx))?;
+            cx.run_until_parked();
+            cx.update_window(handle, |_, window, cx| {
+                window.refresh();
+                window.render_frame(cx)
+            })?;
             let image = cx.capture_screenshot(handle)?;
             let path = out_dir.join(format!("{}.png", scene.name));
             image.save(&path)?;
