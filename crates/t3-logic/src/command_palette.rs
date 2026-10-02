@@ -177,6 +177,63 @@ fn rank_field(field: &str, normalized_query: &str) -> Option<i64> {
     })
 }
 
+/// Add-project browsing over Unix-style paths (`packages/client-runtime/src/state/projects.ts`).
+/// The native client targets macOS and Linux servers, so `\\` separators and drive letters are
+/// not handled.
+pub mod browse {
+    /// A query that switches the palette into browse mode (`isFilesystemBrowseQuery`).
+    pub fn is_browse_query(value: &str) -> bool {
+        ["./", "../", "/", "~/"]
+            .iter()
+            .any(|prefix| value.starts_with(prefix))
+    }
+
+    pub fn has_trailing_separator(value: &str) -> bool {
+        value.ends_with('/')
+    }
+
+    /// The directory to list: the query itself when it ends in `/`, else up to the last `/`.
+    pub fn directory_path(value: &str) -> &str {
+        if has_trailing_separator(value) {
+            return value;
+        }
+        value.rfind('/').map_or(value, |index| &value[..=index])
+    }
+
+    /// The partial name after the last `/`, used to filter entries.
+    pub fn leaf(value: &str) -> &str {
+        value.rfind('/').map_or(value, |index| &value[index + 1..])
+    }
+
+    /// The parent directory with a trailing `/` (`getBrowseParentPath`); `None` at the root or
+    /// for a bare name.
+    pub fn parent_path(value: &str) -> Option<String> {
+        let trimmed = value.trim_end_matches('/');
+        if trimmed.is_empty() {
+            return None;
+        }
+        let index = trimmed.rfind('/')?;
+        Some(trimmed[..=index].to_owned())
+    }
+
+    /// `query` as a directory: appends `/` unless empty or already there.
+    pub fn ensure_directory(value: &str) -> String {
+        let trimmed = value.trim();
+        if trimmed.is_empty() || has_trailing_separator(trimmed) {
+            trimmed.to_owned()
+        } else {
+            format!("{trimmed}/")
+        }
+    }
+
+    /// Entries whose name starts with the leaf (case-insensitive); dot entries only when the
+    /// leaf starts with `.` (`filterBrowseEntries`).
+    pub fn matches(name: &str, leaf: &str) -> bool {
+        name.to_lowercase().starts_with(&leaf.to_lowercase())
+            && (leaf.starts_with('.') || !name.starts_with('.'))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     //! Failure modes:
@@ -296,6 +353,20 @@ mod tests {
         let groups = filter_groups(&[group], "new   thread", true, &[], &[]);
         assert_eq!(ids(&groups), vec![("actions", vec!["split"])]);
         assert_eq!(normalize_search_text("  A\tB  c "), "a b c");
+    }
+
+    #[test]
+    fn browse_paths() {
+        use super::browse::*;
+        assert!(is_browse_query("~/") && is_browse_query("/tmp") && !is_browse_query("tmp"));
+        assert_eq!(directory_path("~/code/aur"), "~/code/");
+        assert_eq!(directory_path("~/code/"), "~/code/");
+        assert_eq!(leaf("~/code/aur"), "aur");
+        assert_eq!(parent_path("~/code/aurora/"), Some("~/code/".into()));
+        assert_eq!(parent_path("/tmp/"), Some("/".into()));
+        assert_eq!(parent_path("/"), None);
+        assert_eq!(ensure_directory(" ~/code "), "~/code/");
+        assert!(matches("Aurora", "au") && !matches(".git", "") && matches(".git", ".g"));
     }
 
     #[test]

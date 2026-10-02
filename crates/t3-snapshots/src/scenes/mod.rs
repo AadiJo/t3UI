@@ -6,6 +6,7 @@
 //! `-dark` / `-light` when a scene exists in both appearances.
 
 mod chat;
+mod command_palette;
 mod diff;
 mod gallery;
 mod markdown;
@@ -58,5 +59,6 @@ pub fn all() -> Vec<Scene> {
     scenes.extend(diff::scenes());
     scenes.extend(markdown::scenes());
     scenes.extend(settings::scenes());
+    scenes.extend(command_palette::scenes());
     scenes
 }

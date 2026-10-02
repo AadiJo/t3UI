@@ -9,6 +9,7 @@
 
 pub mod chat;
 pub mod chrome;
+pub mod command_palette;
 pub mod dialogs;
 pub mod keybindings;
 pub mod notifications;
