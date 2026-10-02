@@ -656,7 +656,7 @@ panel maximized, queued messages.
 | Server welcome bootstrap | `subscribeServerLifecycle` `welcome` event: `bootstrapProjectId`, `bootstrapThreadId` (protocol.md 7.5) | decoded (`t3_protocol::server::LifecycleWelcome`); check the app consumes it for 8.1 |
 | Stage label | `ServerConfig.environment.serverVersion` | present |
 | Capabilities | `environment.capabilities.*` | present |
-| Lifecycle commands | sidebar.md 10 | builders missing for snooze/unsnooze/pin/unpin/pin.reorder/active.reorder/auto-settle.set |
+| Lifecycle commands | sidebar.md 10 | builders present (`t3-client/src/commands.rs:245-343`) |
 | Thread search | `orchestration.searchThreads` | method exists; no `Environment` helper |
 | Optimistic lifecycle overlay | `cr/state/threadLifecycle.ts` | missing |
 | Desktop update state | Electron updater IPC | n/a: native updater missing |
