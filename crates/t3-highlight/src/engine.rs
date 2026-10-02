@@ -94,6 +94,12 @@ pub(crate) fn syntax(grammar: Grammar) -> (&'static SyntaxSet, &'static SyntaxRe
     (set, &set.syntaxes()[usize::from(index)])
 }
 
+pub(crate) fn preload() {
+    LazyLock::force(&BAT_SYNTAXES);
+    LazyLock::force(&SHIKI_SYNTAXES);
+    LazyLock::force(&THEMES);
+}
+
 pub(crate) fn default_style(theme: Theme) -> Style {
     convert_style(Highlighter::new(self::theme(theme)).get_default())
 }

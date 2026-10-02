@@ -8,7 +8,10 @@ use std::{
     time::Duration,
 };
 
-use gpui_kit::{ClipboardItem, Context, EventEmitter, IntoElement, Render, SharedString, Window};
+use gpui_kit::{
+    AppContext as _, ClipboardItem, Context, EventEmitter, IntoElement, Render, SharedString,
+    Window,
+};
 use t3_highlight::{Highlighted, Language, StreamingHighlighter, Theme};
 
 use crate::{
@@ -66,6 +69,8 @@ pub(crate) struct CodeState {
     pub wrap: bool,
     /// The highlight for (code length, theme), reused while the code is unchanged.
     pub highlighted: Option<(usize, Theme, Arc<Highlighted>)>,
+    /// (code length, theme) being highlighted on the background executor.
+    pub pending: Option<(usize, Theme)>,
     /// Incremental highlighter while the block is in the streaming tail.
     pub streaming: Option<StreamingHighlighter>,
 }
@@ -108,8 +113,14 @@ impl Markdown {
     pub fn new(
         text: impl Into<SharedString>,
         options: MarkdownOptions,
-        _cx: &mut Context<Self>,
+        cx: &mut Context<Self>,
     ) -> Self {
+        // Load the grammar sets off the main thread before the first code block needs them.
+        static PRELOADED: std::sync::Once = std::sync::Once::new();
+        PRELOADED.call_once(|| {
+            cx.background_spawn(async { t3_highlight::preload() })
+                .detach()
+        });
         let parse_options = ParseOptions {
             line_breaks: options.line_breaks,
             cwd: options.cwd.clone(),
@@ -231,30 +242,35 @@ impl Markdown {
             .unwrap_or_else(|| MarkdownStyle::from_theme(cx))
     }
 
-    /// The highlighted form of a code block, from the per-block cache, the streaming
-    /// highlighter (tail blocks while streaming) or `t3_highlight`'s global cache.
+    /// The highlighted form of a code block: the per-block cache, the streaming highlighter
+    /// (tail blocks while streaming), `t3_highlight`'s global cache, or `None` while it is being
+    /// highlighted on the background executor (render it plain meanwhile).
     pub(crate) fn highlight(
         &mut self,
         id: usize,
         block: &CodeBlock,
         in_tail: bool,
         theme: Theme,
-    ) -> Arc<Highlighted> {
+        cx: &mut Context<Self>,
+    ) -> Option<Arc<Highlighted>> {
         let word_wrap = self.options.word_wrap;
         let streaming = self.streaming && in_tail;
         let state = self.code.entry(id).or_insert_with(|| CodeState {
             wrap: word_wrap,
             highlighted: None,
+            pending: None,
             streaming: None,
         });
-        if let Some((len, cached_theme, highlighted)) = &state.highlighted
-            && *len == block.code.len()
+        let len = block.code.len();
+        if let Some((cached_len, cached_theme, highlighted)) = &state.highlighted
+            && *cached_len == len
             && *cached_theme == theme
         {
-            return highlighted.clone();
+            return Some(highlighted.clone());
         }
         let language = Language::from_fence(&block.language);
         let highlighted = if streaming {
+            // A growing block: incremental, proportional to the new lines.
             let highlighter = state
                 .streaming
                 .get_or_insert_with(|| StreamingHighlighter::new(language, theme));
@@ -262,11 +278,35 @@ impl Markdown {
                 *highlighter = StreamingHighlighter::new(language, theme);
             }
             highlighter.update(&block.code)
+        } else if let Some(hit) = t3_highlight::cached(&block.code, language, theme) {
+            hit
         } else {
-            t3_highlight::highlight(&block.code, language, theme)
+            // Like the fork's Suspense fallback: plain until the background highlight lands.
+            if state.pending != Some((len, theme)) {
+                state.pending = Some((len, theme));
+                let code = block.code.clone();
+                let task =
+                    cx.background_spawn(
+                        async move { t3_highlight::highlight(&code, language, theme) },
+                    );
+                cx.spawn(async move |this, cx| {
+                    let highlighted = task.await;
+                    let _ = this.update(cx, |this, cx| {
+                        if let Some(state) = this.code.get_mut(&id)
+                            && state.pending == Some((len, theme))
+                        {
+                            state.pending = None;
+                            state.highlighted = Some((len, theme, highlighted));
+                            cx.notify();
+                        }
+                    });
+                })
+                .detach();
+            }
+            return None;
         };
-        state.highlighted = Some((block.code.len(), theme, highlighted.clone()));
-        highlighted
+        state.highlighted = Some((len, theme, highlighted.clone()));
+        Some(highlighted)
     }
 
     pub(crate) fn toggle_wrap(&mut self, id: usize, cx: &mut Context<Self>) {
@@ -274,6 +314,7 @@ impl Markdown {
         let state = self.code.entry(id).or_insert_with(|| CodeState {
             wrap: word_wrap,
             highlighted: None,
+            pending: None,
             streaming: None,
         });
         state.wrap = !state.wrap;

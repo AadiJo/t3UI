@@ -173,6 +173,12 @@ pub fn cached(code: &str, language: Language, theme: Theme) -> Option<Arc<Highli
     cache::get(&cache::Key::new(code, language, theme))
 }
 
+/// Loads the grammar sets and themes (~130ms the first time). Call it on a background thread at
+/// startup so the first highlight on the UI thread does not pay for it.
+pub fn preload() {
+    engine::preload();
+}
+
 /// The theme's plain-text style, without highlighting anything.
 pub fn default_style(theme: Theme) -> Style {
     engine::default_style(theme)

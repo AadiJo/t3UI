@@ -1156,11 +1156,11 @@ fn code_block(
 ) -> AnyElement {
     let colors = ctx.style.colors.clone();
     let id = ctx.base + block.id;
-    let highlighted = this.highlight(id, block, ctx.in_tail, ctx.theme);
+    let highlighted = this.highlight(id, block, ctx.in_tail, ctx.theme, cx);
     let wraps = this.code_wraps(id);
     let copied = this.copied.contains(&id);
     let code_text = expand_tabs(&block.code);
-    let mut content = code_content(ctx, &code_text, &highlighted, wraps);
+    let mut content = code_content(ctx, &code_text, highlighted.as_deref(), wraps);
     // `resolveCodeBlockLanguage`: the fence language, omitted for `text`.
     content.copy.fence = Some(if block.language == "text" {
         String::new()
@@ -1280,9 +1280,17 @@ fn expand_tabs(code: &str) -> String {
 
 /// The highlighted code as text runs. Spans index the original code, so tabs are expanded only
 /// when there are none to keep the ranges aligned.
-fn code_content(ctx: &Ctx, code: &str, highlighted: &Highlighted, wraps: bool) -> TextContent {
+fn code_content(
+    ctx: &Ctx,
+    code: &str,
+    highlighted: Option<&Highlighted>,
+    wraps: bool,
+) -> TextContent {
     let mono = ctx.style.mono_family.clone();
-    let default = highlighted.default_style();
+    let default = highlighted.map_or_else(
+        || t3_highlight::default_style(ctx.theme),
+        Highlighted::default_style,
+    );
     let style_for = |style: t3_highlight::Style| {
         let mut run_font = font(mono.clone());
         if style.bold {
@@ -1300,7 +1308,7 @@ fn code_content(ctx: &Ctx, code: &str, highlighted: &Highlighted, wraps: bool) -
             shift: Pixels::ZERO,
         }
     };
-    let runs = if highlighted.len() == code.len() {
+    let runs = if let Some(highlighted) = highlighted.filter(|h| h.len() == code.len()) {
         highlighted
             .spans()
             .map(|(range, style)| (range, style_for(style)))
