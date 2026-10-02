@@ -15,7 +15,7 @@ done
 cargo clippy "${GPUI_FREE[@]}" --all-targets -- -D warnings
 cargo test -q "${GPUI_FREE[@]}"
 # Crates whose pure-logic modules build without GPUI when default features are off.
-for crate in t3-terminal; do
+for crate in t3-terminal t3-diff; do
   [ -d "crates/$crate" ] && cargo test -q -p "$crate" --no-default-features
 done
 
