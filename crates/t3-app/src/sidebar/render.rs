@@ -2,13 +2,15 @@
 
 use gpui_kit::component::input::Input;
 use gpui_kit::{
-    AnyElement, App, ClickEvent, Context, FontWeight, Hsla, InteractiveElement as _, IntoElement,
-    MouseButton, ParentElement as _, Render, SharedString, StatefulInteractiveElement as _,
-    Styled as _, Transformation, Window, div, prelude::FluentBuilder as _, px, radians,
+    AnyElement, App, AppContext as _, ClickEvent, Context, FontWeight, Hsla,
+    InteractiveElement as _, IntoElement, MouseButton, ParentElement as _, Render, SharedString,
+    StatefulInteractiveElement as _, Styled as _, Transformation, Window, div,
+    prelude::FluentBuilder as _, px, radians,
 };
 use t3_logic::{
     keybindings::Command,
     paths::display_basename,
+    settings::ProjectSortOrder,
     sidebar::{
         EnvironmentPresence, SidebarProject, SidebarThread, ThreadStatus, pull_request_badge,
     },
@@ -20,7 +22,12 @@ use t3_ui::{
     tokens::{StatusColor, layout, radius, text},
 };
 
-use super::{Sidebar, pulse_opacity, sort_menu::sort_menu};
+use super::{
+    Sidebar,
+    drag::{ProjectDrag, ProjectDragPreview},
+    pulse_opacity,
+    sort_menu::sort_menu,
+};
 use crate::{
     chrome::{TypeScale as _, drag_region, under_xs},
     keybindings::shortcut_label,
@@ -250,12 +257,37 @@ impl Sidebar {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> AnyElement {
+        let manual = self
+            .app_state
+            .read(cx)
+            .settings()
+            .sidebar_project_sort_order
+            == ProjectSortOrder::Manual;
+        let colors = cx.colors();
+        let key = project.key.clone();
         div()
             .id(SharedString::from(format!("project-{}", project.key)))
+            .relative()
             .rounded(radius::MD)
             .flex()
             .flex_col()
-            .child(self.render_project_header(project, animate, cx))
+            .child(self.render_project_header(project, animate, manual, cx))
+            .when(manual, |this| {
+                // Drop target: a 1px `primary/40` ring while a project is dragged over it.
+                this.child(
+                    div()
+                        .id(SharedString::from(format!("project-drop-{}", project.key)))
+                        .absolute()
+                        .inset_0()
+                        .rounded(radius::MD)
+                        .drag_over::<ProjectDrag>(move |style, _, _, _| {
+                            style.border_1().border_color(colors.primary_40)
+                        })
+                        .on_drop(cx.listener(move |this, drag: &ProjectDrag, _, cx| {
+                            this.drop_project(drag, &key, cx)
+                        })),
+                )
+            })
             .when(project.show_thread_panel, |this| {
                 this.child(self.render_thread_list(project, animate, window, cx))
             })
@@ -267,6 +299,7 @@ impl Sidebar {
         &self,
         project: &SidebarProject,
         animate: bool,
+        manual: bool,
         cx: &mut Context<Self>,
     ) -> impl IntoElement {
         let colors = cx.colors();
@@ -351,6 +384,23 @@ impl Sidebar {
                         "project-header-{}",
                         project.key
                     )))
+                    .when(manual, |this| {
+                        let drag = ProjectDrag {
+                            members: project
+                                .members
+                                .iter()
+                                .map(|member| member.physical_key.clone())
+                                .collect(),
+                            label: project.display_name.clone().into(),
+                        };
+                        this.on_drag(drag, |drag, _, window, cx| {
+                            let width = window.viewport_size().width.min(px(256.)) - px(16.);
+                            cx.new(|_| ProjectDragPreview {
+                                label: drag.label.clone(),
+                                width,
+                            })
+                        })
+                    })
                     .h_7()
                     .w_full()
                     .pl_2()

@@ -6,6 +6,7 @@
 //! Transient state that the web keeps in memory lives here too: multi-selection, "Show more"
 //! lists, and jump-hint visibility.
 
+mod drag;
 mod menus;
 mod project_dialogs;
 mod pulse;
