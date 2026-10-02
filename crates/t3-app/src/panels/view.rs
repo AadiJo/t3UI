@@ -23,7 +23,6 @@ use super::{
     diff_panel::DiffPanel,
     files::{FilePreview, FilesSurface},
     model::{Surface, SurfaceId, SurfaceKind},
-    plan::PlanSurface,
     store::{INLINE_MIN_WINDOW, RightPanels, clamp_width},
 };
 use crate::{
@@ -41,7 +40,6 @@ enum SurfaceView {
     Diff(Entity<DiffPanel>),
     Files(Entity<FilesSurface>),
     File(Entity<FilePreview>, u64),
-    Plan(Entity<PlanSurface>),
 }
 
 impl SurfaceView {
@@ -50,7 +48,6 @@ impl SurfaceView {
             Self::Diff(view) => view.clone().into(),
             Self::Files(view) => view.clone().into(),
             Self::File(view, _) => view.clone().into(),
-            Self::Plan(view) => view.clone().into(),
         }
     }
 }
@@ -219,6 +216,7 @@ impl RightPanel {
                             path,
                             reveal_line,
                             reveal_request,
+                            ..
                         } => {
                             let (context, path, line) =
                                 (context.clone(), path.clone(), *reveal_line);
@@ -227,17 +225,13 @@ impl RightPanel {
                                 *reveal_request,
                             ))
                         }
-                        Surface::Plan => {
-                            let detail = self
-                                .panels
-                                .update(cx, |panels, cx| panels.detail(thread, cx));
-                            let context = context.clone();
-                            Some(SurfaceView::Plan(
-                                cx.new(|cx| PlanSurface::new(context, detail, window, cx)),
-                            ))
-                        }
-                        // Owned by the terminal and preview surfaces (later phases).
-                        Surface::Terminal { .. } | Surface::Preview { .. } => None,
+                        // Typed slots for their owners (terminal, preview, PR, agents, device).
+                        Surface::Terminal { .. }
+                        | Surface::Preview { .. }
+                        | Surface::PullRequest(_)
+                        | Surface::PullRequests
+                        | Surface::Agents
+                        | Surface::Device { .. } => None,
                     };
                     if let Some(created) = created {
                         self.surfaces.insert(key, created);
@@ -757,7 +751,20 @@ fn surface_title_icon(surface: &Surface, cx: &App) -> (SharedString, AnyElement)
             path.rsplit('/').next().unwrap_or(path).to_owned().into(),
             t3_ui::file_icon(path, dark).render(px(14.)),
         ),
-        Surface::Plan => ("Plan".into(), icon(IconName::ClipboardList)),
+        Surface::PullRequest(pull_request) => (
+            format!("#{}", pull_request.number).into(),
+            icon(IconName::GitPullRequest),
+        ),
+        Surface::PullRequests => ("Pull requests".into(), icon(IconName::Link)),
+        Surface::Agents => ("Agents".into(), icon(IconName::Bot)),
+        Surface::Device { target, title } => (
+            title
+                .clone()
+                .or_else(|| target.as_ref().map(|target| target.name.clone()))
+                .unwrap_or_else(|| "Device".into())
+                .into(),
+            icon(IconName::Smartphone),
+        ),
         Surface::Terminal {
             active_terminal_id, ..
         } => {
