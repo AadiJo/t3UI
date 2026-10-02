@@ -1196,9 +1196,9 @@ reference this follows.
 | DPoP | `crates/t3-client/src/cloud/dpop.rs` | P-256 key via `p256` (pure Rust, so the macOS cross-check needs no C toolchain). Header and payload members in jose's order. |
 | DPoP environment endpoint | `crates/t3-client/src/cloud/endpoint.rs` | `DpopEndpoint` implements `Endpoint`; a `BootstrapSource` supplies one-time credentials (the relay for T3 Connect). Token cached in memory per environment, re-minted when it has under 60 s left, after a failed cached-token ticket, or after an HTTP 401. One mint at a time, 30 s bound. |
 | HTTP renewal hook | `crates/t3-client/src/http.rs` | `HttpAuth::renew` (default no-op): called before each authenticated request and once after a 401, so `Session::http` keeps working past the one-hour DPoP token lifetime. |
-| Service | `crates/t3-client/src/cloud/connect.rs` | `T3Connect`: email-code and provider sign-in, restore, sign-out, discovery state on a `watch` channel, endpoints and catalog entries for relay environments. |
-| Provider sign-in | `crates/t3-client/src/cloud/oauth.rs` | `WebAuthenticator` trait. The app implements it on macOS with `ASWebAuthenticationSession` (callback scheme `t3code`, Safari cookies shared); other platforms hide the provider buttons. |
-| App | `crates/t3-app/src/cloud_ui/` (with the Connections UI) | `CloudAccount` global, sign-in dialog, account and environment rows. Starts saved relay environments of the signed-in account at launch (the generic boot skips relay targets). |
+| Service | `crates/t3-client/src/cloud/connect.rs` | `T3Connect`: email-code and provider sign-in, restore, sign-out, discovery state on a `watch` channel, endpoints and catalog entries for relay environments. Before a sign-in it loads the Clerk client and ends any leftover session (the instance is single-session). |
+| Provider sign-in | `crates/t3-client/src/cloud/oauth.rs`, `web_auth.rs` | `WebAuthenticator` trait; `system_authenticator()` is `ASWebAuthenticationSession` on macOS (callback scheme `t3code`, Safari cookies shared, anchored to the key window) and `None` elsewhere, where the UI hides provider buttons. |
+| App wiring | not built yet | See `docs/handoff/cloud.md` for what the UI calls. |
 
 Secrets (in the `SecretStore`): `t3-connect:dpop-key` (base64url P-256 scalar),
 `t3-connect:clerk-client` (Clerk client token), `t3-connect:account` (JSON: user id, session
