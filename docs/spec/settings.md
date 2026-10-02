@@ -118,7 +118,8 @@ There is no default keybinding for settings beyond the menu accelerator `Cmd+,`.
   Escape. Otherwise `preventDefault`, blur the active element, then navigate to the main app.
   Controls that consume Escape first (menus, dialogs, popovers, the search box while it has a
   query, key recorders) call `preventDefault`/`stopPropagation`, so Escape closes them instead.
-- Sidebar footer "Back" button (§3.6) does the same navigation.
+- Sidebar footer "Back" button (§3.6) does the same navigation. Shell side: `shell.md` (routes,
+  `isSidebarUtilityPage`, `last_main_route`) and `sidebar.md` §9.1.
 
 Native: keep a `last_main_route: Route` in `AppState`, updated whenever the route is not
 `Settings`/`Usage`/`PullRequests`. Escape handler must run after (and yield to) focused controls.
@@ -1022,22 +1023,9 @@ A section that starts closed. A settings-search landing on its `id` opens it bef
 ### 6.11 Confirm dialogs (`localApi.dialogs.confirm`)
 
 Pages call `readLocalApi().dialogs.confirm(message, { variant })` for destructive confirms. In
-fe7d3092c this is **not** a native OS dialog on desktop: it queues a request for the in-app
-`ConfirmDialogHost` (`web/localApi.ts:16-18`, `web/confirmDialog.ts`,
-`web/components/ConfirmDialogHost.tsx`, mounted in `web/routes/__root.tsx:256`).
-
-- Copy split (`ConfirmDialogHost.tsx:26-52`): the first line that ends with `?` is the title; all
-  other lines (joined with `\n`, trimmed) are the description, rendered `whitespace-pre-line`. If
-  no line ends with `?` but the text contains one, title = text up to and including the first `?`,
-  description = the rest. Otherwise title "Confirm action", description = the message (or "This
-  action requires your confirmation.").
-- `AlertDialog` (design-system): header (title + optional description), footer `Cancel`
-  (outline, closes, resolves false) and `Confirm` (button variant = the requested variant, e.g.
-  `destructive`; resolves true).
-- Requests queue; one dialog shows at a time. Escape/backdrop = Cancel.
-
-Native: one app-level confirm host fed by a queue, same title/description split. The old spec's
-"native confirm" (`NSAlert`) is wrong for these.
+fe7d3092c this is an in-app `AlertDialog` (`ConfirmDialogHost`), not a native OS dialog: the first
+line ending in `?` is the title, the remaining lines (pre-line) the description, buttons "Cancel"
+and "Confirm" (requested variant). Full spec: `shell.md` §6.3. Page specs quote the message lines.
 
 ---
 
@@ -1064,7 +1052,7 @@ Native: one app-level confirm host fed by a queue, same title/description split.
 
 | t3UI module | Verdict |
 | --- | --- |
-| `crates/t3-app/src/state/route.rs` (`Route::Settings(SettingsPage)`) | needs changes: carry scope search (`project`, `machine`, `checkout`), target anchor + highlight flag, providers `instance_id`; add `SettingsPage::Diagnostics/OpenSourceLicenses` if missing; retain-scope rule on page switches; `/projects/<key>` → Project page with `project` set. |
+| `crates/t3-app/src/state/route.rs` + `AppState::settings_project` (main, 2976a48: `Route::Project(key)` → `Settings(Projects)` and remembers the key) | needs changes: replace the side field with a scope search on the route (`project`, `machine`, `checkout`), plus target anchor + highlight flag and providers `instance_id`; retain-scope rule on page switches; `/projects/<key>` sets `project` and clears `machine`. |
 | `crates/t3-app/src/state/mod.rs` (`navigate`, `replace_route`, `go_back`) | fits; add `last_main_route` for Back/Escape (§1.4). Settings nav clicks and search landings use `replace_route`; scope changes use `navigate`. |
 | `crates/t3-logic/src/settings.rs` (`ClientSettings`) | needs changes: add every fe7d3092c client key; keep unknown keys on write; defaults from `DEFAULT_CLIENT_SETTINGS`. |
 | `crates/t3-logic/src/sidebar/` grouping + keys | fits for scope groups (same logical projects as the sidebar); add a settings-facing projection sorted by display name with members. |
