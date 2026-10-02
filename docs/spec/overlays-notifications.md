@@ -361,21 +361,21 @@ Recovery screens (`:200-238`): full window, bg --background, centered column max
 
 ## 9. Data and API map
 
-| Need | Upstream | t3UI today |
+| Need | Upstream | t3UI today (main @ 6456079) |
 | --- | --- | --- |
 | keybindings reload events | `subscribeServerConfig` `keybindingsUpdated` | `ServerConfigStreamEvent` decoded; notifier compares config snapshots instead of events (`t3-app/src/notifications.rs`) |
 | open keybindings file | `shell.openInEditor` | `ShellOpenInEditor` (exists) |
-| RPC latency | every unary request | missing: `t3_client::rpc` needs per-request start/ack hooks |
-| clone progress | `subscribeProjectClones`, `projectClone.cancel`, `projectClone.retry`, `project.delete` | stream + cancel/retry missing; `project.delete` command exists |
-| provider advisories | `ServerProvider.versionAdvisory`, `updateState`, `compatibilityAdvisory` | `version_advisory: Option<Value>` untyped; `updateState`, `compatibilityAdvisory` not decoded (`t3-protocol/src/server.rs:263`) |
-| provider update | `server.updateProvider` | `ServerUpdateProvider` (exists) |
-| server self-update | `server.updateServer`, `server.updateServerWithProgress`, `server.commitDesktopUpdate`, `subscribeServerLifecycle` | lifecycle stream exists; update methods missing |
+| RPC latency | every unary request | missing: `t3_client::rpc` per-request start/ack hooks (client agent, pending) |
+| clone progress | `subscribeProjectClones`, `projectClone.cancel`, `projectClone.retry`, `project.delete` | `SubscribeProjectClones` (items `Vec<ProjectCloneSnapshot>`), `ProjectCloneCancel`, `ProjectCloneRetry`, `project.delete` command (all exist) |
+| provider advisories | `ServerProvider.versionAdvisory`, `updateState`, `compatibilityAdvisory` | typed: `version_advisory: Option<ProviderVersionAdvisory>`, `update_state: Option<ProviderUpdateState>`, `compatibility_advisory: Option<ProviderCompatibilityAdvisory>` (`t3-protocol/src/server.rs:270-274`) |
+| provider update | `server.updateProvider` | `ServerUpdateProvider` (exists); per-environment serialization pending (client agent) |
+| server self-update | `server.updateServer`, `server.updateServerWithProgress`, `server.commitDesktopUpdate`, `subscribeServerLifecycle` | `ServerUpdateServer`, stream `ServerUpdateServerWithProgress`, `ServerCommitDesktopUpdate`, `SubscribeServerLifecycle` (all exist) |
 | thread alerts | shell stream | `ShellState` (exists) |
 | desktop update | T3UI updater | missing (native) |
 | notifications inbox | desktop notification model | missing (native port of `desk/notifications/model.ts`) |
 | SSH prompt | desktop SSH transport | depends on the native SSH transport (connections spec) |
 | confirm | in-app AlertDialog | `t3-app/src/dialogs.rs` uses a native `Window::prompt`: wrong surface now |
-| client settings | `notificationMode`, `inAppNotificationsEnabled`, `notificationInboxEnabled`, `confirmQuit` | missing from `t3_logic::settings::ClientSettings` (shell handoff: lacks fe7d3092c fields) |
+| client settings | `notificationMode`, `inAppNotificationsEnabled`, `notificationInboxEnabled`, `confirmQuit` | missing from `t3_logic::settings::ClientSettings` (client agent settings batch, pending) |
 
 ## 10. Reuse map
 

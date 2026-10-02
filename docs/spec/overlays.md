@@ -449,23 +449,23 @@ Highlight rules (`ui/command.tsx:78-92`, `CommandPalette.tsx:3366-3368`): `autoH
 
 ## 12. Data and API map
 
-| Need | Upstream | t3UI today |
+| Need | Upstream | t3UI today (main @ 6456079; all in `t3_protocol::methods`) |
 | --- | --- | --- |
 | keybindings for labels/dispatch | `server.getConfig` + `subscribeServerConfig` | `ServerConfig.keybindings`; resolver in `t3-logic/src/keybindings` |
 | thread rows, projects, env status | `orchestration.subscribeShell`, env catalog | `t3_client::ShellState`, `AppState` envs |
-| thread content search | `orchestration.searchThreads` | `t3_protocol::methods::SearchThreads` (exists) |
+| thread content search | `orchestration.searchThreads` | `t3_protocol::methods::SearchThreads` (exists); multi-env fan-out + debounce helper pending (client agent) |
 | browse | `filesystem.browse` | `FilesystemBrowse` (exists) |
 | add project | `orchestration.dispatchCommand` `project.create` | `ClientCommand::ProjectCreate` (exists) |
 | restart session | `thread.session.stop`, `server.refreshProviders` | `ThreadSessionStop`, `ServerRefreshProviders` (exist) |
 | file picker | `projects.searchEntries` | `ProjectsSearchEntries` (exists) |
 | content search | `projects.searchContents` | `ProjectsSearchContents` (exists) |
-| provider readiness | `server.discoverSourceControl` | missing |
-| repo lookup | `sourceControl.lookupRepository` | missing |
-| blocking clone | `sourceControl.cloneRepository` | missing |
-| tracked clone | `projectClone.start` / `.cancel` / `.retry`, `subscribeProjectClones` | missing |
-| new project | `projects.createNew` | missing |
-| publish | `sourceControl.publishRepository` | missing |
-| scratch project | `projects.ensureScratch` | missing |
+| provider readiness | `server.discoverSourceControl` | `ServerDiscoverSourceControl` (Option fields decode to `Option<String>`) |
+| repo lookup | `sourceControl.lookupRepository` | `SourceControlLookupRepository` |
+| blocking clone | `sourceControl.cloneRepository` | `SourceControlCloneRepository` |
+| tracked clone | `projectClone.start` / `.cancel` / `.retry`, `subscribeProjectClones` | `ProjectCloneStart` / `ProjectCloneCancel` / `ProjectCloneRetry`, stream `SubscribeProjectClones` |
+| new project | `projects.createNew` | `ProjectsCreateNew` |
+| publish | `sourceControl.publishRepository` | `SourceControlPublishRepository` |
+| scratch project | `projects.ensureScratch` | `ProjectsEnsureScratch` |
 | config fields | `newProjectsRoot`, `scratchWorkspaceRoot`, `settings.addProjectBaseDirectory`, `environment.capabilities.{pullRequests, threadPullRequests, projectCloneTracking}`, `environment.platform.os` | present in `t3_protocol::server::ServerConfig` / `environment.rs` |
 | folder picker | desktop `pickFolder` | native `NSOpenPanel` (GPUI `cx.prompt_for_paths`) |
 
