@@ -203,6 +203,14 @@ impl Workspace {
             Command::ThreadJump(index) => self
                 .sidebar
                 .update(cx, |sidebar, cx| sidebar.jump_to(index, cx)),
+            Command::ChatNew | Command::ChatNewLocal
+                if self.app_state.read(cx).route().draft().is_none() =>
+            {
+                let carry = shortcut.command == Command::ChatNew;
+                self.sidebar.update(cx, |sidebar, cx| {
+                    sidebar.new_thread_from_shortcut(carry, cx)
+                })
+            }
             Command::NavigationBack => {
                 self.app_state.update(cx, |state, cx| state.go_back(cx));
                 true

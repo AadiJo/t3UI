@@ -40,6 +40,8 @@ pub struct Sidebar {
     jump_hint_timer: Option<Task<()>>,
     /// The thread row being renamed inline.
     rename: Option<menus::Rename>,
+    /// The row showing the archive "Confirm" pill (`confirmThreadArchive`).
+    confirming_archive: Option<ThreadRef>,
     pulse: PulseClock,
     scroll: ScrollHandle,
     focus: FocusHandle,
@@ -57,6 +59,7 @@ impl Sidebar {
             jump_hints_visible: false,
             jump_hint_timer: None,
             rename: None,
+            confirming_archive: None,
             pulse: PulseClock::default(),
             scroll: ScrollHandle::new(),
             focus: cx.focus_handle(),
@@ -279,6 +282,75 @@ impl Sidebar {
         };
         self.app_state
             .update(cx, |state, cx| state.request_new_thread(request, cx));
+    }
+
+    /// `chat.new` / `chat.newLocal` outside a draft (web `startNewThreadFromContext`): a new
+    /// thread in the route thread's project, else the first project in sidebar order. `chat.new`
+    /// carries the route thread's branch and worktree. Returns false with no project at all.
+    pub fn new_thread_from_shortcut(
+        &mut self,
+        carry_context: bool,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        let state = self.app_state.read(cx);
+        let active = state.route().thread().and_then(|thread| {
+            let shell = state
+                .environment(&thread.environment_id, cx)?
+                .read(cx)
+                .thread(&thread.thread_id)?
+                .clone();
+            Some((thread.environment_id.clone(), shell))
+        });
+        let request = match active {
+            Some((environment_id, shell)) => {
+                let project = t3_logic::ProjectRef::new(environment_id, shell.project_id.clone());
+                if carry_context {
+                    NewThreadRequest {
+                        project,
+                        branch: shell.branch.clone(),
+                        worktree_path: shell.worktree_path.clone(),
+                        env_mode: Some(if shell.worktree_path.is_some() {
+                            ThreadEnvMode::Worktree
+                        } else {
+                            ThreadEnvMode::Local
+                        }),
+                        start_from_origin: None,
+                    }
+                } else {
+                    NewThreadRequest {
+                        project,
+                        branch: None,
+                        worktree_path: None,
+                        env_mode: None,
+                        start_from_origin: None,
+                    }
+                }
+            }
+            None => {
+                let Some(first) = self.model.project_order_keys.first() else {
+                    return false;
+                };
+                let Some(member) = self
+                    .model
+                    .projects
+                    .iter()
+                    .flat_map(|project| &project.members)
+                    .find(|member| &member.physical_key == first)
+                else {
+                    return false;
+                };
+                NewThreadRequest {
+                    project: member.project_ref.clone(),
+                    branch: None,
+                    worktree_path: None,
+                    env_mode: None,
+                    start_from_origin: None,
+                }
+            }
+        };
+        self.app_state
+            .update(cx, |state, cx| state.request_new_thread(request, cx));
+        true
     }
 
     // -------------------------------------------------------------------------------------------

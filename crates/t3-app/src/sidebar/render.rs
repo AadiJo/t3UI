@@ -677,11 +677,24 @@ impl Sidebar {
             .filter(|rename| rename.thread == row.thread_ref)
             .map(|rename| rename.input.clone());
         let is_renaming = renaming.is_some();
+        let confirm_archive = self.app_state.read(cx).settings().confirm_thread_archive;
+        let confirming = !running && self.confirming_archive.as_ref() == Some(&row.thread_ref);
 
         div()
+            .id(SharedString::from(format!("thread-item-{id_suffix}")))
             .group(THREAD_ROW_GROUP)
             .relative()
             .w_full()
+            .on_hover({
+                let thread_ref = row.thread_ref.clone();
+                cx.listener(move |this, hovered: &bool, _, cx| {
+                    // Leaving the row cancels a pending archive confirmation.
+                    if !hovered && this.confirming_archive.as_ref() == Some(&thread_ref) {
+                        this.confirming_archive = None;
+                        cx.notify();
+                    }
+                })
+            })
             .child(
                 div()
                     .id(SharedString::from(format!("thread-row-{id_suffix}")))
@@ -824,6 +837,7 @@ impl Sidebar {
                             .child(
                                 div().min_w_12().flex().justify_end().child(
                                     div()
+                                        .when(confirming, |this| this.opacity(0.))
                                         .when(!running, |this| {
                                             this.group_hover(THREAD_ROW_GROUP, |style| {
                                                 style.opacity(0.)
@@ -851,9 +865,51 @@ impl Sidebar {
                             ),
                     ),
             )
-            .when(!running, |this| {
-                // Archive control: fades in over the meta on row hover.
+            .map(|this| {
                 let thread_ref = row.thread_ref.clone();
+                if confirming {
+                    // "Confirm" pill (confirmThreadArchive): a second click archives.
+                    return this.child(
+                        div()
+                            .absolute()
+                            .top_0()
+                            .bottom_0()
+                            .right_1()
+                            .flex()
+                            .items_center()
+                            .child(
+                                div()
+                                    .id(SharedString::from(format!(
+                                        "thread-archive-confirm-{id_suffix}"
+                                    )))
+                                    .h_5()
+                                    .px_2()
+                                    .flex()
+                                    .items_center()
+                                    .rounded(radius::MD)
+                                    .bg(colors.destructive.opacity(0.12))
+                                    .hover(|style| style.bg(colors.destructive.opacity(0.18)))
+                                    .type_scale(under_xs(10.))
+                                    .font_weight(FontWeight::MEDIUM)
+                                    .text_color(colors.destructive)
+                                    .cursor_pointer()
+                                    .on_mouse_down(MouseButton::Left, |_, _, cx| {
+                                        cx.stop_propagation()
+                                    })
+                                    .on_click(cx.listener(move |this, _, window, cx| {
+                                        cx.stop_propagation();
+                                        this.confirming_archive = None;
+                                        this.archive_thread(&thread_ref, window, cx);
+                                    }))
+                                    .child("Confirm"),
+                            ),
+                    );
+                }
+                if running {
+                    return this;
+                }
+                // Archive control: fades in over the meta on row hover.
+                let tooltip = (!confirm_archive).then(|| text_tooltip("Archive"));
                 this.child(
                     div()
                         .absolute()
@@ -870,11 +926,17 @@ impl Sidebar {
                                 IconName::Archive,
                                 cx,
                             )
-                            .tooltip(text_tooltip("Archive"))
+                            .when_some(tooltip, |this, tooltip| this.tooltip(tooltip))
+                            .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                             .on_click(cx.listener(
                                 move |this, _, window, cx| {
                                     cx.stop_propagation();
-                                    this.archive_thread(&thread_ref, window, cx);
+                                    if confirm_archive {
+                                        this.confirming_archive = Some(thread_ref.clone());
+                                        cx.notify();
+                                    } else {
+                                        this.archive_thread(&thread_ref, window, cx);
+                                    }
                                 },
                             )),
                         ),
