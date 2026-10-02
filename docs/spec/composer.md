@@ -1,8 +1,10 @@
 # Composer build spec
 
-> Refreshed against fe7d3092c. Supersedes `chat.md` sections 4 (composer), 5 (pickers) and 6.3
-> (branch toolbar), which describe the July checkout. Two research distillations (pickers / strip /
-> shortcuts, and the card / editor / send pipeline) were folded in after spot re-verification.
+> Refreshed against fe7d3092c. Overlaps the refreshed `chat.md` §6.1-6.3 (overlay, hero, inset),
+> which point here for everything inside the composer stack; `chat.md` §4 (error banners), §5
+> (timeline slot) and §8 (file drop overlay) stay chat-owned. Two research distillations (pickers /
+> strip / shortcuts, and the card / editor / send pipeline) were folded in after spot
+> re-verification.
 
 The composer is the card at the bottom of the chat column, everything attached to it (drawers above,
 the context strip below, the command menu, pickers), and the send/steer/queue/stop pipeline. The
