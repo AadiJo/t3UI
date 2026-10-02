@@ -2,7 +2,7 @@
 //! (`ChatView.logic.ts` `deriveComposerSendState`, `ChatView.tsx` send pipeline,
 //! `contracts/orchestration.ts` attachment limits).
 
-use super::prompt::TERMINAL_CONTEXT_PLACEHOLDER;
+use super::prompt::{InlineTokenKind, collect_inline_tokens};
 
 /// Most images one message may carry (the fork's limit; upstream allows more).
 pub const MAX_IMAGES_PER_MESSAGE: usize = 8;
@@ -16,17 +16,67 @@ pub const DEFAULT_TITLE: &str = "New thread";
 /// Error shown when the dispatch fails.
 pub const SEND_FAILED: &str = "Failed to send message.";
 
-/// The prompt with terminal placeholders removed, trimmed.
+/// Most characters a turn's input may have (`PROVIDER_SEND_TURN_MAX_INPUT_CHARS`).
+pub const MAX_INPUT_CHARS: usize = 120_000;
+
+/// The prompt with context references removed, trimmed (`stripInlineContextReferences`).
 pub fn visible_text(prompt: &str) -> String {
-    prompt
-        .replace(TERMINAL_CONTEXT_PLACEHOLDER, "")
-        .trim()
-        .to_owned()
+    let mut out = String::with_capacity(prompt.len());
+    let mut cursor = 0;
+    for token in collect_inline_tokens(prompt) {
+        if matches!(token.kind, InlineTokenKind::Context { .. }) {
+            out.push_str(&prompt[cursor..token.range.start]);
+            cursor = token.range.end;
+        }
+    }
+    out.push_str(&prompt[cursor..]);
+    out.trim().to_owned()
 }
 
-/// Whether there is anything to send: text, images, or a terminal context with text.
-pub fn has_sendable_content(prompt: &str, images: usize, live_terminal_contexts: usize) -> bool {
-    !visible_text(prompt).is_empty() || images > 0 || live_terminal_contexts > 0
+/// Whether there is anything to send: text, images, a terminal context that still has its
+/// text, or an element context (`deriveComposerSendState`).
+pub fn has_sendable_content(
+    prompt: &str,
+    images: usize,
+    live_terminal_contexts: usize,
+    element_contexts: usize,
+) -> bool {
+    !visible_text(prompt).is_empty()
+        || images > 0
+        || live_terminal_contexts > 0
+        || element_contexts > 0
+}
+
+/// The error shown instead of sending an over-long prompt
+/// (`getComposerPromptLengthValidationMessage`). Counts UTF-16 units like the web.
+pub fn prompt_length_error(prompt: &str) -> Option<String> {
+    let length = prompt.trim().encode_utf16().count();
+    let excess = length
+        .checked_sub(MAX_INPUT_CHARS)
+        .filter(|excess| *excess > 0)?;
+    let noun = if excess == 1 {
+        "character"
+    } else {
+        "characters"
+    };
+    Some(format!(
+        "Prompt is {} {noun} over the {}-character limit. Shorten or split it before sending.",
+        group_thousands(excess),
+        group_thousands(MAX_INPUT_CHARS)
+    ))
+}
+
+/// `1234567` → `1,234,567` (`toLocaleString("en-US")`).
+fn group_thousands(value: usize) -> String {
+    let digits = value.to_string();
+    let mut out = String::with_capacity(digits.len() + digits.len() / 3);
+    for (index, digit) in digits.chars().enumerate() {
+        if index > 0 && (digits.len() - index).is_multiple_of(3) {
+            out.push(',');
+        }
+        out.push(digit);
+    }
+    out
 }
 
 /// The message text sent for `prompt` with `images` attached.

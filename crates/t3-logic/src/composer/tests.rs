@@ -1,17 +1,22 @@
 //! Failure modes this covers, written before the tests:
 //!
-//! 1. Chips: a token becomes a chip only when whitespace follows; `$9x` is not a skill; a file
-//!    link whose label is not the path's basename, or whose path has a URI scheme, stays text;
-//!    `@"quoted path"` keeps escapes out of the path; adjacent chips separated by one space are
-//!    both found; byte ranges stay correct after multi-byte text.
+//! 1. Chips: a mention or skill becomes a chip only when whitespace follows; skills take any
+//!    currency sigil and may start with a digit but amounts (`$20`, `$20k`, `$1e6`) stay prose;
+//!    a bare `@scope/package` stays text; a file link whose label is not the path's basename, or
+//!    whose path has a URI scheme, stays text; `@"quoted path"` keeps escapes out of the path;
+//!    adjacent chips separated by one space are both found; byte ranges stay correct after
+//!    multi-byte text. Context links (`t3-context://v1/<kind>/<id>`, `!` for images) and
+//!    citations chip anywhere, win over overlapping mentions, and reject bad kinds, ids, or
+//!    citation query keys; context labels are sanitized.
 //! 2. Serialization: a path with spaces, parentheses, `#`, `?`, brackets or non-ASCII round-trips
 //!    through `serialize_file_link` and `collect_inline_tokens` unchanged.
-//! 3. Triggers: `/cmd` only at a line start and without whitespace; `$` and `@` only for the token
-//!    under the cursor; U+FFFC breaks a token; a cursor inside a multi-byte char does not panic.
-//! 4. Menu: an empty `/` query lists `/model` then provider commands, grouped Built-in / Provider;
-//!    a query ranks by name before description; skills hide disabled ones and show the install
-//!    source; a selection reuses one following space; the highlight resets when the query changes
-//!    and ↑/↓ wrap.
+//! 3. Triggers: `/cmd` only at a line start and without whitespace; currency sigils, `@` and `#`
+//!    only for the token under the cursor; U+FFFC no longer breaks a token; a cursor inside a
+//!    multi-byte char does not panic.
+//! 4. Menu: an empty `/` query lists `/model`, provider commands (only at the prompt start), then
+//!    `/skill:` rows, ungrouped; a query ranks by name before description; skills hide disabled
+//!    or agent-only ones and show the install source; a selection reuses one following space; the
+//!    highlight resets when the query changes and ↑/↓ wrap.
 //! 5. Models: the draft's pick beats session, thread, and project; a disabled instance is skipped;
 //!    a model typed by name or alias resolves to its slug; an unknown model falls back to the first
 //!    model; options carry over only for the same instance.
@@ -20,8 +25,9 @@
 //! 7. Pending answers: custom text beats the selection and clears it; single-select replaces,
 //!    multi-select toggles; nothing is complete until every question has an answer; the panel
 //!    summary falls back to file-change for kinds the fork does not name.
-//! 8. Send: placeholders alone are not sendable; image-only messages get the fixed text; titles
-//!    truncate at 50 chars; attachment limits report the reference copy.
+//! 8. Send: context chips alone are not sendable text; image-only messages get the fixed text;
+//!    titles truncate at 50 chars; attachment limits and the 120,000-char prompt limit report
+//!    the reference copy.
 //! 9. Drafts: an unreadable or old file starts empty; empty drafts are not written.
 
 use std::collections::BTreeMap;
@@ -36,10 +42,11 @@ use t3_protocol::{
 
 use super::{
     draft::{ComposerDraft, DraftsFile},
-    menu::{self, MenuAction, Replacement},
+    menu::{self, MenuAction, MenuSources, Replacement},
     pending::{self, DraftAnswer},
     prompt::{self, InlineTokenKind, TriggerKind},
     providers::{self, ModelContext, PickerRail},
+    search::SkillSource,
     send,
 };
 use crate::settings::ModelFavorite;
@@ -66,10 +73,30 @@ fn skill(name: &str) -> InlineTokenKind {
 fn chips_need_trailing_whitespace() {
     assert!(kinds("use $review").is_empty());
     assert_eq!(kinds("use $review "), vec![(skill("review"), "$review")]);
-    assert!(kinds("$9x ").is_empty());
     assert_eq!(
-        kinds("@src/main.rs\n"),
-        vec![(mention("src/main.rs"), "@src/main.rs")]
+        kinds("$9x "),
+        vec![(skill("9x"), "$9x")],
+        "digits first is fine with a letter"
+    );
+    for amount in ["$20 ", "$20k ", "$100M ", "$1e6 ", "$1_000 "] {
+        assert!(kinds(amount).is_empty(), "{amount:?} is an amount");
+    }
+    assert_eq!(
+        kinds("€review "),
+        vec![(skill("review"), "€review")],
+        "any currency sigil"
+    );
+    assert_eq!(
+        kinds("@README.md\n"),
+        vec![(mention("README.md"), "@README.md")]
+    );
+    assert!(
+        kinds("@scope/pkg ").is_empty(),
+        "bare scoped packages stay text"
+    );
+    assert_eq!(
+        kinds("@Src/Main.rs "),
+        vec![(mention("Src/Main.rs"), "@Src/Main.rs")]
     );
     assert!(kinds("a@b.c ").is_empty(), "@ must start a token");
 }
@@ -111,6 +138,42 @@ fn adjacent_chips_and_multibyte_offsets() {
             (mention("c.rs"), "[c.rs](c.rs)"),
         ]
     );
+}
+
+#[test]
+fn context_links_and_citations() {
+    let reference =
+        prompt::serialize_context_reference("terminal", "ctx_1", "Terminal 1 [lines]\n4-6");
+    assert_eq!(
+        reference,
+        "[Terminal 1 lines 4-6](t3-context://v1/terminal/ctx_1)"
+    );
+    let image = prompt::serialize_context_reference("image", "img-2", "");
+    assert_eq!(image, "![image](t3-context://v1/image/img-2)");
+    // No whitespace needed around links; they beat an overlapping mention.
+    let text = format!("see{reference}and {image}@x");
+    let found = prompt::collect_inline_tokens(&text);
+    assert_eq!(found.len(), 2);
+    assert_eq!(&text[found[0].range.clone()], reference);
+    assert_eq!(&text[found[1].range.clone()], image);
+    assert!(
+        matches!(&found[1].kind, InlineTokenKind::Context { image: true, kind, .. } if kind == "image")
+    );
+    assert!(prompt::collect_inline_tokens("[x](t3-context://v1/Bad/ctx)").is_empty());
+    assert!(prompt::collect_inline_tokens("[x](t3-context://v1/terminal/a/b)").is_empty());
+
+    let citation = "[Assistant quote](t3-citation://v1/env/thread/msg?text=Hello+world&start=0&end=11&prefix=&suffix=%21&comment=why)";
+    let found = prompt::collect_inline_tokens(citation);
+    assert_eq!(
+        found[0].kind,
+        InlineTokenKind::Citation {
+            text: "Hello world".into(),
+            comment: Some("why".into())
+        }
+    );
+    let missing_key =
+        "[Assistant quote](t3-citation://v1/env/thread/msg?text=a&start=0&end=1&prefix=)";
+    assert!(prompt::collect_inline_tokens(missing_key).is_empty());
 }
 
 #[test]
@@ -157,8 +220,25 @@ fn skill_and_path_triggers_follow_the_cursor_token() {
         (TriggerKind::Path, "src/ma")
     );
     assert_eq!(prompt::detect_trigger("open @src now", 13), None);
-    let after_placeholder = prompt::detect_trigger("x\u{FFFC}@a", 6).unwrap();
-    assert_eq!(after_placeholder.range, 4..6);
+    assert_eq!(
+        prompt::detect_trigger("x\u{FFFC}@a", 6),
+        None,
+        "U+FFFC no longer breaks tokens"
+    );
+    let pull_request = prompt::detect_trigger("fix #12", 7).unwrap();
+    assert_eq!(
+        (pull_request.kind, pull_request.query.as_str()),
+        (TriggerKind::PullRequest, "12")
+    );
+    assert_eq!(
+        prompt::detect_trigger("#", 1).unwrap().kind,
+        TriggerKind::PullRequest
+    );
+    assert_eq!(prompt::detect_trigger("#-x", 3), None);
+    assert_eq!(
+        prompt::detect_trigger("£sk", 4).unwrap().kind,
+        TriggerKind::Skill
+    );
     // Inside a multi-byte char: snapped, no panic.
     assert_eq!(prompt::detect_trigger("é", 1), None);
 }
@@ -181,24 +261,42 @@ fn codex(config: &t3_protocol::server::ServerConfig) -> &ServerProvider {
         .unwrap()
 }
 
+fn sources<'a>(
+    provider: Option<&'a ServerProvider>,
+    entries: &'a [ProjectEntry],
+) -> MenuSources<'a> {
+    MenuSources {
+        instance: provider.map_or("", |provider| provider.instance_id.as_str()),
+        slash_commands: provider.map_or(&[][..], |provider| &provider.slash_commands[..]),
+        skills: provider.map_or(&[][..], |provider| &provider.skills[..]),
+        entries,
+        plan_mode: false,
+        skills_in_slash_menu: true,
+        compact_available: true,
+    }
+}
+
 #[test]
 fn slash_menu_lists_builtin_then_provider() {
     let config = config();
     let trigger = prompt::detect_trigger("/", 1).unwrap();
-    let items = menu::menu_items(&trigger, Some(codex(&config)), &[]);
+    let items = menu::menu_items(&trigger, sources(Some(codex(&config)), &[]));
     assert_eq!(items[0].label, "/model");
     assert_eq!(items[0].action, MenuAction::OpenModelPicker);
     assert!(items.iter().any(|item| item.label == "/compact"));
-    let groups = menu::group_items(&items, &trigger);
     assert_eq!(
-        groups.iter().map(|group| group.label).collect::<Vec<_>>(),
-        vec![Some("Built-in"), Some("Provider")]
+        items.last().unwrap().label,
+        "Changelog",
+        "skills follow commands"
     );
+    // Provider commands only apply at the start of the prompt.
+    let later = prompt::detect_trigger("hi\n/", 4).unwrap();
+    let items = menu::menu_items(&later, sources(Some(codex(&config)), &[]));
+    assert!(!items.iter().any(|item| item.label == "/compact"));
 
     let typed = prompt::detect_trigger("/comp", 5).unwrap();
-    let items = menu::menu_items(&typed, Some(codex(&config)), &[]);
+    let items = menu::menu_items(&typed, sources(Some(codex(&config)), &[]));
     assert_eq!(items[0].label, "/compact");
-    assert_eq!(menu::group_items(&items, &typed)[0].label, None);
     assert_eq!(
         items[0].replacement(),
         Some(Replacement::Text("/compact ".into()))
@@ -209,10 +307,10 @@ fn slash_menu_lists_builtin_then_provider() {
 fn skill_menu_shows_enabled_skills_with_source() {
     let config = config();
     let trigger = prompt::detect_trigger("$", 1).unwrap();
-    let items = menu::menu_items(&trigger, Some(codex(&config)), &[]);
+    let items = menu::menu_items(&trigger, sources(Some(codex(&config)), &[]));
     assert_eq!(items.len(), 1);
     assert_eq!(items[0].label, "Changelog");
-    assert_eq!(items[0].source.as_deref(), Some("Personal"));
+    assert_eq!(items[0].source.map(SkillSource::label), Some("Personal"));
     assert_eq!(
         items[0].replacement(),
         Some(Replacement::Chip {
@@ -220,7 +318,7 @@ fn skill_menu_shows_enabled_skills_with_source() {
         })
     );
     let none = prompt::detect_trigger("$zzzz", 5).unwrap();
-    assert!(menu::menu_items(&none, Some(codex(&config)), &[]).is_empty());
+    assert!(menu::menu_items(&none, sources(Some(codex(&config)), &[])).is_empty());
     assert_eq!(
         menu::empty_text(TriggerKind::Skill, false),
         "No skills found. Try / to browse provider commands."
@@ -235,7 +333,7 @@ fn path_items_and_selection_range() {
         kind: EntryKind::File,
         ignored: None,
     }];
-    let items = menu::menu_items(&trigger, None, &entries);
+    let items = menu::menu_items(&trigger, sources(None, &entries));
     assert_eq!(items[0].label, "format.ts");
     assert_eq!(items[0].description, "src");
     assert_eq!(items[0].id, "path:file:src/format.ts");
@@ -248,7 +346,7 @@ fn path_items_and_selection_range() {
 fn highlight_resets_and_wraps() {
     let config = config();
     let trigger = prompt::detect_trigger("/", 1).unwrap();
-    let items = menu::menu_items(&trigger, Some(codex(&config)), &[]);
+    let items = menu::menu_items(&trigger, sources(Some(codex(&config)), &[]));
     let last = items.last().unwrap().id.clone();
     assert_eq!(
         menu::active_item(&items, Some(&last), true).unwrap().id,
@@ -496,9 +594,24 @@ fn token_formatting() {
 
 #[test]
 fn send_rules() {
-    assert!(!send::has_sendable_content("  \u{FFFC} ", 0, 0));
-    assert!(send::has_sendable_content("\u{FFFC}", 0, 1));
-    assert!(send::has_sendable_content("", 1, 0));
+    let terminal_chip = " [Terminal 1 line 4](t3-context://v1/terminal/ctx_1) ";
+    assert!(
+        !send::has_sendable_content(terminal_chip, 0, 0, 0),
+        "a chip alone is not text"
+    );
+    assert!(send::has_sendable_content(terminal_chip, 0, 1, 0));
+    assert!(send::has_sendable_content("", 1, 0, 0));
+    assert!(send::has_sendable_content("", 0, 0, 1));
+    assert_eq!(
+        send::prompt_length_error(&"x".repeat(send::MAX_INPUT_CHARS)),
+        None
+    );
+    assert_eq!(
+        send::prompt_length_error(&"x".repeat(send::MAX_INPUT_CHARS + 1234)).as_deref(),
+        Some(
+            "Prompt is 1,234 characters over the 120,000-character limit. Shorten or split it before sending."
+        )
+    );
     assert_eq!(send::outgoing_text("  ", 1), send::IMAGE_ONLY_TEXT);
     assert_eq!(send::title_seed("", Some("shot.png")), "Image: shot.png");
     assert_eq!(send::title_seed("", None), "New thread");

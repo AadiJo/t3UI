@@ -7,14 +7,20 @@
 
 use t3_protocol::server::ProviderSkill;
 
-/// Trims and lowercases a query, optionally dropping leading sigils (`/`, `$`).
-pub fn normalize_query(input: &str, strip_leading: Option<char>) -> String {
+/// Trims and lowercases a query, optionally dropping leading sigils (`/`, or any currency sign
+/// for skills).
+pub fn normalize_query(input: &str, strip_leading: Option<fn(char) -> bool>) -> String {
     let trimmed = input.trim();
     let trimmed = match strip_leading {
         Some(sigil) => trimmed.trim_start_matches(sigil),
         None => trimmed,
     };
     trimmed.to_lowercase()
+}
+
+/// `/` sigils of a slash query.
+pub fn is_slash(c: char) -> bool {
+    c == '/'
 }
 
 /// Base scores per match tier (`scoreQueryMatch` input). `None` disables a tier.
@@ -139,6 +145,22 @@ pub fn rank<T>(mut scored: Vec<(i64, String, T)>) -> Vec<T> {
     scored.into_iter().map(|(_, _, item)| item).collect()
 }
 
+/// Score of a skill row in the `/` menu (`scoreSlashCommandItem`): `/skill` lists every skill,
+/// `/skill:x` searches for `x`, anything else searches the skill directly; a prefix of "skill"
+/// keeps it last.
+pub fn score_slash_skill(skill: &ProviderSkill, query: &str) -> Option<i64> {
+    if query == "skill" {
+        return Some(0);
+    }
+    let skill_query = query.strip_prefix("skill:").unwrap_or(query);
+    let score = if skill_query.is_empty() {
+        Some(0)
+    } else {
+        score_skill(skill, skill_query)
+    };
+    score.or_else(|| "skill".starts_with(query).then_some(i64::MAX))
+}
+
 /// Score of a slash command against a normalized query: the name (fuzzy) or the description.
 pub fn score_slash_command(name: &str, description: &str, query: &str) -> Option<i64> {
     let name_tiers = MatchTiers::standard(0)
@@ -153,56 +175,81 @@ pub fn score_slash_command(name: &str, description: &str, query: &str) -> Option
     .min()
 }
 
-/// Enabled skills matching `query` (`$` stripped), best first (`searchProviderSkills`). An empty
-/// query lists every enabled skill in server order.
+/// Skills a composer pick can start: enabled and not reserved for the agent
+/// (`isProviderSkillUserInvocable`), first of each name (case-insensitive) kept
+/// (`dedupeProviderSkillsByName`).
+pub fn invocable_skills(skills: &[ProviderSkill]) -> Vec<&ProviderSkill> {
+    let mut seen = std::collections::HashSet::new();
+    skills
+        .iter()
+        .filter(|skill| skill.enabled && skill.user_invocable != Some(false))
+        .filter(|skill| seen.insert(skill.name.trim().to_lowercase()))
+        .collect()
+}
+
+/// Score of one skill against a normalized query (`scoreProviderSkill`): name (fuzzy), label
+/// (fuzzy), short description, description, scope.
+pub fn score_skill(skill: &ProviderSkill, query: &str) -> Option<i64> {
+    let label = skill_display_name(skill);
+    [
+        score_match(
+            &skill.name.to_lowercase(),
+            query,
+            MatchTiers::standard(0)
+                .with_fuzzy(100)
+                .with_markers(&['-', '_', '/']),
+        ),
+        score_match(
+            &label.to_lowercase(),
+            query,
+            MatchTiers::standard(1).with_fuzzy(110),
+        ),
+        score_match(
+            &skill
+                .short_description
+                .as_deref()
+                .unwrap_or_default()
+                .to_lowercase(),
+            query,
+            MatchTiers::standard(20),
+        ),
+        score_match(
+            &skill
+                .description
+                .as_deref()
+                .unwrap_or_default()
+                .to_lowercase(),
+            query,
+            MatchTiers::standard(30),
+        ),
+        score_match(
+            &skill.scope.as_deref().unwrap_or_default().to_lowercase(),
+            query,
+            MatchTiers::standard(40).without_boundary(),
+        ),
+    ]
+    .into_iter()
+    .flatten()
+    .min()
+}
+
+/// Invocable skills matching `query` (currency sigils stripped), best first
+/// (`searchProviderSkills`). An empty query lists them all in server order.
 pub fn search_skills<'a>(skills: &'a [ProviderSkill], query: &str) -> Vec<&'a ProviderSkill> {
-    let enabled = skills.iter().filter(|skill| skill.enabled);
-    let query = normalize_query(query, Some('$'));
+    let invocable = invocable_skills(skills);
+    let query = normalize_query(query, Some(super::prompt::is_currency_symbol));
     if query.is_empty() {
-        return enabled.collect();
+        return invocable;
     }
-    let scored = enabled
+    let scored = invocable
+        .into_iter()
         .filter_map(|skill| {
-            let label = skill_display_name(skill);
-            let tiers = [
-                score_match(
-                    &skill.name.to_lowercase(),
-                    &query,
-                    MatchTiers::standard(0)
-                        .with_fuzzy(100)
-                        .with_markers(&['-', '_', '/']),
-                ),
-                score_match(
-                    &label.to_lowercase(),
-                    &query,
-                    MatchTiers::standard(1).with_fuzzy(110),
-                ),
-                score_match(
-                    &skill
-                        .short_description
-                        .as_deref()
-                        .unwrap_or_default()
-                        .to_lowercase(),
-                    &query,
-                    MatchTiers::standard(20),
-                ),
-                score_match(
-                    &skill
-                        .description
-                        .as_deref()
-                        .unwrap_or_default()
-                        .to_lowercase(),
-                    &query,
-                    MatchTiers::standard(30),
-                ),
-                score_match(
-                    &skill.scope.as_deref().unwrap_or_default().to_lowercase(),
-                    &query,
-                    MatchTiers::standard(40).without_boundary(),
-                ),
-            ];
-            let score = tiers.into_iter().flatten().min()?;
-            let tie = format!("{}\u{0}{}", label.to_lowercase(), skill.name);
+            let score = score_skill(skill, &query)?;
+            let tie = format!(
+                "{}\u{0}{}",
+                skill_display_name(skill).to_lowercase(),
+                skill.name
+            );
             Some((score, tie, skill))
         })
         .collect();
@@ -219,20 +266,48 @@ pub fn skill_display_name(skill: &ProviderSkill) -> String {
     title_case_words(&skill.name)
 }
 
-/// Where a skill comes from, shown at the right of its menu row ("App", "System", ...).
-pub fn skill_install_source(skill: &ProviderSkill) -> Option<String> {
-    let path = skill.path.replace('\\', "/");
-    if path.contains("/.codex/plugins/") || path.contains("/.agents/plugins/") {
-        return Some("App".into());
+/// Where a skill comes from (`resolveProviderSkillSourceKind`); its menu badge.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum SkillSource {
+    App,
+    Repo,
+    Project,
+    Personal,
+    System,
+    Other,
+}
+
+impl SkillSource {
+    pub fn of(skill: &ProviderSkill) -> Self {
+        let path = skill.path.replace('\\', "/");
+        if path.contains("/.codex/plugins/") || path.contains("/.agents/plugins/") {
+            return Self::App;
+        }
+        match skill
+            .scope
+            .as_deref()
+            .map(|scope| scope.trim().to_lowercase())
+            .as_deref()
+        {
+            Some("repo" | "repository") => Self::Repo,
+            Some("project" | "workspace" | "local") => Self::Project,
+            Some("user" | "personal") => Self::Personal,
+            Some("system") => Self::System,
+            _ => Self::Other,
+        }
     }
-    let scope = skill.scope.as_deref()?.trim().to_lowercase();
-    Some(match scope.as_str() {
-        "" => return None,
-        "system" => "System".into(),
-        "project" | "workspace" | "local" => "Project".into(),
-        "user" | "personal" => "Personal".into(),
-        other => title_case_words(other),
-    })
+
+    /// The badge text (`SKILL_SOURCE_LABEL_BY_KIND`); the `$` menu appends " Skill".
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::App => "App",
+            Self::Repo => "Repo",
+            Self::Project => "Project",
+            Self::Personal => "Personal",
+            Self::System => "System",
+            Self::Other => "Provider",
+        }
+    }
 }
 
 fn title_case_words(value: &str) -> String {

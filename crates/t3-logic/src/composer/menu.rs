@@ -1,17 +1,17 @@
-//! The composer command menu: items for the active trigger, their grouping, the highlighted row,
-//! and the text a selection writes (`ChatComposer.tsx` `composerMenuItems`, `onSelectComposerItem`,
-//! `ComposerCommandMenu.tsx`, `composerMenuHighlight.ts`).
+//! The composer command menu: items for the active trigger, the highlighted row, and the text a
+//! selection writes (`ChatComposer.tsx` `composerMenuItems`, `onSelectComposerItem`,
+//! `ComposerCommandMenu.tsx`, `composerSlashCommandSearch.ts`, `composerMenuHighlight.ts`).
 
 use t3_protocol::{
     projects::{EntryKind, ProjectEntry},
-    server::ServerProvider,
+    server::{ProviderSkill, ProviderSlashCommand},
 };
 
 use super::{
     prompt::{Trigger, TriggerKind, basename, parent_dir, serialize_file_link, serialize_skill},
     search::{
-        normalize_query, rank, score_slash_command, search_skills, skill_display_name,
-        skill_install_source,
+        SkillSource, invocable_skills, is_slash, normalize_query, rank, score_slash_command,
+        score_slash_skill, search_skills, skill_display_name,
     },
 };
 
@@ -23,15 +23,17 @@ pub const PATH_SEARCH_DEBOUNCE_MS: u64 = 120;
 /// One menu row.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MenuItem {
-    /// Stable id: `path:<kind>:<path>`, `slash:model`, `provider-slash-command:<instance>:<name>`,
-    /// `skill:<instance>:<name>`.
+    /// Stable id: `path:<kind>:<path>`, `slash:<command>`,
+    /// `provider-slash-command:<instance>:<name>`, `skill:<instance>:<name>`.
     pub id: String,
     pub action: MenuAction,
+    /// 12px medium text, at most 45% of the row. `/` skill rows render a muted `/skill:` prefix
+    /// before [`MenuItem::label`].
     pub label: String,
     /// Muted text after the label.
     pub description: String,
-    /// Right-aligned source label for skills ("App", "Personal", ...).
-    pub source: Option<String>,
+    /// Right-aligned badge for skills.
+    pub source: Option<SkillSource>,
 }
 
 /// What selecting a row does.
@@ -41,37 +43,34 @@ pub enum MenuAction {
     Path { path: String, kind: EntryKind },
     /// Built-in `/model`: clear the trigger and open the model picker.
     OpenModelPicker,
+    /// Built-in `/plan` or `/default` (only with plan mode enabled): switch interaction mode.
+    SetPlanMode { plan: bool },
     /// Insert `/name `.
     ProviderCommand { name: String },
-    /// Insert a skill chip.
-    Skill { name: String },
+    /// Insert a skill chip. `slash` when picked from the `/` menu.
+    Skill { name: String, slash: bool },
 }
 
 impl MenuItem {
-    /// Leading glyph of the row.
-    pub fn icon(&self) -> MenuIcon {
+    /// Leading glyph of the row: only paths (Pierre icon) and pull requests have one now.
+    pub fn entry_icon(&self) -> Option<(&str, bool)> {
         match &self.action {
-            MenuAction::Path { path, kind } => MenuIcon::Entry {
-                path: path.clone(),
-                directory: *kind == EntryKind::Directory,
-            },
-            MenuAction::OpenModelPicker => MenuIcon::Bot,
-            MenuAction::ProviderCommand { .. } | MenuAction::Skill { .. } => MenuIcon::Cube,
+            MenuAction::Path { path, kind } => Some((path, *kind == EntryKind::Directory)),
+            _ => None,
         }
     }
 
-    /// The text that replaces the trigger, and whether it ends in a chip. `None` for `/model`,
-    /// which only clears the trigger.
+    /// The text that replaces the trigger. `None` for built-ins, which only clear it.
     pub fn replacement(&self) -> Option<Replacement> {
         Some(match &self.action {
             MenuAction::Path { path, .. } => Replacement::Chip {
                 token: serialize_file_link(path),
             },
-            MenuAction::Skill { name } => Replacement::Chip {
+            MenuAction::Skill { name, .. } => Replacement::Chip {
                 token: serialize_skill(name),
             },
             MenuAction::ProviderCommand { name } => Replacement::Text(format!("/{name} ")),
-            MenuAction::OpenModelPicker => return None,
+            MenuAction::OpenModelPicker | MenuAction::SetPlanMode { .. } => return None,
         })
     }
 }
@@ -85,26 +84,31 @@ pub enum Replacement {
     Text(String),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum MenuIcon {
-    /// Pierre file or folder icon for `path`.
-    Entry { path: String, directory: bool },
-    /// Lucide `Bot`.
-    Bot,
-    /// The cube glyph of provider commands and skills.
-    Cube,
+/// What the menu reads besides the trigger.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct MenuSources<'a> {
+    /// The selected instance's id (item ids).
+    pub instance: &'a str,
+    /// Its slash commands and skills for the thread's workspace.
+    pub slash_commands: &'a [ProviderSlashCommand],
+    pub skills: &'a [ProviderSkill],
+    /// `projects.searchEntries` results for a path trigger.
+    pub entries: &'a [ProjectEntry],
+    /// Client setting `planModeEnabled` and the provider allows the toggle.
+    pub plan_mode: bool,
+    /// Client setting `showSkillsInSlashMenu` (default on).
+    pub skills_in_slash_menu: bool,
+    /// `/compact` applies: the trigger is the whole prompt, nothing attached, and the thread
+    /// has a conversation to compact.
+    pub compact_available: bool,
 }
 
-/// Builds the rows for `trigger`. `provider` is the composer's selected instance; `entries` is
-/// the latest `projects.searchEntries` result for a path trigger.
-pub fn menu_items(
-    trigger: &Trigger,
-    provider: Option<&ServerProvider>,
-    entries: &[ProjectEntry],
-) -> Vec<MenuItem> {
-    let instance = provider.map_or("", |provider| provider.instance_id.as_str());
+/// Builds the rows for `trigger`.
+pub fn menu_items(trigger: &Trigger, sources: MenuSources<'_>) -> Vec<MenuItem> {
+    let instance = sources.instance;
     match trigger.kind {
-        TriggerKind::Path => entries
+        TriggerKind::Path => sources
+            .entries
             .iter()
             .map(|entry| MenuItem {
                 id: format!("path:{}:{}", entry.kind.as_str(), entry.path),
@@ -117,18 +121,79 @@ pub fn menu_items(
                 source: None,
             })
             .collect(),
-        TriggerKind::SlashCommand => {
-            let builtin = MenuItem {
-                id: "slash:model".into(),
-                action: MenuAction::OpenModelPicker,
-                label: "/model".into(),
-                description: "Switch response model for this thread".into(),
-                source: None,
-            };
-            let commands = provider
-                .map(|provider| provider.slash_commands.as_slice())
-                .unwrap_or_default()
+        TriggerKind::SlashCommand => slash_items(trigger, sources),
+        TriggerKind::Skill => search_skills(sources.skills, &trigger.query)
+            .into_iter()
+            .map(|skill| MenuItem {
+                id: format!("skill:{instance}:{}", skill.name),
+                action: MenuAction::Skill {
+                    name: skill.name.clone(),
+                    slash: false,
+                },
+                label: skill_display_name(skill),
+                description: skill_description(skill, "Run provider skill"),
+                source: Some(SkillSource::of(skill)),
+            })
+            .collect(),
+        // Pull request search needs the PR index; not wired yet.
+        TriggerKind::PullRequest => Vec::new(),
+    }
+}
+
+fn skill_description(skill: &ProviderSkill, fallback: &str) -> String {
+    skill
+        .short_description
+        .clone()
+        .or_else(|| skill.description.clone())
+        .or_else(|| skill.scope.as_ref().map(|scope| format!("{scope} skill")))
+        .unwrap_or_else(|| fallback.to_owned())
+}
+
+/// `/model` (+ `/plan`, `/default`), provider commands (not ones a visible skill shadows,
+/// `/compact` only when it applies, and only at the start of the prompt), then `/skill:` rows;
+/// ranked when there is a query.
+fn slash_items(trigger: &Trigger, sources: MenuSources<'_>) -> Vec<MenuItem> {
+    let instance = sources.instance;
+    let mut items = vec![MenuItem {
+        id: "slash:model".into(),
+        action: MenuAction::OpenModelPicker,
+        label: "/model".into(),
+        description: "Switch response model for this thread".into(),
+        source: None,
+    }];
+    if sources.plan_mode {
+        items.push(MenuItem {
+            id: "slash:plan".into(),
+            action: MenuAction::SetPlanMode { plan: true },
+            label: "/plan".into(),
+            description: "Switch this thread into plan mode".into(),
+            source: None,
+        });
+        items.push(MenuItem {
+            id: "slash:default".into(),
+            action: MenuAction::SetPlanMode { plan: false },
+            label: "/default".into(),
+            description: "Switch this thread back to normal build mode".into(),
+            source: None,
+        });
+    }
+    let skills = if sources.skills_in_slash_menu {
+        invocable_skills(sources.skills)
+    } else {
+        Vec::new()
+    };
+    let shadowed: Vec<String> = skills
+        .iter()
+        .map(|skill| skill.name.trim().to_lowercase())
+        .collect();
+    let at_prompt_start = trigger.range.start == 0;
+    if at_prompt_start {
+        items.extend(
+            sources
+                .slash_commands
                 .iter()
+                .filter(|command| !shadowed.contains(&command.name.trim().to_lowercase()))
+                .filter(|command| command.name != "compact" || sources.compact_available)
                 .map(|command| MenuItem {
                     id: format!("provider-slash-command:{instance}:{}", command.name),
                     action: MenuAction::ProviderCommand {
@@ -141,97 +206,67 @@ pub fn menu_items(
                         .or_else(|| command.input.as_ref().map(|input| input.hint.clone()))
                         .unwrap_or_else(|| "Run provider command".into()),
                     source: None,
-                });
-            let items: Vec<MenuItem> = std::iter::once(builtin).chain(commands).collect();
-            let query = normalize_query(&trigger.query, Some('/'));
-            if query.is_empty() {
-                return items;
-            }
-            let scored = items
-                .into_iter()
-                .filter_map(|item| {
-                    let (name, tie) = match &item.action {
-                        MenuAction::OpenModelPicker => ("model".to_owned(), "0\u{0}model".into()),
-                        MenuAction::ProviderCommand { name } => {
-                            (name.clone(), format!("1\u{0}{name}\u{0}{instance}"))
-                        }
-                        _ => return None,
-                    };
-                    let score = score_slash_command(&name, &item.description, &query)?;
-                    Some((score, tie, item))
-                })
-                .collect();
-            rank(scored)
-        }
-        TriggerKind::Skill => {
-            let skills = provider
-                .map(|provider| provider.skills.as_slice())
-                .unwrap_or_default();
-            search_skills(skills, &trigger.query)
-                .into_iter()
-                .map(|skill| MenuItem {
+                }),
+        );
+    }
+    let skill_rows: Vec<(&ProviderSkill, MenuItem)> = skills
+        .into_iter()
+        .map(|skill| {
+            (
+                skill,
+                MenuItem {
                     id: format!("skill:{instance}:{}", skill.name),
                     action: MenuAction::Skill {
                         name: skill.name.clone(),
+                        slash: true,
                     },
                     label: skill_display_name(skill),
-                    description: skill
-                        .short_description
-                        .clone()
-                        .or_else(|| skill.description.clone())
-                        .or_else(|| skill.scope.as_ref().map(|scope| format!("{scope} skill")))
-                        .unwrap_or_else(|| "Run provider skill".into()),
-                    source: skill_install_source(skill),
-                })
-                .collect()
-        }
-    }
-}
+                    description: skill_description(skill, ""),
+                    source: Some(SkillSource::of(skill)),
+                },
+            )
+        })
+        .collect();
 
-/// A labeled run of rows. `label` is `None` for an ungrouped list.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct MenuGroup<'a> {
-    pub label: Option<&'static str>,
-    pub items: Vec<&'a MenuItem>,
-}
-
-/// Groups rows for display: "Skills" for `$`, "Built-in" / "Provider" for an empty `/` query,
-/// one unlabeled group otherwise.
-pub fn group_items<'a>(items: &'a [MenuItem], trigger: &Trigger) -> Vec<MenuGroup<'a>> {
-    match trigger.kind {
-        TriggerKind::Skill if items.is_empty() => Vec::new(),
-        TriggerKind::Skill => vec![MenuGroup {
-            label: Some("Skills"),
-            items: items.iter().collect(),
-        }],
-        TriggerKind::SlashCommand if trigger.query.trim().is_empty() => {
-            let (builtin, provider): (Vec<_>, Vec<_>) = items
-                .iter()
-                .partition(|item| item.action == MenuAction::OpenModelPicker);
-            [("Built-in", builtin), ("Provider", provider)]
-                .into_iter()
-                .filter(|(_, items)| !items.is_empty())
-                .map(|(label, items)| MenuGroup {
-                    label: Some(label),
-                    items,
-                })
-                .collect()
-        }
-        _ => vec![MenuGroup {
-            label: None,
-            items: items.iter().collect(),
-        }],
+    let query = normalize_query(&trigger.query, Some(is_slash));
+    if query.is_empty() {
+        items.extend(skill_rows.into_iter().map(|(_, item)| item));
+        return items;
     }
+    let mut scored: Vec<(i64, String, MenuItem)> = items
+        .into_iter()
+        .filter_map(|item| {
+            let (name, tie) = match &item.action {
+                MenuAction::OpenModelPicker => ("model".to_owned(), "0\u{0}model".to_owned()),
+                MenuAction::SetPlanMode { plan } => {
+                    let name = if *plan { "plan" } else { "default" };
+                    (name.to_owned(), format!("0\u{0}{name}"))
+                }
+                MenuAction::ProviderCommand { name } => {
+                    (name.clone(), format!("1\u{0}{name}\u{0}{instance}"))
+                }
+                _ => return None,
+            };
+            let score = score_slash_command(&name, &item.description, &query)?;
+            Some((score, tie, item))
+        })
+        .collect();
+    scored.extend(skill_rows.into_iter().filter_map(|(skill, item)| {
+        let score = score_slash_skill(skill, &query)?;
+        Some((score, format!("2\u{0}{}\u{0}{instance}", skill.name), item))
+    }));
+    rank(scored)
 }
 
 /// Text shown when there are no rows.
 pub fn empty_text(kind: TriggerKind, loading: bool) -> &'static str {
     match (kind, loading) {
         (TriggerKind::Skill, true) => "Searching workspace skills...",
-        (TriggerKind::Skill, false) => "No skills found. Try / to browse provider commands.",
+        (TriggerKind::PullRequest, true) => "Finding pull request...",
         (_, true) => "Searching workspace files...",
+        (TriggerKind::Skill, false) => "No skills found. Try / to browse provider commands.",
         (TriggerKind::Path, false) => "No matching files or folders.",
-        (TriggerKind::SlashCommand, false) => "No matching command.",
+        (TriggerKind::SlashCommand | TriggerKind::PullRequest, false) => "No matching command.",
     }
 }
 
