@@ -19,6 +19,7 @@ use t3_ui::{
 
 use super::index_view::IndexView;
 use crate::{
+    chat::{ChatTarget, ChatView},
     chrome::{TypeScale as _, drag_region},
     state::{AppState, DraftId, Route},
 };
@@ -50,15 +51,26 @@ impl MainViewKey {
 pub fn build_main_view(
     route: &Route,
     app_state: &Entity<AppState>,
-    _window: &mut Window,
+    window: &mut Window,
     cx: &mut App,
 ) -> AnyView {
     match route {
         Route::Index => cx.new(|cx| IndexView::new(app_state.clone(), cx)).into(),
-        // chat/: ChatView for server threads and drafts.
-        Route::Thread(_) | Route::Draft(_) => cx
-            .new(|cx| Placeholder::new("Chat", app_state.clone(), cx))
-            .into(),
+        Route::Thread(thread) => {
+            let target = ChatTarget::Thread(thread.clone());
+            cx.new(|cx| ChatView::new(target, app_state.clone(), window, cx))
+                .into()
+        }
+        // The draft store (composer) will name the draft's project; until then the header
+        // shows no project.
+        Route::Draft(id) => {
+            let target = ChatTarget::Draft {
+                id: id.clone(),
+                project: None,
+            };
+            cx.new(|cx| ChatView::new(target, app_state.clone(), window, cx))
+                .into()
+        }
         // settings/: SettingsView (reads the page from the route).
         Route::Settings(_) => cx
             .new(|cx| Placeholder::new("Settings", app_state.clone(), cx))
