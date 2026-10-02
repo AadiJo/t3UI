@@ -38,7 +38,7 @@ use std::{
 
 use gpui_kit::{
     App, AppContext as _, ClipboardEntry, Context, Entity, EventEmitter, ExternalPaths,
-    FocusHandle, Focusable, Image, ImageFormat, InteractiveElement as _, IntoElement,
+    FocusHandle, Focusable, Image, ImageFormat, InteractiveElement as _, IntoElement, KeyDownEvent,
     ParentElement as _, Render, SharedString, StatefulInteractiveElement as _, Styled as _,
     StyledImage as _, Subscription, Task, TaskExt as _, Window,
     base::ElementExt as _,
@@ -1010,6 +1010,51 @@ impl Composer {
         cx.notify();
     }
 
+    /// Digits 1-9 pick question options while focus is outside the editor.
+    fn on_option_digit(
+        &mut self,
+        event: &KeyDownEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let modifiers = event.keystroke.modifiers;
+        if self.pending.user_inputs.is_empty()
+            || modifiers.platform
+            || modifiers.control
+            || modifiers.alt
+            || self.editor.read(cx).focus_handle(cx).is_focused(window)
+        {
+            return;
+        }
+        let Some(digit) = event
+            .keystroke
+            .key
+            .parse::<usize>()
+            .ok()
+            .filter(|digit| (1..=9).contains(digit))
+        else {
+            return;
+        };
+        let input = &self.pending.user_inputs[0];
+        if self.responding.contains(&input.request_id) {
+            return;
+        }
+        let index = self
+            .question
+            .index
+            .min(input.questions.len().saturating_sub(1));
+        let Some(option) = input
+            .questions
+            .get(index)
+            .and_then(|question| question.options.get(digit - 1))
+        else {
+            return;
+        };
+        let label = option.label.clone();
+        cx.stop_propagation();
+        self.toggle_question_option(label, cx);
+    }
+
     fn toggle_question_option(&mut self, label: String, cx: &mut Context<Self>) {
         let Some(input) = self.pending.user_inputs.first() else {
             return;
@@ -1712,6 +1757,7 @@ impl Render for Composer {
             .rounded(px(22.))
             .p(px(1.))
             .on_prepaint(self.measure_form(cx))
+            .on_key_down(cx.listener(Self::on_option_digit))
             .on_drag_move::<ExternalPaths>(cx.listener(|this, _, _, cx| {
                 if !this.dragging {
                     this.dragging = true;

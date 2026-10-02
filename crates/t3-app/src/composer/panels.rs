@@ -176,7 +176,9 @@ impl Composer {
                                 .when(responding, |this| this.opacity(0.5))
                                 .when(!responding, |this| {
                                     this.cursor_pointer().on_click(cx.listener(
-                                        move |this, _, _, cx| {
+                                        move |this, _, window, cx| {
+                                            // Focus leaves the editor, so 1-9 pick options next.
+                                            this.focus_handle.focus(window, cx);
                                             this.toggle_question_option(label.clone(), cx)
                                         },
                                     ))
