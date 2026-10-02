@@ -55,3 +55,15 @@ Notes on what is fork behavior rather than a capture artifact:
 - In `thread-running` the in-progress command is not listed in the work log; the fork only lists finished tool rows.
 - The fork drops reasoning text, so no reasoning appears even though the fake sends it.
 - The environment label and the "Worked for" durations vary slightly between machines and runs.
+
+## Storage and caveats
+
+The PNGs are not in git. They live in the `reference-assets` GitHub Release; run
+`script/fetch-references.sh` to download them into this folder.
+
+They were captured from the fork's **web build in Linux Chromium**, not the Electron app on macOS.
+Content inside the window is the target. Window chrome differs from the macOS desktop app:
+shortcut labels read `Ctrl+K` (macOS shows `⌘K`), there is no traffic-light reserve in the top-left
+(the desktop app reserves it and places the sidebar toggle at x=90, see
+`docs/spec/shell-sidebar-settings.md`), and there is no window glass/vibrancy. Fonts are rasterized
+by Chromium/FreeType here and by CoreText in the native app, so expect sub-pixel glyph differences.
