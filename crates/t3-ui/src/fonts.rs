@@ -1,5 +1,10 @@
-//! Bundled fonts: DM Sans (opsz 14 static instances, 400/500/600/700) and JetBrains Mono
-//! (400/500/700, italic 400/700), built by `crates/t3-ui/tools/build_fonts.py`.
+//! Bundled fonts, built by `crates/t3-ui/tools/build_fonts.py`: DM Sans (opsz 14 static
+//! instances, 400/500/600/700) and JetBrains Mono (400/500, plus a wght-760 "Bold").
+//!
+//! The fork loads only upright faces, so Chromium synthesizes italics (a 0.25 skew) and
+//! JetBrains Mono bold (fake-bold of the 500 face). GPUI never synthesizes, so the italics
+//! here are sheared copies of the uprights and the mono bold is the variable font instanced
+//! to the fake-bold stroke weight. See design-system.md section 3.1.
 //!
 //! Mono font decision (spec risk 4): the web stack starts with "SF Mono", which only matches
 //! when the user installed it as a regular font; macOS doesn't expose the system copy by that
@@ -12,13 +17,18 @@ use crate::{assets::Embedded, tokens::font};
 
 const FONT_FILES: &[&str] = &[
     "fonts/DMSans-Regular.ttf",
+    "fonts/DMSans-Italic.ttf",
     "fonts/DMSans-Medium.ttf",
+    "fonts/DMSans-MediumItalic.ttf",
     "fonts/DMSans-SemiBold.ttf",
+    "fonts/DMSans-SemiBoldItalic.ttf",
     "fonts/DMSans-Bold.ttf",
+    "fonts/DMSans-BoldItalic.ttf",
     "fonts/JetBrainsMono-Regular.ttf",
-    "fonts/JetBrainsMono-Medium.ttf",
-    "fonts/JetBrainsMono-Bold.ttf",
     "fonts/JetBrainsMono-Italic.ttf",
+    "fonts/JetBrainsMono-Medium.ttf",
+    "fonts/JetBrainsMono-MediumItalic.ttf",
+    "fonts/JetBrainsMono-Bold.ttf",
     "fonts/JetBrainsMono-BoldItalic.ttf",
 ];
 

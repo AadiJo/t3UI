@@ -46,6 +46,22 @@ pub(super) fn tokens_page(colors: &'static Colors, cx: &App) -> Vec<AnyElement> 
                 .flex()
                 .items_center()
                 .gap(px(24.))
+                .child(type_label("italic (synthetic)", px(14.), px(20.), colors))
+                .children(weights.map(|weight| {
+                    div()
+                        .w(px(300.))
+                        .text_size(px(14.))
+                        .line_height(px(20.))
+                        .font_weight(weight)
+                        .italic()
+                        .child("The quick brown fox 0123")
+                })),
+        )
+        .child(
+            div()
+                .flex()
+                .items_center()
+                .gap(px(24.))
                 .child(type_label("font-mono", px(12.), px(16.), colors))
                 .children(
                     [
@@ -58,6 +74,7 @@ pub(super) fn tokens_page(colors: &'static Colors, cx: &App) -> Vec<AnyElement> 
                         (FontWeight::BOLD, false, "bold 700"),
                         (FontWeight::NORMAL, true, "italic 400"),
                         (FontWeight::BOLD, true, "bold italic 700"),
+                        (FontWeight::MEDIUM, true, "medium italic 500"),
                     ]
                     .map(|(weight, italic, text)| {
                         let sample = div()

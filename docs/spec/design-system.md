@@ -328,6 +328,11 @@ fonttools varLib.instancer "DMSans[opsz,wght].ttf" opsz=14 wght=400 -o DMSans-Re
 - Bundle JetBrains Mono Regular and Medium TTF from the JetBrains release.
 - Register with `cx.text_system().add_fonts(...)`. gpui-component never loads fonts.
 
+**Synthesized faces (decision).** The fork loads only upright faces: DM Sans Variable (wght) and JetBrains Mono 400/500 normal (`main.tsx:8-10`). Chromium therefore synthesizes every italic and every JetBrains Mono weight above 500. GPUI never synthesizes, so `t3UI/crates/t3-ui/tools/build_fonts.py` bakes Chromium's synthesis into static files registered under the same families:
+- **Italics** (DM Sans 400/500/600/700, JetBrains Mono 400/500/700): the upright face sheared by Skia's fake-italic skew, `x += 0.25·y` (about 14°). The true JetBrains Mono italic (cursive `f`, `l`, `a`) never appears in the reference, so it is not bundled.
+- **JetBrains Mono bold**: Chromium draws `font-weight: 700` (and xterm's bold) as the 500 face plus Skia fake bold. At 12px that adds about 0.49px of stroke, or 40 units per 1000: stems near 140 units, between the real Bold (126) and ExtraBold (150). The bundled "Bold" is the variable font instanced at wght 760, which matches that stroke weight with designed outlines. Advances are unchanged either way (monospace).
+- DM Sans 700 is a real variable-font weight in the reference, so it is a plain instance.
+
 **Rendering:** no `-webkit-font-smoothing` or `antialiased` is used anywhere. macOS Chromium uses grayscale AA, and so does GPUI (`is_subpixel_rendering_supported() == false`). No `font-feature-settings` are set, and optical sizing is moot because opsz is pinned.
 
 ### 3.2 Sizes
