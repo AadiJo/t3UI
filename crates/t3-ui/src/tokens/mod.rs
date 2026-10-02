@@ -1,8 +1,9 @@
-//! Design tokens transcribed from the reference web UI (`docs/spec/tokens.json`).
+//! Design tokens from the fork (`docs/spec/tokens.json`).
 //!
-//! Colors, radii, shadows and the type scale are generated into [`generated`] by
-//! `python3 crates/t3-ui/tools/gen_tokens.py`; motion and layout constants live here.
-//! Read colors through [`crate::ActiveColors`] (`cx.colors()`) so they follow the theme.
+//! Colors, the Tailwind palette, radii, shadows and the type scale are generated into
+//! [`generated`] by `python3 crates/t3-ui/tools/gen_tokens.py`; motion and layout constants
+//! live here. Read colors through [`crate::ActiveColors`] (`cx.colors()`, or
+//! `cx.sidebar_colors()` inside the sidebar) so they follow the theme.
 
 mod generated;
 
@@ -11,9 +12,19 @@ use std::time::Duration;
 use gpui_kit::{Hsla, Pixels, px};
 
 pub use generated::{
-    Colors, DARK, LIGHT, PROVIDER_ACCENTS, StatusColor, StatusColors, TerminalColors, radius,
-    shadow, text,
+    Colors, DARK, LIGHT, SIDEBAR_DARK, SIDEBAR_LIGHT, StatusColor, StatusColors, TerminalColors,
+    palette, radius, shadow, text,
 };
+
+/// User-pickable provider accent swatches (`ProviderAccentColorPicker.tsx`).
+pub const PROVIDER_ACCENTS: [Hsla; 6] = [
+    hex(0x2563EBFF),
+    hex(0x16A34AFF),
+    hex(0xEA580CFF),
+    hex(0xDC2626FF),
+    hex(0x7C3AEDFF),
+    hex(0x0891B2FF),
+];
 
 /// Converts `0xRRGGBBAA` (sRGB, straight alpha) to [`Hsla`] exactly as GPUI's
 /// `Hsla::from(rgba(..))` does, but usable in `const` items.
@@ -47,15 +58,22 @@ pub const fn hex(rgba: u32) -> Hsla {
     Hsla { h, s, l, a }
 }
 
-/// Font families registered by [`crate::fonts::register`].
+/// Font families. Nothing is bundled: the fork uses the system stacks (see [`crate::fonts`]).
 pub mod font {
-    /// UI sans family (DM Sans, opsz 14 static instances).
-    pub const SANS: &str = "DM Sans";
-    /// Bundled monospace family. [`crate::fonts::mono_family`] prefers SF Mono when the
-    /// user installed it, matching the web font stack.
-    pub const MONO: &str = "JetBrains Mono";
-    /// First choice of the web mono stack; only present if the user installed it.
-    pub const MONO_PREFERRED: &str = "SF Mono";
+    /// UI sans family: GPUI's name for the system UI font (SF Pro on macOS), the fork's
+    /// `-apple-system, BlinkMacSystemFont, ...` default.
+    pub const SANS: &str = ".SystemUIFont";
+    /// Monospace family that exists on every Mac (the last concrete entry of the fork's mono
+    /// stack). Prefer [`crate::Theme::mono_family`], which resolves the system monospaced font.
+    pub const MONO: &str = "Menlo";
+    /// The fork's `ui-monospace, "SF Mono", "SFMono-Regular", Menlo` in macOS family names,
+    /// tried in order by [`crate::fonts::mono_family`].
+    pub const MONO_CANDIDATES: &[&str] = &[
+        ".AppleSystemUIFontMonospaced",
+        "SF Mono",
+        "SFMono-Regular",
+        MONO,
+    ];
 }
 
 /// Motion timings (spec section 8). Durations are the reference CSS values.
@@ -126,8 +144,9 @@ pub mod layout {
     pub const WINDOW_DEFAULT: (Pixels, Pixels) = (px(1100.), px(780.));
     /// Minimum main window size.
     pub const WINDOW_MIN: (Pixels, Pixels) = (px(840.), px(620.));
-    /// macOS traffic light origin (`trafficLightPosition`).
-    pub const TRAFFIC_LIGHTS: (Pixels, Pixels) = (px(16.), px(18.));
+    /// macOS traffic light origin: x 16, y = topbar 52 / 2 - button radius 7
+    /// (`DesktopWindow.ts` `trafficLightPosition`).
+    pub const TRAFFIC_LIGHTS: (Pixels, Pixels) = (px(16.), px(19.));
     /// Topbar height on macOS (`--workspace-topbar-height`).
     pub const TOPBAR_HEIGHT: Pixels = px(52.);
     /// Sidebar toggle x on macOS, clearing the traffic lights.
@@ -140,7 +159,7 @@ pub mod layout {
     pub const SIDEBAR_MIN_WIDTH: Pixels = px(208.);
     /// Subheader row height (`.surface-subheader`).
     pub const SUBHEADER_HEIGHT: Pixels = px(40.);
-    /// Noise overlay opacity over the main column.
+    /// Grain opacity (baked into the fork's `--surface-grain` SVG).
     pub const NOISE_OPACITY: f32 = 0.035;
     /// Noise tile edge length.
     pub const NOISE_TILE: Pixels = px(256.);

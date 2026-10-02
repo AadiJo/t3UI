@@ -11,7 +11,7 @@ import os from "node:os";
 import path from "node:path";
 import { createRequire } from "node:module";
 
-const ref = path.resolve(process.argv[2] ?? path.join(os.homedir(), "L-Projects/t3code-again"));
+const ref = path.resolve(process.argv[2] ?? process.env.T3_FORK ?? path.join(os.homedir(), "L-Projects/t3UI-refs/t3code-fork"));
 const pnpm = path.join(ref, "node_modules/.pnpm");
 const pick = (prefix) => fs.readdirSync(pnpm).filter((d) => d.startsWith(prefix)).sort().at(-1);
 const esbuild = createRequire(path.join(pnpm, pick("esbuild@"), "node_modules/esbuild/package.json"))("esbuild");

@@ -10,10 +10,18 @@ use crate::tokens::hex;
 /// `lucide-react` import names used by the web UI.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum IconName {
+    /// lucide `activity` (`ActivityIcon`)
+    Activity,
+    /// lucide `alarm-clock-off` (`AlarmClockOffIcon`)
+    AlarmClockOff,
+    /// lucide `alarm-clock` (`AlarmClockIcon`)
+    AlarmClock,
     /// lucide `archive-x` (`ArchiveX`)
     ArchiveX,
     /// lucide `archive` (`ArchiveIcon`)
     Archive,
+    /// lucide `arrow-down-up` (`ArrowDownUpIcon`)
+    ArrowDownUp,
     /// lucide `arrow-down` (`ArrowDownIcon`)
     ArrowDown,
     /// lucide `arrow-left` (`ArrowLeft`, `ArrowLeftIcon`)
@@ -22,42 +30,80 @@ pub enum IconName {
     ArrowRight,
     /// lucide `arrow-up-down` (`ArrowUpDownIcon`)
     ArrowUpDown,
+    /// lucide `arrow-up-right` (`ArrowUpRightIcon`)
+    ArrowUpRight,
     /// lucide `arrow-up` (`ArrowUpIcon`)
     ArrowUp,
-    /// lucide `bot` (`BotIcon`)
+    /// lucide `battery` (`BatteryIcon`)
+    Battery,
+    /// lucide `bell` (`BellIcon`)
+    Bell,
+    /// lucide `blocks` (`BlocksIcon`)
+    Blocks,
+    /// lucide `book-open` (`BookOpenIcon`)
+    BookOpen,
+    /// lucide `bookmark` (`BookmarkIcon`)
+    Bookmark,
+    /// lucide `bot` (`Bot`, `BotIcon`)
     Bot,
+    /// lucide `box` (`Box`)
+    Box,
+    /// lucide `braces` (`Braces`)
+    Braces,
+    /// lucide `brain` (`BrainIcon`)
+    Brain,
     /// lucide `bug` (`BugIcon`)
     Bug,
+    /// lucide `calendar-arrow-down` (`CalendarArrowDownIcon`)
+    CalendarArrowDown,
+    /// lucide `calendar-arrow-up` (`CalendarArrowUpIcon`)
+    CalendarArrowUp,
+    /// lucide `calendar` (`CalendarIcon`)
+    Calendar,
     /// lucide `camera` (`Camera`)
     Camera,
-    /// lucide `chart-no-axes-column` ()
+    /// lucide `chart-no-axes-column` (`ChartNoAxesColumnIcon`)
     ChartNoAxesColumn,
-    /// lucide `check` (`CheckIcon`)
+    /// lucide `check` (`Check`, `CheckIcon`)
     Check,
-    /// lucide `chevron-down` (`ChevronDownIcon`)
+    /// lucide `chevron-down` (`ChevronDown`, `ChevronDownIcon`)
     ChevronDown,
-    /// lucide `chevron-left` (`ChevronLeftIcon`)
+    /// lucide `chevron-left` (`ChevronLeft`, `ChevronLeftIcon`)
     ChevronLeft,
     /// lucide `chevron-right` (`ChevronRight`, `ChevronRightIcon`)
     ChevronRight,
     /// lucide `chevron-up` (`ChevronUpIcon`)
     ChevronUp,
+    /// lucide `chevrons-down-up` (`ChevronsDownUpIcon`)
+    ChevronsDownUp,
     /// lucide `chevrons-left-right-ellipsis` (`ChevronsLeftRightEllipsisIcon`)
     ChevronsLeftRightEllipsis,
     /// lucide `chevrons-up-down` (`ChevronsUpDownIcon`)
     ChevronsUpDown,
-    /// lucide `circle-alert` (`CircleAlertIcon`)
+    /// lucide `circle-alert` (`CircleAlert`, `CircleAlertIcon`)
     CircleAlert,
-    /// lucide `circle-arrow-up` (`ArrowUpCircleIcon`)
+    /// lucide `circle-arrow-up` (`ArrowUpCircleIcon`, `CircleArrowUpIcon`)
     CircleArrowUp,
-    /// lucide `circle-check` (`CircleCheckIcon`)
+    /// lucide `circle-check` (`CheckCircle2Icon`, `CircleCheckIcon`)
     CircleCheck,
-    /// lucide `circle-dashed` ()
+    /// lucide `circle-dashed` (`CircleDashedIcon`)
     CircleDashed,
-    /// lucide `circle-x` (`CircleXIcon`)
+    /// lucide `circle-dot` (`CircleDotIcon`)
+    CircleDot,
+    /// lucide `circle-question-mark` (`CircleHelpIcon`)
+    CircleQuestionMark,
+    /// lucide `circle-slash` (`CircleSlashIcon`)
+    CircleSlash,
+    /// lucide `circle-x` (`CircleXIcon`, `XCircleIcon`)
     CircleX,
-    /// lucide `clipboard-list` (`ClipboardList`)
+    /// lucide `circle` (`CircleIcon`)
+    Circle,
+    /// lucide `clipboard-list` (not imported by the current fork; kept for existing callers)
     ClipboardList,
+    /// lucide `clock` (`ClockIcon`)
+    Clock,
+    /// lucide `cloud-download` (`CloudDownloadIcon`)
+    CloudDownload,
     /// lucide `cloud-upload` (`CloudUploadIcon`)
     CloudUpload,
     /// lucide `cloud` (`CloudIcon`)
@@ -66,19 +112,25 @@ pub enum IconName {
     CodeXml,
     /// lucide `columns-2` (`Columns2Icon`)
     Columns2,
-    /// lucide `container` (`ContainerIcon`)
+    /// lucide `container` (not imported by the current fork; kept for existing callers)
     Container,
     /// lucide `copy` (`CopyIcon`)
     Copy,
+    /// lucide `corner-down-left` (`CornerDownLeftIcon`)
+    CornerDownLeft,
     /// lucide `corner-left-up` (`CornerLeftUpIcon`)
     CornerLeftUp,
+    /// lucide `cpu` (`CpuIcon`)
+    Cpu,
+    /// lucide `database` (`DatabaseIcon`)
+    Database,
     /// lucide `download` (`DownloadIcon`)
     Download,
     /// lucide `earth` (`Globe2`, `Globe2Icon`)
     Earth,
     /// lucide `ellipsis-vertical` (`MoreVertical`)
     EllipsisVertical,
-    /// lucide `ellipsis` (`EllipsisIcon`)
+    /// lucide `ellipsis` (`EllipsisIcon`, `MoreHorizontal`, `MoreHorizontalIcon`)
     Ellipsis,
     /// lucide `external-link` (`ExternalLink`, `ExternalLinkIcon`)
     ExternalLink,
@@ -88,16 +140,28 @@ pub enum IconName {
     Eye,
     /// lucide `file-braces` (`FileJsonIcon`)
     FileBraces,
-    /// lucide `file-diff` (`FileDiff`)
+    /// lucide `file-code-corner` (`FileCode2Icon`)
+    FileCodeCorner,
+    /// lucide `file-diff` (`FileDiff`, `FileDiffIcon`)
     FileDiff,
+    /// lucide `file-search` (`FileSearchIcon`)
+    FileSearch,
+    /// lucide `file-spreadsheet` (`FileSpreadsheetIcon`)
+    FileSpreadsheet,
+    /// lucide `file-text` (`FileTextIcon`)
+    FileText,
     /// lucide `file` (`FileIcon`)
     File,
     /// lucide `files` (`Files`)
     Files,
+    /// lucide `film` (`FilmIcon`)
+    Film,
     /// lucide `flask-conical` (`FlaskConicalIcon`)
     FlaskConical,
     /// lucide `folder-closed` (`FolderClosedIcon`)
     FolderClosed,
+    /// lucide `folder-code` (`FolderCodeIcon`)
+    FolderCode,
     /// lucide `folder-git-2` (`FolderGit2Icon`)
     FolderGit2,
     /// lucide `folder-git` (`FolderGitIcon`)
@@ -106,52 +170,92 @@ pub enum IconName {
     FolderOpen,
     /// lucide `folder-plus` (`FolderPlusIcon`)
     FolderPlus,
-    /// lucide `folder-tree` (`FolderTree`)
+    /// lucide `folder-tree` (`FolderTree`, `FolderTreeIcon`)
     FolderTree,
     /// lucide `folder` (`FolderIcon`)
     Folder,
-    /// lucide `frame` (`Frame`)
+    /// lucide `frame` (not imported by the current fork; kept for existing callers)
     Frame,
-    /// lucide `gauge` ()
+    /// lucide `gauge` (`GaugeIcon`)
     Gauge,
     /// lucide `git-branch-plus` (`GitBranchPlusIcon`)
     GitBranchPlus,
     /// lucide `git-branch` (`GitBranchIcon`)
     GitBranch,
-    /// lucide `git-commit-horizontal` (`GitCommitIcon`)
+    /// lucide `git-commit-horizontal` (`GitCommitHorizontalIcon`, `GitCommitIcon`)
     GitCommitHorizontal,
-    /// lucide `git-pull-request` (`GitPullRequestIcon`)
+    /// lucide `git-merge` (`GitMergeIcon`)
+    GitMerge,
+    /// lucide `git-pull-request-arrow` (`GitPullRequestArrowIcon`)
+    GitPullRequestArrow,
+    /// lucide `git-pull-request-closed` (`GitPullRequestClosedIcon`)
+    GitPullRequestClosed,
+    /// lucide `git-pull-request-draft` (`GitPullRequestDraftIcon`)
+    GitPullRequestDraft,
+    /// lucide `git-pull-request` (not imported by the current fork; kept for existing callers)
     GitPullRequest,
     /// lucide `globe` (`Globe`, `GlobeIcon`)
     Globe,
     /// lucide `hammer` (`HammerIcon`)
     Hammer,
+    /// lucide `hard-drive` (`HardDriveIcon`)
+    HardDrive,
+    /// lucide `history` (`History`, `HistoryIcon`)
+    History,
+    /// lucide `house` (`Home`)
+    House,
+    /// lucide `image` (`ImageIcon`)
+    Image,
     /// lucide `info` (`InfoIcon`)
     Info,
-    /// lucide `keyboard` (`KeyboardIcon`)
+    /// lucide `keyboard` (`Keyboard`, `KeyboardIcon`)
     Keyboard,
+    /// lucide `laptop` (`LaptopIcon`)
+    Laptop,
+    /// lucide `layers` (`LayersIcon`)
+    Layers,
+    /// lucide `lightbulb` (`LightbulbIcon`)
+    Lightbulb,
     /// lucide `link-2` (`Link2`, `Link2Icon`)
     Link2,
     /// lucide `link` (`LinkIcon`)
     Link,
     /// lucide `list-checks` (`ListChecksIcon`)
     ListChecks,
+    /// lucide `list-filter` (`ListFilterIcon`)
+    ListFilter,
+    /// lucide `list-plus` (`ListPlusIcon`)
+    ListPlus,
     /// lucide `list-todo` (`ListTodoIcon`)
     ListTodo,
-    /// lucide `loader-circle` (`Loader2Icon`, `LoaderCircle`, `LoaderCircleIcon`)
+    /// lucide `loader-circle` (`LoaderCircleIcon`)
     LoaderCircle,
-    /// lucide `loader` (`LoaderIcon`)
+    /// lucide `loader` (not imported by the current fork; kept for existing callers)
     Loader,
+    /// lucide `lock-open` (`LockOpenIcon`)
+    LockOpen,
     /// lucide `lock` (`LockIcon`)
     Lock,
     /// lucide `log-in` (`LogInIcon`)
     LogIn,
+    /// lucide `mail` (`MailIcon`)
+    Mail,
     /// lucide `maximize-2` (`Maximize2Icon`)
     Maximize2,
+    /// lucide `maximize` (`Maximize`)
+    Maximize,
+    /// lucide `memory-stick` (`MemoryStickIcon`)
+    MemoryStick,
+    /// lucide `message-circle-question-mark` (`MessageCircleQuestionIcon`)
+    MessageCircleQuestionMark,
     /// lucide `message-circle` (`MessageCircle`, `MessageCircleIcon`)
     MessageCircle,
-    /// lucide `message-square-dashed` ()
+    /// lucide `message-square-dashed` (`MessageSquareDashedIcon`)
     MessageSquareDashed,
+    /// lucide `message-square-off` (`MessageSquareOffIcon`)
+    MessageSquareOff,
+    /// lucide `message-square-warning` (`MessageSquareWarningIcon`)
+    MessageSquareWarning,
     /// lucide `message-square` (`MessageSquareIcon`)
     MessageSquare,
     /// lucide `minimize-2` (`Minimize2Icon`)
@@ -160,58 +264,112 @@ pub enum IconName {
     Minus,
     /// lucide `monitor` (`MonitorIcon`)
     Monitor,
-    /// lucide `mouse-pointer-2` (`MousePointer2`)
+    /// lucide `moon` (`Moon`, `MoonIcon`)
+    Moon,
+    /// lucide `mouse-pointer-2` (`MousePointer2`, `MousePointer2Icon`)
     MousePointer2,
     /// lucide `mouse-pointer-click` (`MousePointerClick`, `MousePointerClickIcon`)
     MousePointerClick,
-    /// lucide `paintbrush` (`Paintbrush`, `PaintbrushIcon`)
+    /// lucide `octagon-alert` (`OctagonAlertIcon`)
+    OctagonAlert,
+    /// lucide `package-plus` (`PackagePlusIcon`)
+    PackagePlus,
+    /// lucide `package` (`PackageIcon`)
+    Package,
+    /// lucide `paintbrush` (`PaintbrushIcon`)
     Paintbrush,
+    /// lucide `palette` (`PaletteIcon`)
+    Palette,
     /// lucide `panel-bottom-close` (`PanelBottomCloseIcon`)
     PanelBottomClose,
-    /// lucide `panel-bottom-open` (`PanelBottomOpenIcon`)
+    /// lucide `panel-bottom-open` (not imported by the current fork; kept for existing callers)
     PanelBottomOpen,
+    /// lucide `panel-bottom` (`PanelBottomIcon`)
+    PanelBottom,
     /// lucide `panel-left-close` (`PanelLeftCloseIcon`)
     PanelLeftClose,
-    /// lucide `panel-left-open` (`PanelLeftOpenIcon`)
+    /// lucide `panel-left-open` (not imported by the current fork; kept for existing callers)
     PanelLeftOpen,
+    /// lucide `panel-left` (`PanelLeftIcon`)
+    PanelLeft,
     /// lucide `panel-right-close` (`PanelRightCloseIcon`)
     PanelRightClose,
-    /// lucide `panel-right-open` (`PanelRightOpenIcon`)
+    /// lucide `panel-right-open` (not imported by the current fork; kept for existing callers)
     PanelRightOpen,
-    /// lucide `pen-line` (`PenLine`)
+    /// lucide `panel-right` (`PanelRightIcon`)
+    PanelRight,
+    /// lucide `panels-top-left` (`PanelsTopLeftIcon`)
+    PanelsTopLeft,
+    /// lucide `paperclip` (`PaperclipIcon`)
+    Paperclip,
+    /// lucide `pen-line` (`PenLineIcon`)
     PenLine,
+    /// lucide `pencil-ruler` (`PencilRulerIcon`)
+    PencilRuler,
+    /// lucide `pencil` (`PencilIcon`)
+    Pencil,
+    /// lucide `picture-in-picture-2` (`PictureInPicture2`)
+    PictureInPicture2,
     /// lucide `pilcrow` (`PilcrowIcon`)
     Pilcrow,
+    /// lucide `pin-off` (`PinOffIcon`)
+    PinOff,
+    /// lucide `pin` (`PinIcon`)
+    Pin,
     /// lucide `pipette` (`PipetteIcon`)
     Pipette,
     /// lucide `play` (`PlayIcon`)
     Play,
+    /// lucide `plug-2` (`Plug2Icon`)
+    Plug2,
     /// lucide `plus` (`Plus`, `PlusIcon`)
     Plus,
+    /// lucide `power` (`Power`)
+    Power,
+    /// lucide `presentation` (`PresentationIcon`)
+    Presentation,
     /// lucide `qr-code` (`QrCodeIcon`)
     QrCode,
+    /// lucide `quote` (`QuoteIcon`)
+    Quote,
     /// lucide `radio-tower` (`RadioTower`)
     RadioTower,
-    /// lucide `refresh-cw` (`RefreshCw`, `RefreshCwIcon`)
+    /// lucide `refresh-cw` (`RefreshCwIcon`)
     RefreshCw,
     /// lucide `rotate-ccw` (`RotateCcw`, `RotateCcwIcon`)
     RotateCcw,
-    /// lucide `rotate-cw` (`RotateCw`, `RotateCwIcon`)
+    /// lucide `rotate-cw` (`RotateCwIcon`)
     RotateCw,
     /// lucide `rows-3` (`Rows3Icon`)
     Rows3,
-    /// lucide `search` (`Search`, `SearchIcon`)
+    /// lucide `scale` (`ScaleIcon`)
+    Scale,
+    /// lucide `search` (`SearchIcon`)
     Search,
+    /// lucide `send` (`SendIcon`)
+    Send,
+    /// lucide `server` (`ServerIcon`)
+    Server,
     /// lucide `settings-2` (`Settings2Icon`)
     Settings2,
     /// lucide `settings` (`SettingsIcon`)
     Settings,
-    /// lucide `sliders-horizontal` ()
+    /// lucide `shield-alert` (`ShieldAlertIcon`)
+    ShieldAlert,
+    /// lucide `shield-question-mark` (`ShieldQuestionIcon`)
+    ShieldQuestionMark,
+    /// lucide `shield` (`ShieldIcon`)
+    Shield,
+    /// lucide `sliders-horizontal` (`SlidersHorizontal`, `SlidersHorizontalIcon`)
     SlidersHorizontal,
-    /// lucide `smartphone` (`SmartphoneIcon`)
+    /// lucide `smartphone` (`Smartphone`, `SmartphoneIcon`)
     Smartphone,
+    /// lucide `smile-plus` (`SmilePlusIcon`)
+    SmilePlus,
     /// lucide `sparkles` (`SparklesIcon`)
     Sparkles,
+    /// lucide `square-arrow-out-up-right` (`SquareArrowOutUpRightIcon`)
+    SquareArrowOutUpRight,
     /// lucide `square-pen` (`SquarePenIcon`)
     SquarePen,
     /// lucide `square-split-horizontal` (`SquareSplitHorizontal`)
@@ -220,24 +378,58 @@ pub enum IconName {
     SquareSplitVertical,
     /// lucide `square-terminal` (`TerminalSquare`)
     SquareTerminal,
+    /// lucide `square` (`Square`, `SquareIcon`)
+    Square,
     /// lucide `star` (`StarIcon`)
     Star,
+    /// lucide `sun` (`Sun`, `SunIcon`)
+    Sun,
+    /// lucide `table-2` (`Table2`)
+    Table2,
+    /// lucide `tag` (`TagIcon`)
+    Tag,
     /// lucide `terminal` (`TerminalIcon`)
     Terminal,
+    /// lucide `text-align-start` (`TextIcon`)
+    TextAlignStart,
+    /// lucide `text-search` (`TextSearchIcon`)
+    TextSearch,
     /// lucide `text-wrap` (`TextWrapIcon`, `WrapTextIcon`)
     TextWrap,
-    /// lucide `ticket` ()
+    /// lucide `ticket` (`TicketIcon`)
     Ticket,
     /// lucide `trash-2` (`Trash2`, `Trash2Icon`)
     Trash2,
-    /// lucide `trending-down` ()
+    /// lucide `trending-down` (`TrendingDownIcon`)
     TrendingDown,
-    /// lucide `trending-up` ()
+    /// lucide `trending-up` (`TrendingUpIcon`)
     TrendingUp,
     /// lucide `triangle-alert` (`AlertTriangleIcon`, `TriangleAlertIcon`)
     TriangleAlert,
+    /// lucide `type` (`Type`)
+    Type,
     /// lucide `undo-2` (`Undo2Icon`)
     Undo2,
+    /// lucide `unlink-2` (`Unlink2`, `Unlink2Icon`)
+    Unlink2,
+    /// lucide `upload` (`UploadIcon`)
+    Upload,
+    /// lucide `user-check` (`UserCheckIcon`)
+    UserCheck,
+    /// lucide `user-lock` (`UserLockIcon`)
+    UserLock,
+    /// lucide `user-plus` (`UserPlusIcon`)
+    UserPlus,
+    /// lucide `user-round-x` (`UserRoundXIcon`)
+    UserRoundX,
+    /// lucide `user-round` (`UserRoundIcon`)
+    UserRound,
+    /// lucide `users` (`UsersIcon`)
+    Users,
+    /// lucide `volume-2` (`Volume2`)
+    Volume2,
+    /// lucide `volume-off` (`VolumeOff`)
+    VolumeOff,
     /// lucide `wifi-off` (`WifiOffIcon`)
     WifiOff,
     /// lucide `wrench` (`WrenchIcon`)
@@ -259,15 +451,31 @@ pub enum IconName {
 impl IconName {
     /// Every icon, in file-name order.
     pub const ALL: &[IconName] = &[
+        Self::Activity,
+        Self::AlarmClockOff,
+        Self::AlarmClock,
         Self::ArchiveX,
         Self::Archive,
+        Self::ArrowDownUp,
         Self::ArrowDown,
         Self::ArrowLeft,
         Self::ArrowRight,
         Self::ArrowUpDown,
+        Self::ArrowUpRight,
         Self::ArrowUp,
+        Self::Battery,
+        Self::Bell,
+        Self::Blocks,
+        Self::BookOpen,
+        Self::Bookmark,
         Self::Bot,
+        Self::Box,
+        Self::Braces,
+        Self::Brain,
         Self::Bug,
+        Self::CalendarArrowDown,
+        Self::CalendarArrowUp,
+        Self::Calendar,
         Self::Camera,
         Self::ChartNoAxesColumn,
         Self::Check,
@@ -275,21 +483,31 @@ impl IconName {
         Self::ChevronLeft,
         Self::ChevronRight,
         Self::ChevronUp,
+        Self::ChevronsDownUp,
         Self::ChevronsLeftRightEllipsis,
         Self::ChevronsUpDown,
         Self::CircleAlert,
         Self::CircleArrowUp,
         Self::CircleCheck,
         Self::CircleDashed,
+        Self::CircleDot,
+        Self::CircleQuestionMark,
+        Self::CircleSlash,
         Self::CircleX,
+        Self::Circle,
         Self::ClipboardList,
+        Self::Clock,
+        Self::CloudDownload,
         Self::CloudUpload,
         Self::Cloud,
         Self::CodeXml,
         Self::Columns2,
         Self::Container,
         Self::Copy,
+        Self::CornerDownLeft,
         Self::CornerLeftUp,
+        Self::Cpu,
+        Self::Database,
         Self::Download,
         Self::Earth,
         Self::EllipsisVertical,
@@ -298,11 +516,17 @@ impl IconName {
         Self::EyeOff,
         Self::Eye,
         Self::FileBraces,
+        Self::FileCodeCorner,
         Self::FileDiff,
+        Self::FileSearch,
+        Self::FileSpreadsheet,
+        Self::FileText,
         Self::File,
         Self::Files,
+        Self::Film,
         Self::FlaskConical,
         Self::FolderClosed,
+        Self::FolderCode,
         Self::FolderGit2,
         Self::FolderGit,
         Self::FolderOpen,
@@ -314,65 +538,129 @@ impl IconName {
         Self::GitBranchPlus,
         Self::GitBranch,
         Self::GitCommitHorizontal,
+        Self::GitMerge,
+        Self::GitPullRequestArrow,
+        Self::GitPullRequestClosed,
+        Self::GitPullRequestDraft,
         Self::GitPullRequest,
         Self::Globe,
         Self::Hammer,
+        Self::HardDrive,
+        Self::History,
+        Self::House,
+        Self::Image,
         Self::Info,
         Self::Keyboard,
+        Self::Laptop,
+        Self::Layers,
+        Self::Lightbulb,
         Self::Link2,
         Self::Link,
         Self::ListChecks,
+        Self::ListFilter,
+        Self::ListPlus,
         Self::ListTodo,
         Self::LoaderCircle,
         Self::Loader,
+        Self::LockOpen,
         Self::Lock,
         Self::LogIn,
+        Self::Mail,
         Self::Maximize2,
+        Self::Maximize,
+        Self::MemoryStick,
+        Self::MessageCircleQuestionMark,
         Self::MessageCircle,
         Self::MessageSquareDashed,
+        Self::MessageSquareOff,
+        Self::MessageSquareWarning,
         Self::MessageSquare,
         Self::Minimize2,
         Self::Minus,
         Self::Monitor,
+        Self::Moon,
         Self::MousePointer2,
         Self::MousePointerClick,
+        Self::OctagonAlert,
+        Self::PackagePlus,
+        Self::Package,
         Self::Paintbrush,
+        Self::Palette,
         Self::PanelBottomClose,
         Self::PanelBottomOpen,
+        Self::PanelBottom,
         Self::PanelLeftClose,
         Self::PanelLeftOpen,
+        Self::PanelLeft,
         Self::PanelRightClose,
         Self::PanelRightOpen,
+        Self::PanelRight,
+        Self::PanelsTopLeft,
+        Self::Paperclip,
         Self::PenLine,
+        Self::PencilRuler,
+        Self::Pencil,
+        Self::PictureInPicture2,
         Self::Pilcrow,
+        Self::PinOff,
+        Self::Pin,
         Self::Pipette,
         Self::Play,
+        Self::Plug2,
         Self::Plus,
+        Self::Power,
+        Self::Presentation,
         Self::QrCode,
+        Self::Quote,
         Self::RadioTower,
         Self::RefreshCw,
         Self::RotateCcw,
         Self::RotateCw,
         Self::Rows3,
+        Self::Scale,
         Self::Search,
+        Self::Send,
+        Self::Server,
         Self::Settings2,
         Self::Settings,
+        Self::ShieldAlert,
+        Self::ShieldQuestionMark,
+        Self::Shield,
         Self::SlidersHorizontal,
         Self::Smartphone,
+        Self::SmilePlus,
         Self::Sparkles,
+        Self::SquareArrowOutUpRight,
         Self::SquarePen,
         Self::SquareSplitHorizontal,
         Self::SquareSplitVertical,
         Self::SquareTerminal,
+        Self::Square,
         Self::Star,
+        Self::Sun,
+        Self::Table2,
+        Self::Tag,
         Self::Terminal,
+        Self::TextAlignStart,
+        Self::TextSearch,
         Self::TextWrap,
         Self::Ticket,
         Self::Trash2,
         Self::TrendingDown,
         Self::TrendingUp,
         Self::TriangleAlert,
+        Self::Type,
         Self::Undo2,
+        Self::Unlink2,
+        Self::Upload,
+        Self::UserCheck,
+        Self::UserLock,
+        Self::UserPlus,
+        Self::UserRoundX,
+        Self::UserRound,
+        Self::Users,
+        Self::Volume2,
+        Self::VolumeOff,
         Self::WifiOff,
         Self::Wrench,
         Self::X,
@@ -386,15 +674,31 @@ impl IconName {
     /// Asset path served by [`crate::Assets`].
     pub const fn path(self) -> &'static str {
         match self {
+            Self::Activity => "icons/lucide/activity.svg",
+            Self::AlarmClockOff => "icons/lucide/alarm-clock-off.svg",
+            Self::AlarmClock => "icons/lucide/alarm-clock.svg",
             Self::ArchiveX => "icons/lucide/archive-x.svg",
             Self::Archive => "icons/lucide/archive.svg",
+            Self::ArrowDownUp => "icons/lucide/arrow-down-up.svg",
             Self::ArrowDown => "icons/lucide/arrow-down.svg",
             Self::ArrowLeft => "icons/lucide/arrow-left.svg",
             Self::ArrowRight => "icons/lucide/arrow-right.svg",
             Self::ArrowUpDown => "icons/lucide/arrow-up-down.svg",
+            Self::ArrowUpRight => "icons/lucide/arrow-up-right.svg",
             Self::ArrowUp => "icons/lucide/arrow-up.svg",
+            Self::Battery => "icons/lucide/battery.svg",
+            Self::Bell => "icons/lucide/bell.svg",
+            Self::Blocks => "icons/lucide/blocks.svg",
+            Self::BookOpen => "icons/lucide/book-open.svg",
+            Self::Bookmark => "icons/lucide/bookmark.svg",
             Self::Bot => "icons/lucide/bot.svg",
+            Self::Box => "icons/lucide/box.svg",
+            Self::Braces => "icons/lucide/braces.svg",
+            Self::Brain => "icons/lucide/brain.svg",
             Self::Bug => "icons/lucide/bug.svg",
+            Self::CalendarArrowDown => "icons/lucide/calendar-arrow-down.svg",
+            Self::CalendarArrowUp => "icons/lucide/calendar-arrow-up.svg",
+            Self::Calendar => "icons/lucide/calendar.svg",
             Self::Camera => "icons/lucide/camera.svg",
             Self::ChartNoAxesColumn => "icons/lucide/chart-no-axes-column.svg",
             Self::Check => "icons/lucide/check.svg",
@@ -402,21 +706,31 @@ impl IconName {
             Self::ChevronLeft => "icons/lucide/chevron-left.svg",
             Self::ChevronRight => "icons/lucide/chevron-right.svg",
             Self::ChevronUp => "icons/lucide/chevron-up.svg",
+            Self::ChevronsDownUp => "icons/lucide/chevrons-down-up.svg",
             Self::ChevronsLeftRightEllipsis => "icons/lucide/chevrons-left-right-ellipsis.svg",
             Self::ChevronsUpDown => "icons/lucide/chevrons-up-down.svg",
             Self::CircleAlert => "icons/lucide/circle-alert.svg",
             Self::CircleArrowUp => "icons/lucide/circle-arrow-up.svg",
             Self::CircleCheck => "icons/lucide/circle-check.svg",
             Self::CircleDashed => "icons/lucide/circle-dashed.svg",
+            Self::CircleDot => "icons/lucide/circle-dot.svg",
+            Self::CircleQuestionMark => "icons/lucide/circle-question-mark.svg",
+            Self::CircleSlash => "icons/lucide/circle-slash.svg",
             Self::CircleX => "icons/lucide/circle-x.svg",
+            Self::Circle => "icons/lucide/circle.svg",
             Self::ClipboardList => "icons/lucide/clipboard-list.svg",
+            Self::Clock => "icons/lucide/clock.svg",
+            Self::CloudDownload => "icons/lucide/cloud-download.svg",
             Self::CloudUpload => "icons/lucide/cloud-upload.svg",
             Self::Cloud => "icons/lucide/cloud.svg",
             Self::CodeXml => "icons/lucide/code-xml.svg",
             Self::Columns2 => "icons/lucide/columns-2.svg",
             Self::Container => "icons/lucide/container.svg",
             Self::Copy => "icons/lucide/copy.svg",
+            Self::CornerDownLeft => "icons/lucide/corner-down-left.svg",
             Self::CornerLeftUp => "icons/lucide/corner-left-up.svg",
+            Self::Cpu => "icons/lucide/cpu.svg",
+            Self::Database => "icons/lucide/database.svg",
             Self::Download => "icons/lucide/download.svg",
             Self::Earth => "icons/lucide/earth.svg",
             Self::EllipsisVertical => "icons/lucide/ellipsis-vertical.svg",
@@ -425,11 +739,17 @@ impl IconName {
             Self::EyeOff => "icons/lucide/eye-off.svg",
             Self::Eye => "icons/lucide/eye.svg",
             Self::FileBraces => "icons/lucide/file-braces.svg",
+            Self::FileCodeCorner => "icons/lucide/file-code-corner.svg",
             Self::FileDiff => "icons/lucide/file-diff.svg",
+            Self::FileSearch => "icons/lucide/file-search.svg",
+            Self::FileSpreadsheet => "icons/lucide/file-spreadsheet.svg",
+            Self::FileText => "icons/lucide/file-text.svg",
             Self::File => "icons/lucide/file.svg",
             Self::Files => "icons/lucide/files.svg",
+            Self::Film => "icons/lucide/film.svg",
             Self::FlaskConical => "icons/lucide/flask-conical.svg",
             Self::FolderClosed => "icons/lucide/folder-closed.svg",
+            Self::FolderCode => "icons/lucide/folder-code.svg",
             Self::FolderGit2 => "icons/lucide/folder-git-2.svg",
             Self::FolderGit => "icons/lucide/folder-git.svg",
             Self::FolderOpen => "icons/lucide/folder-open.svg",
@@ -441,65 +761,129 @@ impl IconName {
             Self::GitBranchPlus => "icons/lucide/git-branch-plus.svg",
             Self::GitBranch => "icons/lucide/git-branch.svg",
             Self::GitCommitHorizontal => "icons/lucide/git-commit-horizontal.svg",
+            Self::GitMerge => "icons/lucide/git-merge.svg",
+            Self::GitPullRequestArrow => "icons/lucide/git-pull-request-arrow.svg",
+            Self::GitPullRequestClosed => "icons/lucide/git-pull-request-closed.svg",
+            Self::GitPullRequestDraft => "icons/lucide/git-pull-request-draft.svg",
             Self::GitPullRequest => "icons/lucide/git-pull-request.svg",
             Self::Globe => "icons/lucide/globe.svg",
             Self::Hammer => "icons/lucide/hammer.svg",
+            Self::HardDrive => "icons/lucide/hard-drive.svg",
+            Self::History => "icons/lucide/history.svg",
+            Self::House => "icons/lucide/house.svg",
+            Self::Image => "icons/lucide/image.svg",
             Self::Info => "icons/lucide/info.svg",
             Self::Keyboard => "icons/lucide/keyboard.svg",
+            Self::Laptop => "icons/lucide/laptop.svg",
+            Self::Layers => "icons/lucide/layers.svg",
+            Self::Lightbulb => "icons/lucide/lightbulb.svg",
             Self::Link2 => "icons/lucide/link-2.svg",
             Self::Link => "icons/lucide/link.svg",
             Self::ListChecks => "icons/lucide/list-checks.svg",
+            Self::ListFilter => "icons/lucide/list-filter.svg",
+            Self::ListPlus => "icons/lucide/list-plus.svg",
             Self::ListTodo => "icons/lucide/list-todo.svg",
             Self::LoaderCircle => "icons/lucide/loader-circle.svg",
             Self::Loader => "icons/lucide/loader.svg",
+            Self::LockOpen => "icons/lucide/lock-open.svg",
             Self::Lock => "icons/lucide/lock.svg",
             Self::LogIn => "icons/lucide/log-in.svg",
+            Self::Mail => "icons/lucide/mail.svg",
             Self::Maximize2 => "icons/lucide/maximize-2.svg",
+            Self::Maximize => "icons/lucide/maximize.svg",
+            Self::MemoryStick => "icons/lucide/memory-stick.svg",
+            Self::MessageCircleQuestionMark => "icons/lucide/message-circle-question-mark.svg",
             Self::MessageCircle => "icons/lucide/message-circle.svg",
             Self::MessageSquareDashed => "icons/lucide/message-square-dashed.svg",
+            Self::MessageSquareOff => "icons/lucide/message-square-off.svg",
+            Self::MessageSquareWarning => "icons/lucide/message-square-warning.svg",
             Self::MessageSquare => "icons/lucide/message-square.svg",
             Self::Minimize2 => "icons/lucide/minimize-2.svg",
             Self::Minus => "icons/lucide/minus.svg",
             Self::Monitor => "icons/lucide/monitor.svg",
+            Self::Moon => "icons/lucide/moon.svg",
             Self::MousePointer2 => "icons/lucide/mouse-pointer-2.svg",
             Self::MousePointerClick => "icons/lucide/mouse-pointer-click.svg",
+            Self::OctagonAlert => "icons/lucide/octagon-alert.svg",
+            Self::PackagePlus => "icons/lucide/package-plus.svg",
+            Self::Package => "icons/lucide/package.svg",
             Self::Paintbrush => "icons/lucide/paintbrush.svg",
+            Self::Palette => "icons/lucide/palette.svg",
             Self::PanelBottomClose => "icons/lucide/panel-bottom-close.svg",
             Self::PanelBottomOpen => "icons/lucide/panel-bottom-open.svg",
+            Self::PanelBottom => "icons/lucide/panel-bottom.svg",
             Self::PanelLeftClose => "icons/lucide/panel-left-close.svg",
             Self::PanelLeftOpen => "icons/lucide/panel-left-open.svg",
+            Self::PanelLeft => "icons/lucide/panel-left.svg",
             Self::PanelRightClose => "icons/lucide/panel-right-close.svg",
             Self::PanelRightOpen => "icons/lucide/panel-right-open.svg",
+            Self::PanelRight => "icons/lucide/panel-right.svg",
+            Self::PanelsTopLeft => "icons/lucide/panels-top-left.svg",
+            Self::Paperclip => "icons/lucide/paperclip.svg",
             Self::PenLine => "icons/lucide/pen-line.svg",
+            Self::PencilRuler => "icons/lucide/pencil-ruler.svg",
+            Self::Pencil => "icons/lucide/pencil.svg",
+            Self::PictureInPicture2 => "icons/lucide/picture-in-picture-2.svg",
             Self::Pilcrow => "icons/lucide/pilcrow.svg",
+            Self::PinOff => "icons/lucide/pin-off.svg",
+            Self::Pin => "icons/lucide/pin.svg",
             Self::Pipette => "icons/lucide/pipette.svg",
             Self::Play => "icons/lucide/play.svg",
+            Self::Plug2 => "icons/lucide/plug-2.svg",
             Self::Plus => "icons/lucide/plus.svg",
+            Self::Power => "icons/lucide/power.svg",
+            Self::Presentation => "icons/lucide/presentation.svg",
             Self::QrCode => "icons/lucide/qr-code.svg",
+            Self::Quote => "icons/lucide/quote.svg",
             Self::RadioTower => "icons/lucide/radio-tower.svg",
             Self::RefreshCw => "icons/lucide/refresh-cw.svg",
             Self::RotateCcw => "icons/lucide/rotate-ccw.svg",
             Self::RotateCw => "icons/lucide/rotate-cw.svg",
             Self::Rows3 => "icons/lucide/rows-3.svg",
+            Self::Scale => "icons/lucide/scale.svg",
             Self::Search => "icons/lucide/search.svg",
+            Self::Send => "icons/lucide/send.svg",
+            Self::Server => "icons/lucide/server.svg",
             Self::Settings2 => "icons/lucide/settings-2.svg",
             Self::Settings => "icons/lucide/settings.svg",
+            Self::ShieldAlert => "icons/lucide/shield-alert.svg",
+            Self::ShieldQuestionMark => "icons/lucide/shield-question-mark.svg",
+            Self::Shield => "icons/lucide/shield.svg",
             Self::SlidersHorizontal => "icons/lucide/sliders-horizontal.svg",
             Self::Smartphone => "icons/lucide/smartphone.svg",
+            Self::SmilePlus => "icons/lucide/smile-plus.svg",
             Self::Sparkles => "icons/lucide/sparkles.svg",
+            Self::SquareArrowOutUpRight => "icons/lucide/square-arrow-out-up-right.svg",
             Self::SquarePen => "icons/lucide/square-pen.svg",
             Self::SquareSplitHorizontal => "icons/lucide/square-split-horizontal.svg",
             Self::SquareSplitVertical => "icons/lucide/square-split-vertical.svg",
             Self::SquareTerminal => "icons/lucide/square-terminal.svg",
+            Self::Square => "icons/lucide/square.svg",
             Self::Star => "icons/lucide/star.svg",
+            Self::Sun => "icons/lucide/sun.svg",
+            Self::Table2 => "icons/lucide/table-2.svg",
+            Self::Tag => "icons/lucide/tag.svg",
             Self::Terminal => "icons/lucide/terminal.svg",
+            Self::TextAlignStart => "icons/lucide/text-align-start.svg",
+            Self::TextSearch => "icons/lucide/text-search.svg",
             Self::TextWrap => "icons/lucide/text-wrap.svg",
             Self::Ticket => "icons/lucide/ticket.svg",
             Self::Trash2 => "icons/lucide/trash-2.svg",
             Self::TrendingDown => "icons/lucide/trending-down.svg",
             Self::TrendingUp => "icons/lucide/trending-up.svg",
             Self::TriangleAlert => "icons/lucide/triangle-alert.svg",
+            Self::Type => "icons/lucide/type.svg",
             Self::Undo2 => "icons/lucide/undo-2.svg",
+            Self::Unlink2 => "icons/lucide/unlink-2.svg",
+            Self::Upload => "icons/lucide/upload.svg",
+            Self::UserCheck => "icons/lucide/user-check.svg",
+            Self::UserLock => "icons/lucide/user-lock.svg",
+            Self::UserPlus => "icons/lucide/user-plus.svg",
+            Self::UserRoundX => "icons/lucide/user-round-x.svg",
+            Self::UserRound => "icons/lucide/user-round.svg",
+            Self::Users => "icons/lucide/users.svg",
+            Self::Volume2 => "icons/lucide/volume-2.svg",
+            Self::VolumeOff => "icons/lucide/volume-off.svg",
             Self::WifiOff => "icons/lucide/wifi-off.svg",
             Self::Wrench => "icons/lucide/wrench.svg",
             Self::X => "icons/lucide/x.svg",
@@ -518,8 +902,12 @@ impl IconName {
 pub enum Logo {
     /// `ACPRegistryIcon`
     ACPRegistryIcon,
+    /// `AndroidIcon`
+    AndroidIcon,
     /// `AntigravityIcon`
     AntigravityIcon,
+    /// `AppleIcon`
+    AppleIcon,
     /// `AquaIcon`
     AquaIcon,
     /// `AzureDevOpsIcon`
@@ -530,12 +918,20 @@ pub enum Logo {
     CLionIcon,
     /// `ClaudeAI`
     ClaudeAI,
+    /// `ComputerUseAppIcon`
+    ComputerUseAppIcon,
     /// `CursorIcon`
     CursorIcon,
     /// `DataGripIcon`
     DataGripIcon,
     /// `DataSpellIcon`
     DataSpellIcon,
+    /// `FileExplorerIcon`
+    FileExplorerIcon,
+    /// `FinderIcon`
+    FinderIcon,
+    /// `ForgejoIcon`
+    ForgejoIcon,
     /// `Gemini`
     Gemini,
     /// `GitHubIcon`
@@ -556,6 +952,14 @@ pub enum Logo {
     JujutsuIcon,
     /// `KiroIcon`
     KiroIcon,
+    /// `LinuxIcon`
+    LinuxIcon,
+    /// `MacAccessibilityIcon`
+    MacAccessibilityIcon,
+    /// `MacScreenRecordingIcon`
+    MacScreenRecordingIcon,
+    /// `MetaIcon`
+    MetaIcon,
     /// `OpenAI`
     OpenAI,
     /// `OpenCodeIcon`
@@ -574,6 +978,8 @@ pub enum Logo {
     RustRoverIcon,
     /// `TraeIcon`
     TraeIcon,
+    /// `UltrafastIcon`
+    UltrafastIcon,
     /// `VSCodium`
     VSCodium,
     /// `VisualStudioCode`
@@ -587,18 +993,76 @@ pub enum Logo {
 }
 
 impl Logo {
+    /// Whether the logo paints only the current text color (`fill-current` in the fork),
+    /// so it must be drawn as a tinted mask rather than a full-color image.
+    pub const fn is_single_color(self) -> bool {
+        match self {
+            Self::ACPRegistryIcon => false,
+            Self::AndroidIcon => true,
+            Self::AntigravityIcon => false,
+            Self::AppleIcon => true,
+            Self::AquaIcon => false,
+            Self::AzureDevOpsIcon => false,
+            Self::BitbucketIcon => false,
+            Self::CLionIcon => false,
+            Self::ClaudeAI => false,
+            Self::ComputerUseAppIcon => false,
+            Self::CursorIcon => false,
+            Self::DataGripIcon => false,
+            Self::DataSpellIcon => false,
+            Self::FileExplorerIcon => false,
+            Self::FinderIcon => false,
+            Self::ForgejoIcon => false,
+            Self::Gemini => false,
+            Self::GitHubIcon => true,
+            Self::GitIcon => false,
+            Self::GitLabIcon => false,
+            Self::GithubCopilotIcon => false,
+            Self::GoLandIcon => false,
+            Self::GrokIcon => false,
+            Self::IntelliJIdeaIcon => false,
+            Self::JujutsuIcon => false,
+            Self::KiroIcon => false,
+            Self::LinuxIcon => true,
+            Self::MacAccessibilityIcon => false,
+            Self::MacScreenRecordingIcon => false,
+            Self::MetaIcon => false,
+            Self::OpenAI => true,
+            Self::OpenCodeIcon => false,
+            Self::PhpStormIcon => false,
+            Self::PiAgentIcon => false,
+            Self::PyCharmIcon => false,
+            Self::RiderIcon => false,
+            Self::RubyMineIcon => false,
+            Self::RustRoverIcon => false,
+            Self::TraeIcon => true,
+            Self::UltrafastIcon => true,
+            Self::VSCodium => false,
+            Self::VisualStudioCode => false,
+            Self::VisualStudioCodeInsiders => false,
+            Self::WebStormIcon => false,
+            Self::Zed => false,
+        }
+    }
+
     /// Every logo, in file-name order.
     pub const ALL: &[Logo] = &[
         Self::ACPRegistryIcon,
+        Self::AndroidIcon,
         Self::AntigravityIcon,
+        Self::AppleIcon,
         Self::AquaIcon,
         Self::AzureDevOpsIcon,
         Self::BitbucketIcon,
         Self::CLionIcon,
         Self::ClaudeAI,
+        Self::ComputerUseAppIcon,
         Self::CursorIcon,
         Self::DataGripIcon,
         Self::DataSpellIcon,
+        Self::FileExplorerIcon,
+        Self::FinderIcon,
+        Self::ForgejoIcon,
         Self::Gemini,
         Self::GitHubIcon,
         Self::GitIcon,
@@ -609,6 +1073,10 @@ impl Logo {
         Self::IntelliJIdeaIcon,
         Self::JujutsuIcon,
         Self::KiroIcon,
+        Self::LinuxIcon,
+        Self::MacAccessibilityIcon,
+        Self::MacScreenRecordingIcon,
+        Self::MetaIcon,
         Self::OpenAI,
         Self::OpenCodeIcon,
         Self::PhpStormIcon,
@@ -618,6 +1086,7 @@ impl Logo {
         Self::RubyMineIcon,
         Self::RustRoverIcon,
         Self::TraeIcon,
+        Self::UltrafastIcon,
         Self::VSCodium,
         Self::VisualStudioCode,
         Self::VisualStudioCodeInsiders,
@@ -635,12 +1104,15 @@ impl Logo {
                     "icons/logos/ACPRegistryIcon.light.svg"
                 }
             }
+            Self::AndroidIcon => "icons/logos/AndroidIcon.svg",
             Self::AntigravityIcon => "icons/logos/AntigravityIcon.svg",
+            Self::AppleIcon => "icons/logos/AppleIcon.svg",
             Self::AquaIcon => "icons/logos/AquaIcon.svg",
             Self::AzureDevOpsIcon => "icons/logos/AzureDevOpsIcon.svg",
             Self::BitbucketIcon => "icons/logos/BitbucketIcon.svg",
             Self::CLionIcon => "icons/logos/CLionIcon.svg",
             Self::ClaudeAI => "icons/logos/ClaudeAI.svg",
+            Self::ComputerUseAppIcon => "icons/logos/ComputerUseAppIcon.svg",
             Self::CursorIcon => {
                 if dark {
                     "icons/logos/CursorIcon.dark.svg"
@@ -650,6 +1122,9 @@ impl Logo {
             }
             Self::DataGripIcon => "icons/logos/DataGripIcon.svg",
             Self::DataSpellIcon => "icons/logos/DataSpellIcon.svg",
+            Self::FileExplorerIcon => "icons/logos/FileExplorerIcon.svg",
+            Self::FinderIcon => "icons/logos/FinderIcon.svg",
+            Self::ForgejoIcon => "icons/logos/ForgejoIcon.svg",
             Self::Gemini => "icons/logos/Gemini.svg",
             Self::GitHubIcon => "icons/logos/GitHubIcon.svg",
             Self::GitIcon => "icons/logos/GitIcon.svg",
@@ -672,13 +1147,11 @@ impl Logo {
             Self::IntelliJIdeaIcon => "icons/logos/IntelliJIdeaIcon.svg",
             Self::JujutsuIcon => "icons/logos/JujutsuIcon.svg",
             Self::KiroIcon => "icons/logos/KiroIcon.svg",
-            Self::OpenAI => {
-                if dark {
-                    "icons/logos/OpenAI.dark.svg"
-                } else {
-                    "icons/logos/OpenAI.light.svg"
-                }
-            }
+            Self::LinuxIcon => "icons/logos/LinuxIcon.svg",
+            Self::MacAccessibilityIcon => "icons/logos/MacAccessibilityIcon.svg",
+            Self::MacScreenRecordingIcon => "icons/logos/MacScreenRecordingIcon.svg",
+            Self::MetaIcon => "icons/logos/MetaIcon.svg",
+            Self::OpenAI => "icons/logos/OpenAI.svg",
             Self::OpenCodeIcon => {
                 if dark {
                     "icons/logos/OpenCodeIcon.dark.svg"
@@ -693,6 +1166,7 @@ impl Logo {
             Self::RubyMineIcon => "icons/logos/RubyMineIcon.svg",
             Self::RustRoverIcon => "icons/logos/RustRoverIcon.svg",
             Self::TraeIcon => "icons/logos/TraeIcon.svg",
+            Self::UltrafastIcon => "icons/logos/UltrafastIcon.svg",
             Self::VSCodium => "icons/logos/VSCodium.svg",
             Self::VisualStudioCode => "icons/logos/VisualStudioCode.svg",
             Self::VisualStudioCodeInsiders => "icons/logos/VisualStudioCodeInsiders.svg",
@@ -779,6 +1253,7 @@ pub(crate) const FILE_NAME_TOKENS: &[(&str, &str)] = &[
     ("next.config.mjs", "nextjs"),
     ("next.config.mts", "nextjs"),
     ("next.config.ts", "nextjs"),
+    ("package.json", "npm"),
     ("postcss.config.cjs", "postcss"),
     ("postcss.config.js", "postcss"),
     ("postcss.config.mjs", "postcss"),
@@ -799,6 +1274,7 @@ pub(crate) const FILE_NAME_TOKENS: &[(&str, &str)] = &[
     ("tailwind.config.js", "tailwind"),
     ("tailwind.config.mjs", "tailwind"),
     ("tailwind.config.ts", "tailwind"),
+    ("tsconfig.json", "typescript"),
     ("vite.config.js", "vite"),
     ("vite.config.mjs", "vite"),
     ("vite.config.mts", "vite"),
@@ -996,13 +1472,20 @@ pub(crate) const TOKEN_COLORS: &[(&str, Hsla, Hsla)] = &[
     ("zip", hex(0xD47628FF), hex(0xFFA359FF)),
 ];
 
+/// T3 overrides by lowercase extension: `(extension, icon stem, has light/dark files)`.
+pub(crate) const T3_EXTENSION_ICONS: &[(&str, &str, bool)] = &[
+    ("avi", "t3-video", false),
+    ("m4v", "t3-video", false),
+    ("mkv", "t3-video", false),
+    ("mov", "t3-video", false),
+    ("mp4", "t3-video", false),
+    ("ogv", "t3-video", false),
+    ("webm", "t3-video", false),
+];
+
 /// T3 overrides by lowercase file name: `(file name, icon stem, has light/dark files)`.
 pub(crate) const T3_FILE_ICONS: &[(&str, &str, bool)] = &[
     ("agents.md", "t3-agents", true),
-    ("claude.md", "t3-claude", false),
-    ("package.json", "t3-package-json", false),
     ("pnpm-lock.yaml", "t3-pnpm", true),
     ("pnpm-workspace.yaml", "t3-pnpm", true),
-    ("readme.md", "t3-readme", false),
-    ("tsconfig.json", "t3-tsconfig", false),
 ];

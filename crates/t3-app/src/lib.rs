@@ -48,7 +48,6 @@ pub fn run() {
             keybindings::menu::install(cx);
             let options = t3_ui::window::main_window_options(cx);
             gpui_kit::open_window(options, cx, |window, cx| {
-                t3_ui::window::install_glass(window);
                 t3_ui::theme::observe_system_appearance(window, cx).detach();
                 cx.new(|cx| Workspace::new(window, cx))
             })

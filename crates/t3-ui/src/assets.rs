@@ -1,5 +1,5 @@
-//! The app's [`AssetSource`]: bundled fonts and icons from the repo's `assets/` directory,
-//! falling back to gpui-kit's own icon bundle for paths we don't ship.
+//! The app's [`AssetSource`]: icons from the repo's `assets/` directory, falling back to
+//! gpui-kit's own icon bundle for paths we don't ship.
 //!
 //! Pass it to `gpui_kit::application().with_assets(t3_ui::Assets)` and to headless
 //! contexts so snapshots render the same glyphs and icons as the app.
@@ -10,9 +10,8 @@ use gpui_kit::{AssetSource, Result, SharedString};
 
 #[derive(rust_embed::RustEmbed)]
 #[folder = "$CARGO_MANIFEST_DIR/../../assets"]
-#[include = "fonts/*.ttf"]
 #[include = "icons/**/*.svg"]
-pub(crate) struct Embedded;
+struct Embedded;
 
 /// Asset source for every T3UI window. Paths look like `icons/lucide/x.svg`.
 #[derive(Clone, Copy, Debug, Default)]

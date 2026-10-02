@@ -3,16 +3,14 @@
 //! [`Theme`] is a GPUI global holding the user's [`ThemeMode`] and the resolved
 //! [`Appearance`]. Components read colors with `cx.colors()` ([`ActiveColors`]). Changing
 //! the mode also re-themes gpui-component (inputs, lists, scrollbars, popover positioning)
-//! from the generated ThemeSet in `gpui_component.json`, with its `Root` background made
-//! transparent so the window glass shows through.
+//! from the generated ThemeSet in `gpui_component.json`.
 
 use gpui_kit::{
     App, Global, SharedString, Subscription, Window, WindowAppearance,
-    component::{Theme as ComponentTheme, ThemeRegistry, ThemeToken},
-    transparent_black,
+    component::{Theme as ComponentTheme, ThemeRegistry},
 };
 
-use crate::tokens::{Colors, DARK, LIGHT};
+use crate::tokens::{Colors, DARK, LIGHT, SIDEBAR_DARK, SIDEBAR_LIGHT};
 
 /// gpui-component ThemeSet generated from tokens.json by `tools/gen_tokens.py`.
 const COMPONENT_THEMES: &str = include_str!("gpui_component.json");
@@ -53,6 +51,14 @@ impl Appearance {
         match self {
             Self::Light => &LIGHT,
             Self::Dark => &DARK,
+        }
+    }
+
+    /// The color set inside the sidebar (`[data-app-sidebar]` re-declares some tokens).
+    pub fn sidebar_colors(self) -> &'static Colors {
+        match self {
+            Self::Light => &SIDEBAR_LIGHT,
+            Self::Dark => &SIDEBAR_DARK,
         }
     }
 
@@ -100,6 +106,11 @@ impl Theme {
         self.appearance.colors()
     }
 
+    /// The active color set inside the sidebar.
+    pub fn sidebar_colors(&self) -> &'static Colors {
+        self.appearance.sidebar_colors()
+    }
+
     /// The monospace family chosen at startup (see [`crate::fonts::mono_family`]).
     pub fn mono_family(&self) -> &SharedString {
         &self.mono_family
@@ -109,12 +120,20 @@ impl Theme {
 /// Access to the active colors from any context: `cx.colors().border`.
 pub trait ActiveColors {
     fn colors(&self) -> &'static Colors;
+    /// Colors for elements inside the sidebar, where the fork re-declares row and border
+    /// tokens (dark rows are translucent foreground washes, for example).
+    fn sidebar_colors(&self) -> &'static Colors;
 }
 
 impl ActiveColors for App {
     #[inline]
     fn colors(&self) -> &'static Colors {
         Theme::global(self).colors()
+    }
+
+    #[inline]
+    fn sidebar_colors(&self) -> &'static Colors {
+        Theme::global(self).sidebar_colors()
     }
 }
 
@@ -195,13 +214,6 @@ fn apply(cx: &mut App) {
         component.mono_font_family = mono_family;
         // We draw our own focus rings (spec section 1.6); theirs is a 3px ring/50 band.
         component.focus_ring = false;
-        // `Root` (and Dialog, Sheet, TabBar) paint `tokens.background`. Keep the solid
-        // color for components that read it, but paint nothing so the glass shows.
-        // `reconcile` keeps this token because its color matches `colors.background`.
-        component.tokens.background = ThemeToken {
-            color: component.background,
-            background: transparent_black().into(),
-        };
     });
 
     if native {

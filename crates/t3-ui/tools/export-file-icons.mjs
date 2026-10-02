@@ -5,7 +5,7 @@
 //
 // Usage (from the repo root):
 //   node crates/t3-ui/tools/export-file-icons.mjs [referenceRepo] [outDir]
-//   defaults: ~/L-Projects/t3code-again  ->  ./assets/icons/files
+//   defaults: $T3_FORK (default ~/L-Projects/t3UI-refs/t3code-fork)  ->  ./assets/icons/files
 //
 // Output:
 //   <token>.svg        Pierre built-ins. Single-color (`currentColor` with opacity layers), so
@@ -20,7 +20,7 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-const refRepo = path.resolve(process.argv[2] ?? path.join(os.homedir(), "L-Projects/t3code-again"));
+const refRepo = path.resolve(process.argv[2] ?? process.env.T3_FORK ?? path.join(os.homedir(), "L-Projects/t3UI-refs/t3code-fork"));
 const outDir = path.resolve(process.argv[3] ?? "assets/icons/files");
 const treesDist = path.join(refRepo, "apps/web/node_modules/@pierre/trees/dist");
 
@@ -57,7 +57,9 @@ for (const [, id, viewBox, body] of sprite.matchAll(symbolRe)) {
 // T3 overrides from pierre-icons.ts.
 const t3Src = fs.readFileSync(path.join(refRepo, "apps/web/src/pierre-icons.ts"), "utf8");
 const t3Sprite = t3Src.match(/const T3_FILE_ICON_SPRITE = `([\s\S]*?)`;/)[1];
-const FOREGROUND = { light: "#262626", dark: "#F5F5F5" };
+// `currentColor` inside the file tree is the tree foreground (`--foreground`).
+const specTokens = JSON.parse(fs.readFileSync(new URL("../../../docs/spec/tokens.json", import.meta.url), "utf8"));
+const FOREGROUND = { light: specTokens.color.light.foreground.slice(0, 7), dark: specTokens.color.dark.foreground.slice(0, 7) };
 const t3Icons = {};
 for (const [, id, viewBox, body] of t3Sprite.matchAll(symbolRe)) {
   const name = id.replace(/^t3-file-icon-/, "t3-");
@@ -72,8 +74,20 @@ for (const [, id, viewBox, body] of t3Sprite.matchAll(symbolRe)) {
   }
 }
 const t3FileNames = {};
-for (const [, fileName, id] of t3Src.matchAll(/"([^"]+)": "(t3-file-icon-[^"]+)"/g)) {
-  t3FileNames[fileName] = t3Icons[id];
+// File-name overrides that point at a Pierre built-in instead of a T3 symbol.
+const fileNameOverrides = {};
+const byFileName = t3Src.match(/byFileName: \{([\s\S]*?)\}/)[1];
+for (const [, fileName, id] of byFileName.matchAll(/"([^"]+)": "([^"]+)"/g)) {
+  if (id.startsWith("t3-file-icon-")) t3FileNames[fileName] = t3Icons[id];
+  else fileNameOverrides[fileName] = id.replace(/^file-tree-builtin-/, "");
+}
+// Extension overrides: `byFileExtension` maps the shared video extensions to the T3 video icon.
+const t3Extensions = {};
+if (/VIDEO_FILE_EXTENSIONS\.map\(\(extension\) => \[extension, "t3-file-icon-video"\]\)/.test(t3Src)) {
+  const video = fs.readFileSync(path.join(refRepo, "packages/shared/src/video.ts"), "utf8");
+  for (const [, extension] of video.matchAll(/\["([a-z0-9]+)", "video\/[^"]+"\]/g)) {
+    t3Extensions[extension] = t3Icons["t3-file-icon-video"];
+  }
 }
 
 // Token colors: --trees-file-icon-color-<token> -> --trees-icon-<palette> -> light-dark(a, b).
@@ -92,12 +106,13 @@ for (const [, token, color] of style.matchAll(
 }
 
 const manifest = {
-  fileNames: builtIns.BUILT_IN_FILE_NAME_TOKENS,
+  fileNames: { ...builtIns.BUILT_IN_FILE_NAME_TOKENS, ...fileNameOverrides },
   extensions: builtIns.BUILT_IN_FILE_EXTENSION_TOKENS,
   completeExtensionOverrides: builtIns.COMPLETE_EXTENSION_OVERRIDES,
   tokenColors,
   palette,
   t3FileNames,
+  t3Extensions,
 };
 fs.writeFileSync(path.join(outDir, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
 console.log(

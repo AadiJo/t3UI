@@ -81,7 +81,8 @@ def main() -> None:
     variants = []
     for file in lucide:
         names = ", ".join(f"`{n}`" for n in sorted(aliases.get(file, [])))
-        variants.append((camel(file[:-4]), f"icons/lucide/{file}", f"lucide `{file[:-4]}` ({names})"))
+        doc = f"lucide `{file[:-4]}` ({names})" if names else f"lucide `{file[:-4]}` (not imported by the current fork; kept for existing callers)"
+        variants.append((camel(file[:-4]), f"icons/lucide/{file}", doc))
     for file in ui:
         variants.append((camel(file[:-4]), f"icons/ui/{file}", f"hand-drawn `{file[:-4]}`"))
     assert len({v for v, _, _ in variants}) == len(variants), "duplicate icon variant"
@@ -120,7 +121,23 @@ def main() -> None:
     for base in logos:
         w(f"    /// `{base}`\n    {camel(base)},\n")
     w("}\n\n")
+    def single_color(path: str) -> bool:
+        """No painted color of its own (only `currentColor` or the default black), no raster."""
+        text = (ROOT / "assets" / path).read_text()
+        colors = {
+            m.group(2).lower()
+            for m in re.finditer(r'(fill|stroke|stop-color)="([^"]+)"', text)
+        } - {"none", "currentcolor"}
+        return not colors and "<image" not in text
+
     w("impl Logo {\n")
+    w("    /// Whether the logo paints only the current text color (`fill-current` in the fork),\n")
+    w("    /// so it must be drawn as a tinted mask rather than a full-color image.\n")
+    w("    pub const fn is_single_color(self) -> bool {\n        match self {\n")
+    for base, files in logos.items():
+        path = files.get("any") or files["light"]
+        w(f"            Self::{camel(base)} => {'true' if single_color(path) else 'false'},\n")
+    w("        }\n    }\n\n")
     w("    /// Every logo, in file-name order.\n")
     w("    pub const ALL: &[Logo] = &[\n")
     for base in logos:
@@ -157,6 +174,12 @@ def main() -> None:
         w(f"    ({rust_str(token)}, {hex_lit(light)}, {hex_lit(dark)}),\n")
     w("];\n\n")
 
+    w("/// T3 overrides by lowercase extension: `(extension, icon stem, has light/dark files)`.\n")
+    w("pub(crate) const T3_EXTENSION_ICONS: &[(&str, &str, bool)] = &[\n")
+    for ext in sorted(files.get("t3Extensions", {})):
+        entry = files["t3Extensions"][ext]
+        w(f"    ({rust_str(ext)}, {rust_str(entry['name'])}, {'true' if entry['themed'] else 'false'}),\n")
+    w("];\n\n")
     w("/// T3 overrides by lowercase file name: `(file name, icon stem, has light/dark files)`.\n")
     w("pub(crate) const T3_FILE_ICONS: &[(&str, &str, bool)] = &[\n")
     for name in sorted(files["t3FileNames"]):

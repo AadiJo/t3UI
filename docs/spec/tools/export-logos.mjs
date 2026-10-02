@@ -4,7 +4,7 @@
 //
 // Usage:
 //   node docs/spec/tools/export-logos.mjs [referenceRepo] [outDir]
-//   defaults: ~/L-Projects/t3code-again  ->  ./assets/icons/logos
+//   defaults: $T3_FORK (default ~/L-Projects/t3UI-refs/t3code-fork)  ->  ./assets/icons/logos
 //
 // How it works: esbuild (from the reference repo's node_modules) bundles a tiny entry that
 // imports every exported component and renders it with react-dom/server. Tailwind classes
@@ -18,7 +18,7 @@ import os from "node:os";
 import path from "node:path";
 import { createRequire } from "node:module";
 
-const refRepo = path.resolve(process.argv[2] ?? path.join(os.homedir(), "L-Projects/t3code-again"));
+const refRepo = path.resolve(process.argv[2] ?? process.env.T3_FORK ?? path.join(os.homedir(), "L-Projects/t3UI-refs/t3code-fork"));
 const outDir = path.resolve(process.argv[3] ?? "assets/icons/logos");
 const webDir = path.join(refRepo, "apps/web");
 const pnpmDir = path.join(refRepo, "node_modules/.pnpm");

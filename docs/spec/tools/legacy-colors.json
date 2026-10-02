@@ -1,0 +1,34 @@
+{
+  "$comment": "Pre-refresh t3-ui color names (spec from the July fork) that the fe7d3092c token sheet no longer defines, expressed in the new tokens so existing callers keep compiling. `name_NN` names not listed here resolve as Tailwind `name/NN` (oklab alpha of the utility color). Values are CSS evaluated in the root scope; an object gives per-mode expressions. Remove entries once no crate reads them.",
+  "outline": "color-mix(in oklab, var(--ring) 50%, transparent)",
+  "border_mix_78": "color-mix(in srgb, var(--contrast-border) 78%, transparent)",
+  "border_mix_60": "color-mix(in srgb, var(--contrast-border) 60%, transparent)",
+  "foreground_mix_8": "color-mix(in srgb, var(--contrast-foreground) 8%, transparent)",
+  "app_sidebar_glass": "var(--sidebar)",
+  "app_main_glass": "var(--background)",
+  "composer_glass": "var(--card)",
+  "codeblock_bg": "var(--code-background)",
+  "diff_viewport": "var(--background)",
+  "diff_file_surface": "var(--card)",
+  "inset_highlight": "color-mix(in oklab, #fff 16%, transparent)",
+  "inset_press": "color-mix(in oklab, #000 8%, transparent)",
+  "group_text_bevel": "color-mix(in oklab, #000 6%, transparent)",
+  "skeleton_highlight": {
+    "light": "color-mix(in oklab, #fff 64%, transparent)",
+    "dark": "color-mix(in oklab, #fff 4%, transparent)"
+  },
+  "bevel": {
+    "light": "color-mix(in oklab, #000 4%, transparent)",
+    "dark": "color-mix(in oklab, #fff 6%, transparent)"
+  },
+  "bevel_pressed": {
+    "light": "transparent",
+    "dark": "color-mix(in oklab, #fff 2%, transparent)"
+  },
+  "scrollbar_thumb": "var(--app-scrollbar-thumb)",
+  "scrollbar_thumb_hover": "var(--app-scrollbar-thumb-hover)",
+  "model_picker_thumb": { "light": "#0000001A", "dark": "#FFFFFF14" },
+  "model_picker_thumb_hover": { "light": "#00000033", "dark": "#FFFFFF26" },
+  "code_scrollbar_thumb": "color-mix(in srgb, var(--contrast-border) 78%, transparent)",
+  "scroll_area_thumb": "color-mix(in oklab, var(--contrast-foreground) 20%, transparent)"
+}

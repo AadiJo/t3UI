@@ -103,7 +103,9 @@
     "webpack.config.cjs": "webpack",
     "webpack.config.js": "webpack",
     "webpack.config.mjs": "webpack",
-    "webpack.config.ts": "webpack"
+    "webpack.config.ts": "webpack",
+    "package.json": "npm",
+    "tsconfig.json": "typescript"
   },
   "extensions": {
     "7z": "zip",
@@ -340,25 +342,9 @@
     ]
   },
   "t3FileNames": {
-    "package.json": {
-      "name": "t3-package-json",
-      "themed": false
-    },
-    "tsconfig.json": {
-      "name": "t3-tsconfig",
-      "themed": false
-    },
     "agents.md": {
       "name": "t3-agents",
       "themed": true
-    },
-    "claude.md": {
-      "name": "t3-claude",
-      "themed": false
-    },
-    "readme.md": {
-      "name": "t3-readme",
-      "themed": false
     },
     "pnpm-lock.yaml": {
       "name": "t3-pnpm",
@@ -367,6 +353,36 @@
     "pnpm-workspace.yaml": {
       "name": "t3-pnpm",
       "themed": true
+    }
+  },
+  "t3Extensions": {
+    "avi": {
+      "name": "t3-video",
+      "themed": false
+    },
+    "m4v": {
+      "name": "t3-video",
+      "themed": false
+    },
+    "mkv": {
+      "name": "t3-video",
+      "themed": false
+    },
+    "mov": {
+      "name": "t3-video",
+      "themed": false
+    },
+    "mp4": {
+      "name": "t3-video",
+      "themed": false
+    },
+    "ogv": {
+      "name": "t3-video",
+      "themed": false
+    },
+    "webm": {
+      "name": "t3-video",
+      "themed": false
     }
   }
 }

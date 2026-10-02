@@ -1,9 +1,8 @@
-//! Main window chrome (spec section 2): window options matching the Electron
-//! `BrowserWindow`, the macOS `NSVisualEffectView` glass behind GPUI's layer, and the 3.5%
-//! grain overlay.
+//! Main window chrome: window options matching the fork's Electron `BrowserWindow`
+//! (`apps/desktop/src/window/DesktopWindow.ts`) and the 3.5% surface grain.
 //!
-//! Layer stack on macOS, bottom to top: native material, the main column's
-//! `app_main_glass` tint, [`NoiseOverlay`], the sidebar's `app_sidebar_glass`, popups.
+//! The window is opaque: the fork dropped vibrancy, and paints `--app-chrome-background` with
+//! the grain layered behind content.
 
 use std::sync::{Arc, LazyLock};
 
@@ -15,13 +14,12 @@ use gpui_kit::{
 
 use crate::tokens::layout;
 
-/// Window title. The reference fixes it to this string (`DesktopWindow.ts:22`); it shows in
-/// the Window menu and Mission Control, never in the hidden titlebar.
-pub const TITLE: &str = "HOME-PC";
+/// Window title (the fork uses the build's display name); shown in the Window menu and Mission
+/// Control, never in the hidden titlebar.
+pub const TITLE: &str = "T3 Code";
 
-/// Options for the main window: 1100x780 centered, min 840x620, hidden-inset titlebar with
-/// the traffic lights at (16, 18), and a transparent background on macOS so
-/// [`install_glass`] shows through. Other platforms stay opaque (spec risk 12).
+/// Options for the main window: 1100x780 centered, min 840x620, opaque, hidden-inset titlebar
+/// with the traffic lights at (16, 19), vertically centered in the 52px topbar.
 pub fn main_window_options(cx: &App) -> WindowOptions {
     let (width, height) = layout::WINDOW_DEFAULT;
     let (min_width, min_height) = layout::WINDOW_MIN;
@@ -37,65 +35,11 @@ pub fn main_window_options(cx: &App) -> WindowOptions {
             appears_transparent: true,
             traffic_light_position: Some(point(lights_x, lights_y)),
         }),
-        window_background: if cfg!(target_os = "macos") {
-            WindowBackgroundAppearance::Transparent
-        } else {
-            WindowBackgroundAppearance::Opaque
-        },
+        window_background: WindowBackgroundAppearance::Opaque,
         window_min_size: Some(size(min_width, min_height)),
         ..Default::default()
     }
 }
-
-/// Inserts the window glass under GPUI's view: an `NSVisualEffectView` with material
-/// `underWindowBackground`, blending `behindWindow` and state `active` (stays live while the
-/// window is inactive), resized with the window. This is Electron's `vibrancy: under-window`.
-///
-/// GPUI's own `WindowBackgroundAppearance::Blurred` uses the `selection` material and strips
-/// the desktop tint, which looks flatter, so the window must be opened with `Transparent`
-/// ([`main_window_options`]). Call once per window from the `open_window` build closure. No-op
-/// on other platforms.
-#[cfg(target_os = "macos")]
-pub fn install_glass(window: &Window) {
-    use objc2::{MainThreadMarker, MainThreadOnly as _};
-    use objc2_app_kit::{
-        NSAutoresizingMaskOptions, NSView, NSVisualEffectBlendingMode, NSVisualEffectMaterial,
-        NSVisualEffectState, NSVisualEffectView, NSWindowOrderingMode,
-    };
-    use raw_window_handle::{HasWindowHandle, RawWindowHandle};
-
-    let Some(mtm) = MainThreadMarker::new() else {
-        return;
-    };
-    // `Window::window_handle` (inherent) returns GPUI's handle; we want the raw one.
-    let Ok(handle) = HasWindowHandle::window_handle(window) else {
-        return;
-    };
-    let RawWindowHandle::AppKit(appkit) = handle.as_raw() else {
-        return;
-    };
-    // SAFETY: GPUI's AppKit handle points at its live content NSView, owned by the window
-    // that `window` borrows, and we are on the main thread.
-    let gpui_view: &NSView = unsafe { appkit.ns_view.cast::<NSView>().as_ref() };
-    // GPUI's view is a subview of the window's content view; the glass goes beneath it.
-    // SAFETY: reading the superview of a live view on the main thread.
-    let Some(content_view) = (unsafe { gpui_view.superview() }) else {
-        return;
-    };
-    let glass =
-        NSVisualEffectView::initWithFrame(NSVisualEffectView::alloc(mtm), content_view.bounds());
-    glass.setMaterial(NSVisualEffectMaterial::UnderWindowBackground);
-    glass.setBlendingMode(NSVisualEffectBlendingMode::BehindWindow);
-    glass.setState(NSVisualEffectState::Active);
-    glass.setAutoresizingMask(
-        NSAutoresizingMaskOptions::ViewWidthSizable | NSAutoresizingMaskOptions::ViewHeightSizable,
-    );
-    content_view.addSubview_positioned_relativeTo(&glass, NSWindowOrderingMode::Below, None);
-}
-
-/// No-op off macOS: those windows are opaque.
-#[cfg(not(target_os = "macos"))]
-pub fn install_glass(_window: &Window) {}
 
 static NOISE_TILE: LazyLock<Arc<Image>> = LazyLock::new(|| {
     Arc::new(Image::from_bytes(
@@ -104,10 +48,11 @@ static NOISE_TILE: LazyLock<Arc<Image>> = LazyLock::new(|| {
     ))
 });
 
-/// The web's `body::after` grain: a static 256px fractal-noise tile repeated at 3.5% opacity.
+/// The fork's `--surface-grain`: a static 256px fractal-noise tile repeated at 3.5% opacity.
 ///
-/// Place it as the last child of the main column (`relative` parent), after the composer and
-/// titlebar controls, but under the sidebar and popups (spec risk 8). It is a static texture:
+/// The fork paints it *behind* content: as the body's background image and through the
+/// `surface-grain` utility on surfaces that float over the body. So place this as the first
+/// child of an opaque surface (`relative` parent), before its content. It is a static texture:
 /// no animation, and the tiles share one GPU sprite.
 #[derive(IntoElement, Default)]
 pub struct NoiseOverlay;

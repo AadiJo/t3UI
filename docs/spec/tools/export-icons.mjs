@@ -3,7 +3,7 @@
 //
 // Usage:
 //   node docs/spec/tools/export-icons.mjs [referenceRepo] [outDir]
-//   defaults: ~/L-Projects/t3code-again  ->  ./assets/icons/lucide
+//   defaults: $T3_FORK (default ~/L-Projects/t3UI-refs/t3code-fork)  ->  ./assets/icons/lucide
 //
 // How it works:
 //   1. Scans <ref>/apps/web/src for `import { ... } from "lucide-react"` (tests excluded).
@@ -21,7 +21,7 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-const refRepo = path.resolve(process.argv[2] ?? path.join(os.homedir(), "L-Projects/t3code-again"));
+const refRepo = path.resolve(process.argv[2] ?? process.env.T3_FORK ?? path.join(os.homedir(), "L-Projects/t3UI-refs/t3code-fork"));
 const outDir = path.resolve(process.argv[3] ?? "assets/icons/lucide");
 const webSrc = path.join(refRepo, "apps/web/src");
 const lucideRoot = path.join(refRepo, "apps/web/node_modules/lucide-react/dist/esm");

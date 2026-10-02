@@ -149,7 +149,7 @@ pub(super) fn tokens_page(colors: &'static Colors, cx: &App) -> Vec<AnyElement> 
 
     vec![
         section(
-            "Typography (DM Sans 400 / 500 / 600 / 700)",
+            "Typography (system UI font 400 / 500 / 600 / 700)",
             colors,
             typography,
         ),

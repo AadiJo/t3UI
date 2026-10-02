@@ -13,17 +13,7 @@ tracing.workspace = true
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2.workspace = true
-objc2-foundation = { workspace = true, features = ["NSString", "NSGeometry"] }
-objc2-app-kit = { workspace = true, features = [
-    "NSAppearance",
-    "NSApplication",
-    "NSGraphics",
-    "NSResponder",
-    "NSView",
-    "NSVisualEffectView",
-    "NSWindow",
-] }
-raw-window-handle.workspace = true
+objc2-app-kit = { workspace = true, features = ["NSAppearance", "NSApplication", "NSResponder"] }
 
 [lints]
 workspace = true

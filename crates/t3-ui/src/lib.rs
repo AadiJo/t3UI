@@ -15,18 +15,15 @@ pub mod window;
 
 pub use assets::Assets;
 pub use components::*;
-pub use icon::{FileIcon, Icon, IconName, Logo, file_icon, logo};
+pub use icon::{FileIcon, Icon, IconName, Logo, LogoImage, file_icon, logo};
 pub use theme::{ActiveColors, Appearance, Theme, ThemeMode};
 pub use tokens::Colors;
 
 use gpui_kit::App;
 
-/// Registers fonts and installs the theme. Call once after `gpui_kit::init(cx)`, before
+/// Resolves fonts and installs the theme. Call once after `gpui_kit::init(cx)`, before
 /// opening windows. `mode` is the persisted [`ThemeMode`] (default `System`).
 pub fn init(mode: ThemeMode, cx: &mut App) {
-    if let Err(error) = fonts::register(cx) {
-        tracing::error!("failed to register bundled fonts: {error:#}");
-    }
     let mono_family = fonts::mono_family(cx);
     theme::init(mode, mono_family, cx);
 }
