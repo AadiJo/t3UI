@@ -16,6 +16,7 @@ t3-protocol = { path = "crates/t3-protocol" }
 t3-client = { path = "crates/t3-client" }
 t3-ui = { path = "crates/t3-ui" }
 t3-highlight = { path = "crates/t3-highlight" }
+t3-logic = { path = "crates/t3-logic" }
 
 # UI. gpui-kit re-exports GPUI (gpui-pre), gpui-base and gpui-component, pinned together.
 gpui-kit = { version = "=0.7.0" }

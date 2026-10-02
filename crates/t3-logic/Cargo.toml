@@ -1,0 +1,16 @@
+[package]
+name = "t3-logic"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "GPUI-free UI logic ported from the web client: keybindings, sidebar grouping, sorting, status."
+
+[dependencies]
+t3-protocol.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+
+[lints]
+workspace = true
