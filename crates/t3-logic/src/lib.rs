@@ -2,6 +2,7 @@
 //! keyboard shortcut resolution, sidebar grouping/sorting/status, client settings, persisted UI
 //! state, timestamp formatting, and the chat timeline rows. `t3-app` wraps these in entities and renders them.
 
+pub mod composer;
 pub mod keybindings;
 pub mod paths;
 pub mod refs;
