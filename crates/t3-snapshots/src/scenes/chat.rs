@@ -78,10 +78,7 @@ fn load(cx: &mut App) -> (Entity<AppState>, t3_protocol::EnvironmentId) {
         }],
     });
     let state = fixtures::load(&fixture.to_string(), cx).expect("fixture should decode");
-    let environment: t3_protocol::EnvironmentId = manifest["environmentId"]
-        .as_str()
-        .expect("manifest has environmentId")
-        .into();
+    let environment = environment_id();
     for (_, text) in THREADS {
         let thread: t3_client::ThreadState =
             serde_json::from_str(text).expect("thread fixture decodes");
@@ -89,6 +86,32 @@ fn load(cx: &mut App) -> (Entity<AppState>, t3_protocol::EnvironmentId) {
         chat_fixtures::install(thread_ref, thread, cx);
     }
     (state, environment)
+}
+
+fn environment_id() -> t3_protocol::EnvironmentId {
+    json(MANIFEST)["environmentId"]
+        .as_str()
+        .expect("manifest has environmentId")
+        .into()
+}
+
+/// Marks `thread` (fixture `name`) visited at its latest completion, which clears its sidebar
+/// "Completed" pill. The chat view does this itself only while its window is active, which a
+/// headless window is not.
+fn mark_visited(app_state: &Entity<AppState>, thread: &ThreadRef, name: &str, cx: &mut App) {
+    let completed_at = THREADS
+        .iter()
+        .find(|(fixture, _)| *fixture == name)
+        .and_then(|(_, text)| {
+            json(text)["thread"]["latestTurn"]["completedAt"]
+                .as_str()
+                .map(str::to_owned)
+        });
+    if let Some(completed_at) = completed_at {
+        app_state.update(cx, |state, cx| {
+            state.mark_thread_visited(thread, &completed_at, cx)
+        });
+    }
 }
 
 /// What a scene shows.
@@ -109,23 +132,10 @@ fn build(show: Show, window: &mut Window, cx: &mut App) -> AnyView {
     let target = match show {
         Show::End(name) | Show::Top(name) | Show::Expanded(name) => {
             let thread = ThreadRef::new(environment, format!("thread-{name}").into());
-            // The reference visited the thread, which clears its sidebar "Completed" pill. The
-            // view does this itself only while its window is active, which a headless one is not.
-            let completed_at = THREADS
-                .iter()
-                .find(|(fixture, _)| *fixture == name)
-                .and_then(|(_, text)| {
-                    let state = json(text);
-                    state["thread"]["latestTurn"]["completedAt"]
-                        .as_str()
-                        .map(str::to_owned)
-                });
             app_state.update(cx, |state, cx| {
-                state.replace_route(Route::Thread(thread.clone()), cx);
-                if let Some(completed_at) = completed_at {
-                    state.mark_thread_visited(&thread, &completed_at, cx);
-                }
+                state.replace_route(Route::Thread(thread.clone()), cx)
             });
+            mark_visited(&app_state, &thread, name, cx);
             ChatTarget::Thread(thread)
         }
         Show::Draft => {
@@ -139,6 +149,10 @@ fn build(show: Show, window: &mut Window, cx: &mut App) -> AnyView {
             }
         }
     };
+    // The reference session opened the showcase thread first, so its sidebar row never shows
+    // "Completed" in any capture.
+    let tour = ThreadRef::new(environment_id(), "thread-aurora-tour".into());
+    mark_visited(&app_state, &tour, "aurora-tour", cx);
     let chat = cx.new(|cx| ChatView::new(target, app_state.clone(), window, cx));
     match show {
         Show::Top(_) => chat.update(cx, |chat, cx| chat.scroll_to_top(cx)),
