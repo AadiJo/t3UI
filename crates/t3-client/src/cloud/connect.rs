@@ -7,7 +7,7 @@ use std::sync::{
 
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
-use t3_protocol::EnvironmentId;
+use t3_protocol::{EnvironmentId, environment::ExecutionEnvironmentDescriptor};
 use tokio::sync::watch;
 use url::Url;
 
@@ -17,10 +17,10 @@ use super::{
     dpop::{self, DpopKey},
     endpoint::{Bootstrap, BootstrapSource, DpopEndpoint},
     oauth::{self, Callback, OAuthProvider, WebAuthError, WebAuthenticator},
-    relay::{NETWORK_BLOCKING_HINT, RelayClient, RelayEnvironment},
+    relay::{NETWORK_BLOCKING_HINT, RelayClient, RelayEnvironment, RelayEnvironmentStatus},
 };
 use crate::{
-    auth::{BoxFuture, ClientInfo, Endpoint},
+    auth::{BoxFuture, ClientInfo, Endpoint, check_descriptor},
     connection::{BlockedReason, ConnectionFailure, TransientReason},
     store::{
         EnvironmentCatalog, KnownTarget, SavedEnvironment, SavedTarget, SecretStore, StoreError,
@@ -74,6 +74,22 @@ pub struct Discovery {
 pub struct DiscoveredEnvironment {
     pub environment: RelayEnvironment,
     pub availability: Availability,
+    /// The last status response, with the environment's descriptor when it is online.
+    pub status: Option<RelayEnvironmentStatus>,
+}
+
+impl DiscoveredEnvironment {
+    /// The descriptor the relay's health check returned, if it decodes.
+    pub fn descriptor(&self) -> Option<ExecutionEnvironmentDescriptor> {
+        let descriptor = self.status.as_ref()?.descriptor.clone()?;
+        serde_json::from_value(descriptor).ok()
+    }
+
+    /// Why this client cannot talk to the environment (protocol version), known before
+    /// connecting from the relay's descriptor (upstream `orchestrationProtocolCompatibilityError`).
+    pub fn compatibility_error(&self) -> Option<ConnectionFailure> {
+        check_descriptor(&self.descriptor()?, None).err()
+    }
 }
 
 /// What the relay says about a linked environment.
@@ -282,6 +298,7 @@ impl T3Connect {
         let connect = self.clone();
         crate::runtime::spawn(async move {
             let inner = &connect.inner;
+            inner.prepare_client().await?;
             let created = inner
                 .clerk
                 .create_sign_in(&[("identifier", email.as_str())])
@@ -324,6 +341,7 @@ impl T3Connect {
         let inner = self.inner.clone();
         crate::runtime::spawn(async move {
             let redirect = inner.config.oauth_redirect_url.to_string();
+            inner.prepare_client().await?;
             let created = inner
                 .clerk
                 .create_sign_in(&[
@@ -547,6 +565,17 @@ fn account_from(session_id: &str, client: Option<&ClientResource>) -> Option<Acc
 }
 
 impl Inner {
+    /// Makes sure a Clerk client exists before a sign-in (clerk-js loads it first) and that it
+    /// holds no session: the instance is single-session, so a leftover one (from a sign-in whose
+    /// account this install never stored) would fail the new sign-in with `session_exists`.
+    async fn prepare_client(&self) -> Result<(), CloudError> {
+        let client = self.clerk.client().await?;
+        if client.is_some_and(|c| c.sessions.iter().any(|s| s.status == "active")) {
+            self.clerk.remove_sessions().await?;
+        }
+        Ok(())
+    }
+
     /// Completes a sign-in whose attempt or reload returned `reply`.
     async fn finish_sign_in(
         inner: &Arc<Inner>,
@@ -700,32 +729,39 @@ impl Inner {
                 .map(|environment| DiscoveredEnvironment {
                     environment: environment.clone(),
                     availability: Availability::Checking,
+                    status: None,
                 })
                 .collect();
         });
-        let checks = environments.iter().map(|environment| {
-            let jwt = &jwt;
-            async move {
-                let availability = match inner.relay.environment_status(jwt, environment).await {
-                    Ok(status) if status.status == "online" => Availability::Online,
-                    Ok(status) => Availability::Offline {
-                        reason: status.error,
-                    },
-                    Err(failure) => Availability::Error(failure),
-                };
-                if current(inner) {
-                    inner.state.send_modify(|s| {
-                        if let Some(entry) =
-                            s.discovery.environments.iter_mut().find(|e| {
+        let checks =
+            environments.iter().map(|environment| {
+                let jwt = &jwt;
+                async move {
+                    let (availability, status) =
+                        match inner.relay.environment_status(jwt, environment).await {
+                            Ok(status) if status.status == "online" => {
+                                (Availability::Online, Some(status))
+                            }
+                            Ok(status) => (
+                                Availability::Offline {
+                                    reason: status.error.clone(),
+                                },
+                                Some(status),
+                            ),
+                            Err(failure) => (Availability::Error(failure), None),
+                        };
+                    if current(inner) {
+                        inner.state.send_modify(|s| {
+                            if let Some(entry) = s.discovery.environments.iter_mut().find(|e| {
                                 e.environment.environment_id == environment.environment_id
-                            })
-                        {
-                            entry.availability = availability;
-                        }
-                    });
+                            }) {
+                                entry.availability = availability;
+                                entry.status = status;
+                            }
+                        });
+                    }
                 }
-            }
-        });
+            });
         futures::future::join_all(checks).await;
         if current(inner) {
             inner.state.send_modify(|s| s.discovery.refreshing = false);
@@ -798,6 +834,39 @@ mod tests {
             uuid::Uuid::new_v4()
         ));
         Arc::new(FileSecretStore::at(path))
+    }
+
+    #[test]
+    fn discovered_compatibility_from_the_relay_descriptor() {
+        let environment: RelayEnvironment = serde_json::from_str(
+            r#"{"environmentId":"env-1","label":"box","linkedAt":"x",
+                "endpoint":{"httpBaseUrl":"https://a.example/","wsBaseUrl":"wss://a.example/ws","providerKind":"cloudflare_tunnel"}}"#,
+        )
+        .unwrap();
+        let status = |protocol: u32| -> RelayEnvironmentStatus {
+            serde_json::from_value(serde_json::json!({
+                "environmentId": "env-1", "status": "online", "checkedAt": "x",
+                "endpoint": {"httpBaseUrl":"https://a.example/","wsBaseUrl":"wss://a.example/ws","providerKind":"cloudflare_tunnel"},
+                "descriptor": {"environmentId":"env-1","label":"box","platform":{"os":"linux","arch":"x64"},
+                    "serverVersion":"9.9.9","orchestrationProtocolVersion":protocol,"capabilities":{}},
+            }))
+            .unwrap()
+        };
+        let mut entry = DiscoveredEnvironment {
+            environment,
+            availability: Availability::Online,
+            status: Some(status(1)),
+        };
+        assert!(entry.compatibility_error().is_none());
+        entry.status = Some(status(2));
+        let failure = entry.compatibility_error().unwrap();
+        assert!(
+            failure
+                .detail
+                .starts_with("This client is not supported by this server.")
+        );
+        entry.status = None;
+        assert!(entry.compatibility_error().is_none());
     }
 
     #[test]

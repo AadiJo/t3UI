@@ -33,6 +33,12 @@ rand_core.workspace = true
 reqwest = { version = "0.13", default-features = false, features = ["json", "gzip", "native-tls"] }
 tokio-tungstenite = { workspace = true, features = ["native-tls"] }
 security-framework.workspace = true
+objc2.workspace = true
+objc2-foundation = { workspace = true, features = ["NSArray", "NSError", "NSString", "NSURL"] }
+objc2-app-kit = { workspace = true, features = ["NSApplication", "NSResponder", "NSWindow"] }
+objc2-authentication-services.workspace = true
+block2.workspace = true
+dispatch2.workspace = true
 
 [target.'cfg(not(target_os = "macos"))'.dependencies]
 reqwest = { version = "0.13", default-features = false, features = ["json", "gzip", "rustls"] }

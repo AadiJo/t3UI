@@ -10,8 +10,8 @@
 //! - [`endpoint`]: [`DpopEndpoint`], the [`Endpoint`](crate::Endpoint) for DPoP-authorized
 //!   environments, with a [`BootstrapSource`] seam for where credentials come from.
 //! - [`dpop`]: the install's ES256 key and RFC 9449 proofs.
-//! - [`oauth`]: providers and the [`WebAuthenticator`] seam the app implements with
-//!   `ASWebAuthenticationSession`.
+//! - [`oauth`]: providers and the [`WebAuthenticator`] seam; [`system_authenticator`] is the
+//!   macOS implementation (`ASWebAuthenticationSession`), `None` elsewhere.
 //!
 //! Secrets (the DPoP key, the Clerk client token, the account) live in the
 //! [`SecretStore`](crate::store::SecretStore) under `t3-connect:*` keys. Connected T3 Connect
@@ -26,6 +26,7 @@ mod jwt;
 mod net;
 pub mod oauth;
 pub mod relay;
+mod web_auth;
 
 pub use connect::{
     ACCOUNT_KEY, Account, Availability, CloudError, CloudState, DiscoveredEnvironment, Discovery,
@@ -34,6 +35,7 @@ pub use connect::{
 pub use endpoint::{Bootstrap, BootstrapSource, DpopEndpoint};
 pub use oauth::{OAuthProvider, WebAuthError, WebAuthenticator};
 pub use relay::{RelayEnvironment, RelayManagedEndpoint};
+pub use web_auth::system_authenticator;
 
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use url::Url;

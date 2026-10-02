@@ -55,6 +55,10 @@ objc2 = "0.6"
 objc2-foundation = "0.3"
 objc2-app-kit = "0.3"
 raw-window-handle = "0.6"
+# T3 Connect provider sign-in (ASWebAuthenticationSession), same objc2 generation as GPUI.
+objc2-authentication-services = { version = "0.3", default-features = false, features = ["std", "block2", "ASFoundation", "ASWebAuthenticationSession"] }
+block2 = "0.6"
+dispatch2 = "0.3"
 
 # Markdown + syntax highlighting. Pure-Rust regex (fancy) so macOS cross-checks need no C toolchain.
 syntect = { version = "5.3", default-features = false, features = ["parsing", "regex-fancy", "plist-load", "yaml-load"] }
