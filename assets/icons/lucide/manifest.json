@@ -1,0 +1,534 @@
+{
+  "AlertTriangleIcon": {
+    "file": "triangle-alert.svg",
+    "files": 1
+  },
+  "ArchiveIcon": {
+    "file": "archive.svg",
+    "files": 3
+  },
+  "ArchiveX": {
+    "file": "archive-x.svg",
+    "files": 1
+  },
+  "ArrowDownIcon": {
+    "file": "arrow-down.svg",
+    "files": 2
+  },
+  "ArrowLeft": {
+    "file": "arrow-left.svg",
+    "files": 1
+  },
+  "ArrowLeftIcon": {
+    "file": "arrow-left.svg",
+    "files": 2
+  },
+  "ArrowRight": {
+    "file": "arrow-right.svg",
+    "files": 1
+  },
+  "ArrowRightIcon": {
+    "file": "arrow-right.svg",
+    "files": 1
+  },
+  "ArrowUpCircleIcon": {
+    "file": "circle-arrow-up.svg",
+    "files": 1
+  },
+  "ArrowUpDownIcon": {
+    "file": "arrow-up-down.svg",
+    "files": 1
+  },
+  "ArrowUpIcon": {
+    "file": "arrow-up.svg",
+    "files": 2
+  },
+  "BotIcon": {
+    "file": "bot.svg",
+    "files": 3
+  },
+  "BugIcon": {
+    "file": "bug.svg",
+    "files": 1
+  },
+  "Camera": {
+    "file": "camera.svg",
+    "files": 1
+  },
+  "CheckIcon": {
+    "file": "check.svg",
+    "files": 13
+  },
+  "ChevronDownIcon": {
+    "file": "chevron-down.svg",
+    "files": 19
+  },
+  "ChevronLeftIcon": {
+    "file": "chevron-left.svg",
+    "files": 2
+  },
+  "ChevronRight": {
+    "file": "chevron-right.svg",
+    "files": 1
+  },
+  "ChevronRightIcon": {
+    "file": "chevron-right.svg",
+    "files": 10
+  },
+  "ChevronUpIcon": {
+    "file": "chevron-up.svg",
+    "files": 2
+  },
+  "ChevronsLeftRightEllipsisIcon": {
+    "file": "chevrons-left-right-ellipsis.svg",
+    "files": 1
+  },
+  "ChevronsUpDownIcon": {
+    "file": "chevrons-up-down.svg",
+    "files": 3
+  },
+  "CircleAlertIcon": {
+    "file": "circle-alert.svg",
+    "files": 4
+  },
+  "CircleCheckIcon": {
+    "file": "circle-check.svg",
+    "files": 2
+  },
+  "CircleXIcon": {
+    "file": "circle-x.svg",
+    "files": 1
+  },
+  "ClipboardList": {
+    "file": "clipboard-list.svg",
+    "files": 1
+  },
+  "CloudIcon": {
+    "file": "cloud.svg",
+    "files": 3
+  },
+  "CloudUploadIcon": {
+    "file": "cloud-upload.svg",
+    "files": 1
+  },
+  "Code2": {
+    "file": "code-xml.svg",
+    "files": 1
+  },
+  "Columns2Icon": {
+    "file": "columns-2.svg",
+    "files": 1
+  },
+  "ContainerIcon": {
+    "file": "container.svg",
+    "files": 1
+  },
+  "CopyIcon": {
+    "file": "copy.svg",
+    "files": 5
+  },
+  "CornerLeftUpIcon": {
+    "file": "corner-left-up.svg",
+    "files": 1
+  },
+  "DownloadIcon": {
+    "file": "download.svg",
+    "files": 6
+  },
+  "EllipsisIcon": {
+    "file": "ellipsis.svg",
+    "files": 4
+  },
+  "ExternalLink": {
+    "file": "external-link.svg",
+    "files": 1
+  },
+  "ExternalLinkIcon": {
+    "file": "external-link.svg",
+    "files": 1
+  },
+  "Eye": {
+    "file": "eye.svg",
+    "files": 1
+  },
+  "EyeIcon": {
+    "file": "eye.svg",
+    "files": 2
+  },
+  "EyeOffIcon": {
+    "file": "eye-off.svg",
+    "files": 1
+  },
+  "FileDiff": {
+    "file": "file-diff.svg",
+    "files": 1
+  },
+  "FileIcon": {
+    "file": "file.svg",
+    "files": 1
+  },
+  "FileJsonIcon": {
+    "file": "file-braces.svg",
+    "files": 1
+  },
+  "Files": {
+    "file": "files.svg",
+    "files": 1
+  },
+  "FlaskConicalIcon": {
+    "file": "flask-conical.svg",
+    "files": 1
+  },
+  "FolderClosedIcon": {
+    "file": "folder-closed.svg",
+    "files": 2
+  },
+  "FolderGit2Icon": {
+    "file": "folder-git-2.svg",
+    "files": 3
+  },
+  "FolderGitIcon": {
+    "file": "folder-git.svg",
+    "files": 2
+  },
+  "FolderIcon": {
+    "file": "folder.svg",
+    "files": 6
+  },
+  "FolderOpenIcon": {
+    "file": "folder-open.svg",
+    "files": 1
+  },
+  "FolderPlusIcon": {
+    "file": "folder-plus.svg",
+    "files": 2
+  },
+  "FolderTree": {
+    "file": "folder-tree.svg",
+    "files": 1
+  },
+  "Frame": {
+    "file": "frame.svg",
+    "files": 1
+  },
+  "GitBranchIcon": {
+    "file": "git-branch.svg",
+    "files": 2
+  },
+  "GitBranchPlusIcon": {
+    "file": "git-branch-plus.svg",
+    "files": 1
+  },
+  "GitCommitIcon": {
+    "file": "git-commit-horizontal.svg",
+    "files": 1
+  },
+  "GitPullRequestIcon": {
+    "file": "git-pull-request.svg",
+    "files": 3
+  },
+  "Globe": {
+    "file": "globe.svg",
+    "files": 1
+  },
+  "Globe2": {
+    "file": "earth.svg",
+    "files": 2
+  },
+  "Globe2Icon": {
+    "file": "earth.svg",
+    "files": 1
+  },
+  "GlobeIcon": {
+    "file": "globe.svg",
+    "files": 3
+  },
+  "HammerIcon": {
+    "file": "hammer.svg",
+    "files": 2
+  },
+  "InfoIcon": {
+    "file": "info.svg",
+    "files": 6
+  },
+  "KeyboardIcon": {
+    "file": "keyboard.svg",
+    "files": 1
+  },
+  "Link2": {
+    "file": "link-2.svg",
+    "files": 1
+  },
+  "Link2Icon": {
+    "file": "link-2.svg",
+    "files": 1
+  },
+  "LinkIcon": {
+    "file": "link.svg",
+    "files": 2
+  },
+  "ListChecksIcon": {
+    "file": "list-checks.svg",
+    "files": 1
+  },
+  "ListTodoIcon": {
+    "file": "list-todo.svg",
+    "files": 2
+  },
+  "Loader2Icon": {
+    "file": "loader-circle.svg",
+    "files": 1
+  },
+  "LoaderCircle": {
+    "file": "loader-circle.svg",
+    "files": 1
+  },
+  "LoaderCircleIcon": {
+    "file": "loader-circle.svg",
+    "files": 1
+  },
+  "LoaderIcon": {
+    "file": "loader.svg",
+    "files": 5
+  },
+  "LockIcon": {
+    "file": "lock.svg",
+    "files": 1
+  },
+  "LogInIcon": {
+    "file": "log-in.svg",
+    "files": 1
+  },
+  "Maximize2Icon": {
+    "file": "maximize-2.svg",
+    "files": 2
+  },
+  "MessageCircle": {
+    "file": "message-circle.svg",
+    "files": 2
+  },
+  "MessageCircleIcon": {
+    "file": "message-circle.svg",
+    "files": 1
+  },
+  "MessageSquareIcon": {
+    "file": "message-square.svg",
+    "files": 1
+  },
+  "Minimize2Icon": {
+    "file": "minimize-2.svg",
+    "files": 2
+  },
+  "Minus": {
+    "file": "minus.svg",
+    "files": 1
+  },
+  "MinusIcon": {
+    "file": "minus.svg",
+    "files": 3
+  },
+  "MonitorIcon": {
+    "file": "monitor.svg",
+    "files": 2
+  },
+  "MoreVertical": {
+    "file": "ellipsis-vertical.svg",
+    "files": 1
+  },
+  "MousePointer2": {
+    "file": "mouse-pointer-2.svg",
+    "files": 1
+  },
+  "MousePointerClick": {
+    "file": "mouse-pointer-click.svg",
+    "files": 3
+  },
+  "MousePointerClickIcon": {
+    "file": "mouse-pointer-click.svg",
+    "files": 1
+  },
+  "Paintbrush": {
+    "file": "paintbrush.svg",
+    "files": 1
+  },
+  "PaintbrushIcon": {
+    "file": "paintbrush.svg",
+    "files": 1
+  },
+  "PanelBottomCloseIcon": {
+    "file": "panel-bottom-close.svg",
+    "files": 1
+  },
+  "PanelBottomOpenIcon": {
+    "file": "panel-bottom-open.svg",
+    "files": 1
+  },
+  "PanelLeftCloseIcon": {
+    "file": "panel-left-close.svg",
+    "files": 1
+  },
+  "PanelLeftOpenIcon": {
+    "file": "panel-left-open.svg",
+    "files": 1
+  },
+  "PanelRightCloseIcon": {
+    "file": "panel-right-close.svg",
+    "files": 1
+  },
+  "PanelRightOpenIcon": {
+    "file": "panel-right-open.svg",
+    "files": 1
+  },
+  "PenLine": {
+    "file": "pen-line.svg",
+    "files": 1
+  },
+  "PilcrowIcon": {
+    "file": "pilcrow.svg",
+    "files": 1
+  },
+  "PipetteIcon": {
+    "file": "pipette.svg",
+    "files": 1
+  },
+  "PlayIcon": {
+    "file": "play.svg",
+    "files": 1
+  },
+  "Plus": {
+    "file": "plus.svg",
+    "files": 3
+  },
+  "PlusIcon": {
+    "file": "plus.svg",
+    "files": 8
+  },
+  "QrCodeIcon": {
+    "file": "qr-code.svg",
+    "files": 1
+  },
+  "RadioTower": {
+    "file": "radio-tower.svg",
+    "files": 1
+  },
+  "RefreshCw": {
+    "file": "refresh-cw.svg",
+    "files": 1
+  },
+  "RefreshCwIcon": {
+    "file": "refresh-cw.svg",
+    "files": 6
+  },
+  "RotateCcw": {
+    "file": "rotate-ccw.svg",
+    "files": 1
+  },
+  "RotateCcwIcon": {
+    "file": "rotate-ccw.svg",
+    "files": 1
+  },
+  "RotateCw": {
+    "file": "rotate-cw.svg",
+    "files": 1
+  },
+  "RotateCwIcon": {
+    "file": "rotate-cw.svg",
+    "files": 1
+  },
+  "Rows3Icon": {
+    "file": "rows-3.svg",
+    "files": 1
+  },
+  "Search": {
+    "file": "search.svg",
+    "files": 1
+  },
+  "SearchIcon": {
+    "file": "search.svg",
+    "files": 6
+  },
+  "Settings2Icon": {
+    "file": "settings-2.svg",
+    "files": 1
+  },
+  "SettingsIcon": {
+    "file": "settings.svg",
+    "files": 3
+  },
+  "SmartphoneIcon": {
+    "file": "smartphone.svg",
+    "files": 2
+  },
+  "SparklesIcon": {
+    "file": "sparkles.svg",
+    "files": 1
+  },
+  "SquarePenIcon": {
+    "file": "square-pen.svg",
+    "files": 3
+  },
+  "SquareSplitHorizontal": {
+    "file": "square-split-horizontal.svg",
+    "files": 1
+  },
+  "SquareSplitVertical": {
+    "file": "square-split-vertical.svg",
+    "files": 1
+  },
+  "StarIcon": {
+    "file": "star.svg",
+    "files": 3
+  },
+  "TerminalIcon": {
+    "file": "terminal.svg",
+    "files": 5
+  },
+  "TerminalSquare": {
+    "file": "square-terminal.svg",
+    "files": 2
+  },
+  "TextWrapIcon": {
+    "file": "text-wrap.svg",
+    "files": 1
+  },
+  "Trash2": {
+    "file": "trash-2.svg",
+    "files": 2
+  },
+  "Trash2Icon": {
+    "file": "trash-2.svg",
+    "files": 1
+  },
+  "TriangleAlertIcon": {
+    "file": "triangle-alert.svg",
+    "files": 7
+  },
+  "Undo2Icon": {
+    "file": "undo-2.svg",
+    "files": 2
+  },
+  "WifiOffIcon": {
+    "file": "wifi-off.svg",
+    "files": 1
+  },
+  "WrapTextIcon": {
+    "file": "text-wrap.svg",
+    "files": 1
+  },
+  "WrenchIcon": {
+    "file": "wrench.svg",
+    "files": 2
+  },
+  "X": {
+    "file": "x.svg",
+    "files": 5
+  },
+  "XIcon": {
+    "file": "x.svg",
+    "files": 17
+  },
+  "ZapIcon": {
+    "file": "zap.svg",
+    "files": 1
+  }
+}
