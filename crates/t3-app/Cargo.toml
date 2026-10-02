@@ -23,5 +23,13 @@ url.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2.workspace = true
+objc2-foundation = { workspace = true, features = ["NSArray", "NSError", "NSString", "NSURL"] }
+objc2-app-kit = { workspace = true, features = ["NSApplication", "NSResponder", "NSWindow"] }
+objc2-authentication-services.workspace = true
+block2.workspace = true
+dispatch2.workspace = true
+
 [lints]
 workspace = true

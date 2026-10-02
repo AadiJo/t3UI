@@ -4701,6 +4701,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "objc2-authentication-services"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ee6d6f7dab884a28adaec1012eb3889257a49cc145724e35f93ece2d209f8b25"
+dependencies = [
+ "block2 0.6.2",
+ "objc2 0.6.4",
+ "objc2-app-kit 0.3.2",
+ "objc2-foundation 0.3.2",
+]
+
+[[package]]
 name = "objc2-cloud-kit"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7268,7 +7280,13 @@ name = "t3-app"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "block2 0.6.2",
+ "dispatch2",
  "gpui-kit",
+ "objc2 0.6.4",
+ "objc2-app-kit 0.3.2",
+ "objc2-authentication-services",
+ "objc2-foundation 0.3.2",
  "serde",
  "serde_json",
  "t3-client",
