@@ -9,6 +9,7 @@ mod chat;
 mod diff;
 mod gallery;
 mod markdown;
+mod pages;
 mod terminal;
 mod workspace;
 
@@ -68,5 +69,6 @@ pub fn all() -> Vec<Scene> {
     scenes.extend(terminal::scenes());
     scenes.extend(diff::scenes());
     scenes.extend(markdown::scenes());
+    scenes.extend(pages::scenes());
     scenes
 }

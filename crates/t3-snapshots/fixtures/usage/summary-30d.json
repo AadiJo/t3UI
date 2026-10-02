@@ -1,0 +1,1398 @@
+{
+  "contractVersion": 6,
+  "readAt": "2026-10-02T05:59:01.409Z",
+  "timeZone": "UTC",
+  "sinceDay": "2026-09-03",
+  "untilDay": "2026-10-02",
+  "buckets": [
+    {
+      "day": "2026-09-03",
+      "provider": "claude",
+      "model": "claude-opus-4-1",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 1034,
+        "cachedInputTokens": 254308,
+        "cacheCreationTokens": 24062,
+        "outputTokens": 4543,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0,
+      "cacheSavingsUsd": 0,
+      "costSource": "unpriced",
+      "records": 6,
+      "unpricedRecords": 6,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-03",
+      "provider": "claude",
+      "model": "claude-sonnet-4-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 2211,
+        "cachedInputTokens": 433313,
+        "cacheCreationTokens": 32711,
+        "outputTokens": 17309,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0.5189281499999999,
+      "cacheSavingsUsd": 1.1699451,
+      "costSource": "modelPriced",
+      "records": 10,
+      "unpricedRecords": 0,
+      "sessions": 2
+    },
+    {
+      "day": "2026-09-03",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 60837,
+        "cachedInputTokens": 155238,
+        "cacheCreationTokens": 0,
+        "outputTokens": 23307,
+        "reasoningTokens": 9323
+      },
+      "costUsd": 0.32852100000000006,
+      "cacheSavingsUsd": 0.17464275,
+      "costSource": "modelPriced",
+      "records": 7,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-03",
+      "provider": "codex",
+      "model": "gpt-5-mini",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 80204,
+        "cachedInputTokens": 200237,
+        "cacheCreationTokens": 0,
+        "outputTokens": 25605,
+        "reasoningTokens": 10242
+      },
+      "costUsd": 0.076266925,
+      "cacheSavingsUsd": 0.045053325000000005,
+      "costSource": "modelPriced",
+      "records": 7,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-04",
+      "provider": "claude",
+      "model": "claude-opus-4-1",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 1506,
+        "cachedInputTokens": 297737,
+        "cacheCreationTokens": 21835,
+        "outputTokens": 9377,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0,
+      "cacheSavingsUsd": 0,
+      "costSource": "unpriced",
+      "records": 6,
+      "unpricedRecords": 6,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-04",
+      "provider": "claude",
+      "model": "claude-sonnet-4-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 1844,
+        "cachedInputTokens": 376126,
+        "cacheCreationTokens": 34026,
+        "outputTokens": 16949,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0.5002023,
+      "cacheSavingsUsd": 1.0155402000000002,
+      "costSource": "modelPriced",
+      "records": 8,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-04",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 306135,
+        "cachedInputTokens": 728910,
+        "cacheCreationTokens": 0,
+        "outputTokens": 99083,
+        "reasoningTokens": 39634
+      },
+      "costUsd": 1.4646125,
+      "cacheSavingsUsd": 0.8200237500000002,
+      "costSource": "modelPriced",
+      "records": 32,
+      "unpricedRecords": 0,
+      "sessions": 3
+    },
+    {
+      "day": "2026-09-04",
+      "provider": "codex",
+      "model": "gpt-5-mini",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 51084,
+        "cachedInputTokens": 148956,
+        "cacheCreationTokens": 0,
+        "outputTokens": 11199,
+        "reasoningTokens": 4480
+      },
+      "costUsd": 0.038892899999999994,
+      "cacheSavingsUsd": 0.033515100000000006,
+      "costSource": "modelPriced",
+      "records": 5,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-07",
+      "provider": "claude",
+      "model": "claude-opus-4-1",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 821,
+        "cachedInputTokens": 175982,
+        "cacheCreationTokens": 17162,
+        "outputTokens": 9293,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0,
+      "cacheSavingsUsd": 0,
+      "costSource": "unpriced",
+      "records": 4,
+      "unpricedRecords": 4,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-07",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 340542,
+        "cachedInputTokens": 726119,
+        "cacheCreationTokens": 0,
+        "outputTokens": 119097,
+        "reasoningTokens": 47641
+      },
+      "costUsd": 1.7074123750000003,
+      "cacheSavingsUsd": 0.8168838749999999,
+      "costSource": "modelPriced",
+      "records": 35,
+      "unpricedRecords": 0,
+      "sessions": 4
+    },
+    {
+      "day": "2026-09-07",
+      "provider": "codex",
+      "model": "gpt-5-mini",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 112327,
+        "cachedInputTokens": 267850,
+        "cacheCreationTokens": 0,
+        "outputTokens": 26625,
+        "reasoningTokens": 10650
+      },
+      "costUsd": 0.08802799999999998,
+      "cacheSavingsUsd": 0.06026625,
+      "costSource": "modelPriced",
+      "records": 11,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-08",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 320435,
+        "cachedInputTokens": 760820,
+        "cacheCreationTokens": 0,
+        "outputTokens": 88615,
+        "reasoningTokens": 35446
+      },
+      "costUsd": 1.38179625,
+      "cacheSavingsUsd": 0.8559224999999998,
+      "costSource": "modelPriced",
+      "records": 29,
+      "unpricedRecords": 0,
+      "sessions": 3
+    },
+    {
+      "day": "2026-09-08",
+      "provider": "codex",
+      "model": "gpt-5-mini",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 73660,
+        "cachedInputTokens": 212667,
+        "cacheCreationTokens": 0,
+        "outputTokens": 21313,
+        "reasoningTokens": 8526
+      },
+      "costUsd": 0.06635767499999999,
+      "cacheSavingsUsd": 0.047850075,
+      "costSource": "modelPriced",
+      "records": 7,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-09",
+      "provider": "claude",
+      "model": "claude-sonnet-4-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 2470,
+        "cachedInputTokens": 532204,
+        "cacheCreationTokens": 48997,
+        "outputTokens": 20595,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0.65973495,
+      "cacheSavingsUsd": 1.4369508000000002,
+      "costSource": "modelPriced",
+      "records": 13,
+      "unpricedRecords": 0,
+      "sessions": 2
+    },
+    {
+      "day": "2026-09-09",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 64012,
+        "cachedInputTokens": 108038,
+        "cacheCreationTokens": 0,
+        "outputTokens": 11649,
+        "reasoningTokens": 4659
+      },
+      "costUsd": 0.21000975000000005,
+      "cacheSavingsUsd": 0.12154274999999999,
+      "costSource": "modelPriced",
+      "records": 6,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-09",
+      "provider": "codex",
+      "model": "gpt-5-mini",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 128032,
+        "cachedInputTokens": 228988,
+        "cacheCreationTokens": 0,
+        "outputTokens": 34327,
+        "reasoningTokens": 13730
+      },
+      "costUsd": 0.1063867,
+      "cacheSavingsUsd": 0.0515223,
+      "costSource": "modelPriced",
+      "records": 8,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-10",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 152469,
+        "cachedInputTokens": 308716,
+        "cacheCreationTokens": 0,
+        "outputTokens": 64746,
+        "reasoningTokens": 25898
+      },
+      "costUsd": 0.87663575,
+      "cacheSavingsUsd": 0.3473055,
+      "costSource": "modelPriced",
+      "records": 17,
+      "unpricedRecords": 0,
+      "sessions": 2
+    },
+    {
+      "day": "2026-09-10",
+      "provider": "codex",
+      "model": "gpt-5-mini",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 121814,
+        "cachedInputTokens": 264642,
+        "cacheCreationTokens": 0,
+        "outputTokens": 38978,
+        "reasoningTokens": 15589
+      },
+      "costUsd": 0.11502554999999998,
+      "cacheSavingsUsd": 0.05954445,
+      "costSource": "modelPriced",
+      "records": 10,
+      "unpricedRecords": 0,
+      "sessions": 2
+    },
+    {
+      "day": "2026-09-11",
+      "provider": "claude",
+      "model": "claude-opus-4-1",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 2197,
+        "cachedInputTokens": 472549,
+        "cacheCreationTokens": 36702,
+        "outputTokens": 11791,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0,
+      "cacheSavingsUsd": 0,
+      "costSource": "unpriced",
+      "records": 8,
+      "unpricedRecords": 8,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-11",
+      "provider": "claude",
+      "model": "claude-sonnet-4-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 2764,
+        "cachedInputTokens": 416483,
+        "cacheCreationTokens": 44820,
+        "outputTokens": 17613,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0.5655068999999999,
+      "cacheSavingsUsd": 1.1245041,
+      "costSource": "modelPriced",
+      "records": 11,
+      "unpricedRecords": 0,
+      "sessions": 2
+    },
+    {
+      "day": "2026-09-11",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 132360,
+        "cachedInputTokens": 330246,
+        "cacheCreationTokens": 0,
+        "outputTokens": 40336,
+        "reasoningTokens": 16135
+      },
+      "costUsd": 0.61009075,
+      "cacheSavingsUsd": 0.37152675,
+      "costSource": "modelPriced",
+      "records": 13,
+      "unpricedRecords": 0,
+      "sessions": 2
+    },
+    {
+      "day": "2026-09-11",
+      "provider": "codex",
+      "model": "gpt-5-mini",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 111792,
+        "cachedInputTokens": 283623,
+        "cacheCreationTokens": 0,
+        "outputTokens": 32363,
+        "reasoningTokens": 12945
+      },
+      "costUsd": 0.099764575,
+      "cacheSavingsUsd": 0.063815175,
+      "costSource": "modelPriced",
+      "records": 11,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-14",
+      "provider": "claude",
+      "model": "claude-opus-4-1",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 612,
+        "cachedInputTokens": 158607,
+        "cacheCreationTokens": 20022,
+        "outputTokens": 3044,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0,
+      "cacheSavingsUsd": 0,
+      "costSource": "unpriced",
+      "records": 3,
+      "unpricedRecords": 3,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-14",
+      "provider": "claude",
+      "model": "claude-sonnet-4-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 1574,
+        "cachedInputTokens": 232436,
+        "cacheCreationTokens": 19591,
+        "outputTokens": 10649,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0.30765405000000007,
+      "cacheSavingsUsd": 0.6275772000000002,
+      "costSource": "modelPriced",
+      "records": 7,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-14",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 206342,
+        "cachedInputTokens": 636990,
+        "cacheCreationTokens": 0,
+        "outputTokens": 100427,
+        "reasoningTokens": 40170
+      },
+      "costUsd": 1.34182125,
+      "cacheSavingsUsd": 0.7166137499999999,
+      "costSource": "modelPriced",
+      "records": 25,
+      "unpricedRecords": 0,
+      "sessions": 3
+    },
+    {
+      "day": "2026-09-14",
+      "provider": "codex",
+      "model": "gpt-5-mini",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 101152,
+        "cachedInputTokens": 196348,
+        "cacheCreationTokens": 0,
+        "outputTokens": 28112,
+        "reasoningTokens": 11245
+      },
+      "costUsd": 0.08642069999999999,
+      "cacheSavingsUsd": 0.0441783,
+      "costSource": "modelPriced",
+      "records": 9,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-15",
+      "provider": "claude",
+      "model": "claude-opus-4-1",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 1420,
+        "cachedInputTokens": 266962,
+        "cacheCreationTokens": 22124,
+        "outputTokens": 9609,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0,
+      "cacheSavingsUsd": 0,
+      "costSource": "unpriced",
+      "records": 6,
+      "unpricedRecords": 6,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-15",
+      "provider": "claude",
+      "model": "claude-sonnet-4-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 1247,
+        "cachedInputTokens": 308067,
+        "cacheCreationTokens": 41900,
+        "outputTokens": 10953,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0.4175811,
+      "cacheSavingsUsd": 0.8317808999999998,
+      "costSource": "modelPriced",
+      "records": 8,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-15",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 273093,
+        "cachedInputTokens": 628681,
+        "cacheCreationTokens": 0,
+        "outputTokens": 72146,
+        "reasoningTokens": 28859
+      },
+      "costUsd": 1.1414113750000003,
+      "cacheSavingsUsd": 0.7072661249999997,
+      "costSource": "modelPriced",
+      "records": 24,
+      "unpricedRecords": 0,
+      "sessions": 3
+    },
+    {
+      "day": "2026-09-15",
+      "provider": "codex",
+      "model": "gpt-5-mini",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 53034,
+        "cachedInputTokens": 85225,
+        "cacheCreationTokens": 0,
+        "outputTokens": 11990,
+        "reasoningTokens": 4796
+      },
+      "costUsd": 0.039369125,
+      "cacheSavingsUsd": 0.019175625,
+      "costSource": "modelPriced",
+      "records": 4,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-16",
+      "provider": "claude",
+      "model": "claude-opus-4-1",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 1245,
+        "cachedInputTokens": 293935,
+        "cacheCreationTokens": 23113,
+        "outputTokens": 9739,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0,
+      "cacheSavingsUsd": 0,
+      "costSource": "unpriced",
+      "records": 6,
+      "unpricedRecords": 6,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-16",
+      "provider": "claude",
+      "model": "claude-sonnet-4-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 1447,
+        "cachedInputTokens": 401784,
+        "cacheCreationTokens": 35740,
+        "outputTokens": 16354,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0.5042112,
+      "cacheSavingsUsd": 1.0848168,
+      "costSource": "modelPriced",
+      "records": 9,
+      "unpricedRecords": 0,
+      "sessions": 2
+    },
+    {
+      "day": "2026-09-16",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 207696,
+        "cachedInputTokens": 475238,
+        "cacheCreationTokens": 0,
+        "outputTokens": 65810,
+        "reasoningTokens": 26325
+      },
+      "costUsd": 0.97712475,
+      "cacheSavingsUsd": 0.5346427499999999,
+      "costSource": "modelPriced",
+      "records": 21,
+      "unpricedRecords": 0,
+      "sessions": 3
+    },
+    {
+      "day": "2026-09-16",
+      "provider": "codex",
+      "model": "gpt-5-mini",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 75021,
+        "cachedInputTokens": 213733,
+        "cacheCreationTokens": 0,
+        "outputTokens": 20967,
+        "reasoningTokens": 8386
+      },
+      "costUsd": 0.066032575,
+      "cacheSavingsUsd": 0.048089925000000006,
+      "costSource": "modelPriced",
+      "records": 9,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-17",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 59537,
+        "cachedInputTokens": 123423,
+        "cacheCreationTokens": 0,
+        "outputTokens": 10734,
+        "reasoningTokens": 4294
+      },
+      "costUsd": 0.19718912500000002,
+      "cacheSavingsUsd": 0.138850875,
+      "costSource": "modelPriced",
+      "records": 4,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-17",
+      "provider": "codex",
+      "model": "gpt-5-mini",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 82479,
+        "cachedInputTokens": 171846,
+        "cacheCreationTokens": 0,
+        "outputTokens": 20308,
+        "reasoningTokens": 8122
+      },
+      "costUsd": 0.06553189999999999,
+      "cacheSavingsUsd": 0.03866535,
+      "costSource": "modelPriced",
+      "records": 6,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-21",
+      "provider": "claude",
+      "model": "claude-opus-4-1",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 432,
+        "cachedInputTokens": 131262,
+        "cacheCreationTokens": 5791,
+        "outputTokens": 2863,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0,
+      "cacheSavingsUsd": 0,
+      "costSource": "unpriced",
+      "records": 2,
+      "unpricedRecords": 2,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-21",
+      "provider": "claude",
+      "model": "claude-sonnet-4-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 970,
+        "cachedInputTokens": 199101,
+        "cacheCreationTokens": 12406,
+        "outputTokens": 3066,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0.15515279999999998,
+      "cacheSavingsUsd": 0.5375727,
+      "costSource": "modelPriced",
+      "records": 4,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-21",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 119759,
+        "cachedInputTokens": 368170,
+        "cacheCreationTokens": 0,
+        "outputTokens": 37587,
+        "reasoningTokens": 15036
+      },
+      "costUsd": 0.57159,
+      "cacheSavingsUsd": 0.41419125000000007,
+      "costSource": "modelPriced",
+      "records": 14,
+      "unpricedRecords": 0,
+      "sessions": 2
+    },
+    {
+      "day": "2026-09-22",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 180640,
+        "cachedInputTokens": 403846,
+        "cacheCreationTokens": 0,
+        "outputTokens": 62584,
+        "reasoningTokens": 25033
+      },
+      "costUsd": 0.9021207500000001,
+      "cacheSavingsUsd": 0.45432675,
+      "costSource": "modelPriced",
+      "records": 20,
+      "unpricedRecords": 0,
+      "sessions": 3
+    },
+    {
+      "day": "2026-09-22",
+      "provider": "codex",
+      "model": "gpt-5-mini",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 35938,
+        "cachedInputTokens": 108226,
+        "cacheCreationTokens": 0,
+        "outputTokens": 14660,
+        "reasoningTokens": 5864
+      },
+      "costUsd": 0.041010149999999995,
+      "cacheSavingsUsd": 0.02435085,
+      "costSource": "modelPriced",
+      "records": 4,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-23",
+      "provider": "claude",
+      "model": "claude-opus-4-1",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 734,
+        "cachedInputTokens": 217608,
+        "cacheCreationTokens": 15669,
+        "outputTokens": 4673,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0,
+      "cacheSavingsUsd": 0,
+      "costSource": "unpriced",
+      "records": 4,
+      "unpricedRecords": 4,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-23",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 87258,
+        "cachedInputTokens": 227307,
+        "cacheCreationTokens": 0,
+        "outputTokens": 39807,
+        "reasoningTokens": 15923
+      },
+      "costUsd": 0.535555875,
+      "cacheSavingsUsd": 0.255720375,
+      "costSource": "modelPriced",
+      "records": 14,
+      "unpricedRecords": 0,
+      "sessions": 2
+    },
+    {
+      "day": "2026-09-23",
+      "provider": "codex",
+      "model": "gpt-5-mini",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 94627,
+        "cachedInputTokens": 213189,
+        "cacheCreationTokens": 0,
+        "outputTokens": 31585,
+        "reasoningTokens": 12635
+      },
+      "costUsd": 0.09215647499999997,
+      "cacheSavingsUsd": 0.047967525,
+      "costSource": "modelPriced",
+      "records": 8,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-24",
+      "provider": "claude",
+      "model": "claude-opus-4-1",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 1155,
+        "cachedInputTokens": 287181,
+        "cacheCreationTokens": 18323,
+        "outputTokens": 7164,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0,
+      "cacheSavingsUsd": 0,
+      "costSource": "unpriced",
+      "records": 6,
+      "unpricedRecords": 6,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-24",
+      "provider": "claude",
+      "model": "claude-sonnet-4-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 416,
+        "cachedInputTokens": 86144,
+        "cacheCreationTokens": 9922,
+        "outputTokens": 2129,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0.0962337,
+      "cacheSavingsUsd": 0.23258879999999998,
+      "costSource": "modelPriced",
+      "records": 2,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-24",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 194963,
+        "cachedInputTokens": 407274,
+        "cacheCreationTokens": 0,
+        "outputTokens": 63103,
+        "reasoningTokens": 25242
+      },
+      "costUsd": 0.9256430000000002,
+      "cacheSavingsUsd": 0.45818325000000004,
+      "costSource": "modelPriced",
+      "records": 15,
+      "unpricedRecords": 0,
+      "sessions": 3
+    },
+    {
+      "day": "2026-09-24",
+      "provider": "codex",
+      "model": "gpt-5-mini",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 44893,
+        "cachedInputTokens": 103374,
+        "cacheCreationTokens": 0,
+        "outputTokens": 11892,
+        "reasoningTokens": 4757
+      },
+      "costUsd": 0.0375916,
+      "cacheSavingsUsd": 0.02325915,
+      "costSource": "modelPriced",
+      "records": 4,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-25",
+      "provider": "claude",
+      "model": "claude-opus-4-1",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 526,
+        "cachedInputTokens": 118733,
+        "cacheCreationTokens": 9674,
+        "outputTokens": 3151,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0,
+      "cacheSavingsUsd": 0,
+      "costSource": "unpriced",
+      "records": 2,
+      "unpricedRecords": 2,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-25",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 323958,
+        "cachedInputTokens": 726332,
+        "cacheCreationTokens": 0,
+        "outputTokens": 98259,
+        "reasoningTokens": 39305
+      },
+      "costUsd": 1.4783290000000002,
+      "cacheSavingsUsd": 0.8171235,
+      "costSource": "modelPriced",
+      "records": 29,
+      "unpricedRecords": 0,
+      "sessions": 4
+    },
+    {
+      "day": "2026-09-25",
+      "provider": "codex",
+      "model": "gpt-5-mini",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 80753,
+        "cachedInputTokens": 269001,
+        "cacheCreationTokens": 0,
+        "outputTokens": 35996,
+        "reasoningTokens": 14399
+      },
+      "costUsd": 0.09890527499999999,
+      "cacheSavingsUsd": 0.060525224999999995,
+      "costSource": "modelPriced",
+      "records": 11,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-28",
+      "provider": "claude",
+      "model": "claude-sonnet-4-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 703,
+        "cachedInputTokens": 232321,
+        "cacheCreationTokens": 15459,
+        "outputTokens": 9527,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0.27268155,
+      "cacheSavingsUsd": 0.6272667,
+      "costSource": "modelPriced",
+      "records": 5,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-28",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 262512,
+        "cachedInputTokens": 511176,
+        "cacheCreationTokens": 0,
+        "outputTokens": 78223,
+        "reasoningTokens": 31288
+      },
+      "costUsd": 1.174267,
+      "cacheSavingsUsd": 0.5750730000000002,
+      "costSource": "modelPriced",
+      "records": 21,
+      "unpricedRecords": 0,
+      "sessions": 3
+    },
+    {
+      "day": "2026-09-28",
+      "provider": "codex",
+      "model": "gpt-5-mini",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 123836,
+        "cachedInputTokens": 321236,
+        "cacheCreationTokens": 0,
+        "outputTokens": 38384,
+        "reasoningTokens": 15354
+      },
+      "costUsd": 0.1157579,
+      "cacheSavingsUsd": 0.0722781,
+      "costSource": "modelPriced",
+      "records": 12,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-29",
+      "provider": "claude",
+      "model": "claude-sonnet-4-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 1305,
+        "cachedInputTokens": 256250,
+        "cacheCreationTokens": 28452,
+        "outputTokens": 11683,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0.36273,
+      "cacheSavingsUsd": 0.6918749999999999,
+      "costSource": "modelPriced",
+      "records": 7,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-29",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 123929,
+        "cachedInputTokens": 369889,
+        "cacheCreationTokens": 0,
+        "outputTokens": 36320,
+        "reasoningTokens": 14527
+      },
+      "costUsd": 0.5643473750000001,
+      "cacheSavingsUsd": 0.41612512500000004,
+      "costSource": "modelPriced",
+      "records": 12,
+      "unpricedRecords": 0,
+      "sessions": 2
+    },
+    {
+      "day": "2026-09-29",
+      "provider": "codex",
+      "model": "gpt-5-mini",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 137078,
+        "cachedInputTokens": 335635,
+        "cacheCreationTokens": 0,
+        "outputTokens": 49339,
+        "reasoningTokens": 19734
+      },
+      "costUsd": 0.141338375,
+      "cacheSavingsUsd": 0.075517875,
+      "costSource": "modelPriced",
+      "records": 16,
+      "unpricedRecords": 0,
+      "sessions": 2
+    },
+    {
+      "day": "2026-09-30",
+      "provider": "claude",
+      "model": "claude-sonnet-4-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 606,
+        "cachedInputTokens": 248771,
+        "cacheCreationTokens": 19608,
+        "outputTokens": 6394,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0.24588930000000003,
+      "cacheSavingsUsd": 0.6716817,
+      "costSource": "modelPriced",
+      "records": 5,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-30",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 91947,
+        "cachedInputTokens": 176345,
+        "cacheCreationTokens": 0,
+        "outputTokens": 29932,
+        "reasoningTokens": 11972
+      },
+      "costUsd": 0.43629687500000003,
+      "cacheSavingsUsd": 0.198388125,
+      "costSource": "modelPriced",
+      "records": 7,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-09-30",
+      "provider": "codex",
+      "model": "gpt-5-mini",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 66431,
+        "cachedInputTokens": 144668,
+        "cacheCreationTokens": 0,
+        "outputTokens": 8260,
+        "reasoningTokens": 3304
+      },
+      "costUsd": 0.03674445,
+      "cacheSavingsUsd": 0.032550300000000004,
+      "costSource": "modelPriced",
+      "records": 4,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-10-01",
+      "provider": "claude",
+      "model": "claude-opus-4-1",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 3690,
+        "cachedInputTokens": 868514,
+        "cacheCreationTokens": 70424,
+        "outputTokens": 24406,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0,
+      "cacheSavingsUsd": 0,
+      "costSource": "unpriced",
+      "records": 18,
+      "unpricedRecords": 18,
+      "sessions": 4
+    },
+    {
+      "day": "2026-10-01",
+      "provider": "claude",
+      "model": "claude-sonnet-4-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 1548,
+        "cachedInputTokens": 213737,
+        "cacheCreationTokens": 26790,
+        "outputTokens": 6308,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0.2638476,
+      "cacheSavingsUsd": 0.5770898999999999,
+      "costSource": "modelPriced",
+      "records": 6,
+      "unpricedRecords": 0,
+      "sessions": 2
+    },
+    {
+      "day": "2026-10-01",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 340615,
+        "cachedInputTokens": 881347,
+        "cacheCreationTokens": 0,
+        "outputTokens": 125871,
+        "reasoningTokens": 50351
+      },
+      "costUsd": 1.7946471250000002,
+      "cacheSavingsUsd": 0.991515375,
+      "costSource": "modelPriced",
+      "records": 37,
+      "unpricedRecords": 0,
+      "sessions": 8
+    },
+    {
+      "day": "2026-10-01",
+      "provider": "codex",
+      "model": "gpt-5-mini",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 77128,
+        "cachedInputTokens": 209026,
+        "cacheCreationTokens": 0,
+        "outputTokens": 37749,
+        "reasoningTokens": 15100
+      },
+      "costUsd": 0.10000565,
+      "cacheSavingsUsd": 0.04703085000000001,
+      "costSource": "modelPriced",
+      "records": 12,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-10-02",
+      "provider": "claude",
+      "model": "claude-opus-4-1",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 548,
+        "cachedInputTokens": 38335,
+        "cacheCreationTokens": 8124,
+        "outputTokens": 1453,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0,
+      "cacheSavingsUsd": 0,
+      "costSource": "unpriced",
+      "records": 2,
+      "unpricedRecords": 2,
+      "sessions": 1
+    },
+    {
+      "day": "2026-10-02",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 20732,
+        "cachedInputTokens": 60778,
+        "cacheCreationTokens": 0,
+        "outputTokens": 9394,
+        "reasoningTokens": 3758
+      },
+      "costUsd": 0.12745225,
+      "cacheSavingsUsd": 0.06837525,
+      "costSource": "modelPriced",
+      "records": 4,
+      "unpricedRecords": 0,
+      "sessions": 1
+    }
+  ],
+  "sources": [
+    {
+      "fingerprint": {
+        "hostId": "HOME-PC",
+        "provider": "claude",
+        "resolvedHomePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+        "volumeId": "2096:8017082"
+      },
+      "status": "ok",
+      "scannedFiles": 34,
+      "skippedFiles": 0,
+      "malformedRecords": 0,
+      "distinctSessions": 34,
+      "message": null
+    },
+    {
+      "fingerprint": {
+        "hostId": "HOME-PC",
+        "provider": "codex",
+        "resolvedHomePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+        "volumeId": "2096:8017015"
+      },
+      "status": "ok",
+      "scannedFiles": 76,
+      "skippedFiles": 0,
+      "malformedRecords": 0,
+      "distinctSessions": 76,
+      "message": null
+    },
+    {
+      "fingerprint": {
+        "hostId": "HOME-PC",
+        "provider": "grok",
+        "resolvedHomePath": "/tmp/t3ui-e2e/run-pages/userhome/.grok/sessions",
+        "volumeId": ""
+      },
+      "status": "missing",
+      "scannedFiles": 0,
+      "skippedFiles": 0,
+      "malformedRecords": 0,
+      "distinctSessions": 0,
+      "message": "No transcript directory on this environment."
+    },
+    {
+      "fingerprint": {
+        "hostId": "HOME-PC",
+        "provider": "opencode",
+        "resolvedHomePath": "/tmp/t3ui-e2e/run-pages/userhome/.local/share/opencode",
+        "volumeId": ""
+      },
+      "status": "missing",
+      "scannedFiles": 0,
+      "skippedFiles": 0,
+      "malformedRecords": 0,
+      "distinctSessions": 0,
+      "message": "No transcript directory on this environment."
+    },
+    {
+      "fingerprint": {
+        "hostId": "HOME-PC",
+        "provider": "antigravity",
+        "resolvedHomePath": "/tmp/t3ui-e2e/run-pages/userhome/.gemini/antigravity",
+        "volumeId": ""
+      },
+      "status": "missing",
+      "scannedFiles": 0,
+      "skippedFiles": 0,
+      "malformedRecords": 0,
+      "distinctSessions": 0,
+      "message": "No transcript directory on this environment."
+    },
+    {
+      "fingerprint": {
+        "hostId": "HOME-PC",
+        "provider": "antigravity",
+        "resolvedHomePath": "/tmp/t3ui-e2e/run-pages/userhome/.gemini/antigravity-cli",
+        "volumeId": ""
+      },
+      "status": "missing",
+      "scannedFiles": 0,
+      "skippedFiles": 0,
+      "malformedRecords": 0,
+      "distinctSessions": 0,
+      "message": "No transcript directory on this environment."
+    },
+    {
+      "fingerprint": {
+        "hostId": "HOME-PC",
+        "provider": "antigravity",
+        "resolvedHomePath": "/tmp/t3ui-e2e/run-pages/userhome/.gemini/antigravity-ide",
+        "volumeId": ""
+      },
+      "status": "missing",
+      "scannedFiles": 0,
+      "skippedFiles": 0,
+      "malformedRecords": 0,
+      "distinctSessions": 0,
+      "message": "No transcript directory on this environment."
+    },
+    {
+      "fingerprint": {
+        "hostId": "HOME-PC",
+        "provider": "antigravity",
+        "resolvedHomePath": "/tmp/t3ui-e2e/run-pages/userhome/.gemini/antigravity-backup",
+        "volumeId": ""
+      },
+      "status": "missing",
+      "scannedFiles": 0,
+      "skippedFiles": 0,
+      "malformedRecords": 0,
+      "distinctSessions": 0,
+      "message": "No transcript directory on this environment."
+    },
+    {
+      "fingerprint": {
+        "hostId": "HOME-PC",
+        "provider": "antigravity",
+        "resolvedHomePath": "/tmp/t3ui-e2e/run-pages/userhome/.config/antigravity",
+        "volumeId": ""
+      },
+      "status": "missing",
+      "scannedFiles": 0,
+      "skippedFiles": 0,
+      "malformedRecords": 0,
+      "distinctSessions": 0,
+      "message": "No transcript directory on this environment."
+    }
+  ],
+  "pricing": {
+    "status": "fresh",
+    "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
+    "fetchedAt": "2026-10-02T05:59:01.238Z",
+    "knownModels": 4941
+  },
+  "scanDurationMs": 70
+}

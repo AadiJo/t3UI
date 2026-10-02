@@ -1,0 +1,504 @@
+{
+  "contractVersion": 6,
+  "readAt": "2026-10-02T05:59:01.426Z",
+  "timeZone": "UTC",
+  "sinceDay": "2026-10-01",
+  "untilDay": "2026-10-02",
+  "buckets": [
+    {
+      "day": "2026-10-01",
+      "hourStart": "2026-10-01T07:59:00.000Z",
+      "provider": "claude",
+      "model": "claude-opus-4-1",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 514,
+        "cachedInputTokens": 136039,
+        "cacheCreationTokens": 10340,
+        "outputTokens": 4664,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0,
+      "cacheSavingsUsd": 0,
+      "costSource": "unpriced",
+      "records": 3,
+      "unpricedRecords": 3,
+      "sessions": 1
+    },
+    {
+      "day": "2026-10-01",
+      "hourStart": "2026-10-01T07:59:00.000Z",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 43901,
+        "cachedInputTokens": 61873,
+        "cacheCreationTokens": 0,
+        "outputTokens": 13279,
+        "reasoningTokens": 5312
+      },
+      "costUsd": 0.195400375,
+      "cacheSavingsUsd": 0.06960712499999999,
+      "costSource": "modelPriced",
+      "records": 3,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-10-01",
+      "hourStart": "2026-10-01T09:59:00.000Z",
+      "provider": "claude",
+      "model": "claude-opus-4-1",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 1313,
+        "cachedInputTokens": 336586,
+        "cacheCreationTokens": 26946,
+        "outputTokens": 9712,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0,
+      "cacheSavingsUsd": 0,
+      "costSource": "unpriced",
+      "records": 7,
+      "unpricedRecords": 7,
+      "sessions": 1
+    },
+    {
+      "day": "2026-10-01",
+      "hourStart": "2026-10-01T09:59:00.000Z",
+      "provider": "claude",
+      "model": "claude-sonnet-4-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 595,
+        "cachedInputTokens": 119610,
+        "cacheCreationTokens": 14809,
+        "outputTokens": 2795,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0.13512675000000002,
+      "cacheSavingsUsd": 0.322947,
+      "costSource": "modelPriced",
+      "records": 3,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-10-01",
+      "hourStart": "2026-10-01T09:59:00.000Z",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 89422,
+        "cachedInputTokens": 189957,
+        "cacheCreationTokens": 0,
+        "outputTokens": 21085,
+        "reasoningTokens": 8434
+      },
+      "costUsd": 0.34637212500000003,
+      "cacheSavingsUsd": 0.21370162499999998,
+      "costSource": "modelPriced",
+      "records": 8,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-10-01",
+      "hourStart": "2026-10-01T09:59:00.000Z",
+      "provider": "codex",
+      "model": "gpt-5-mini",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 72542,
+        "cachedInputTokens": 201160,
+        "cacheCreationTokens": 0,
+        "outputTokens": 35934,
+        "reasoningTokens": 14374
+      },
+      "costUsd": 0.0950325,
+      "cacheSavingsUsd": 0.04526100000000001,
+      "costSource": "modelPriced",
+      "records": 11,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-10-01",
+      "hourStart": "2026-10-01T10:59:00.000Z",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 27459,
+        "cachedInputTokens": 134650,
+        "cacheCreationTokens": 0,
+        "outputTokens": 17335,
+        "reasoningTokens": 6935
+      },
+      "costUsd": 0.224505,
+      "cacheSavingsUsd": 0.15148125,
+      "costSource": "modelPriced",
+      "records": 6,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-10-01",
+      "hourStart": "2026-10-01T10:59:00.000Z",
+      "provider": "codex",
+      "model": "gpt-5-mini",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 4586,
+        "cachedInputTokens": 7866,
+        "cacheCreationTokens": 0,
+        "outputTokens": 1815,
+        "reasoningTokens": 726
+      },
+      "costUsd": 0.00497315,
+      "cacheSavingsUsd": 0.00176985,
+      "costSource": "modelPriced",
+      "records": 1,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-10-01",
+      "hourStart": "2026-10-01T13:59:00.000Z",
+      "provider": "claude",
+      "model": "claude-opus-4-1",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 764,
+        "cachedInputTokens": 154910,
+        "cacheCreationTokens": 16087,
+        "outputTokens": 5243,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0,
+      "cacheSavingsUsd": 0,
+      "costSource": "unpriced",
+      "records": 3,
+      "unpricedRecords": 3,
+      "sessions": 1
+    },
+    {
+      "day": "2026-10-01",
+      "hourStart": "2026-10-01T13:59:00.000Z",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 27344,
+        "cachedInputTokens": 84379,
+        "cacheCreationTokens": 0,
+        "outputTokens": 12567,
+        "reasoningTokens": 5026
+      },
+      "costUsd": 0.17039737500000002,
+      "cacheSavingsUsd": 0.09492637500000001,
+      "costSource": "modelPriced",
+      "records": 3,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-10-01",
+      "hourStart": "2026-10-01T14:59:00.000Z",
+      "provider": "claude",
+      "model": "claude-sonnet-4-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 953,
+        "cachedInputTokens": 94127,
+        "cacheCreationTokens": 11981,
+        "outputTokens": 3513,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0.12872085,
+      "cacheSavingsUsd": 0.2541429,
+      "costSource": "modelPriced",
+      "records": 3,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-10-01",
+      "hourStart": "2026-10-01T16:59:00.000Z",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 19046,
+        "cachedInputTokens": 33653,
+        "cacheCreationTokens": 0,
+        "outputTokens": 8880,
+        "reasoningTokens": 3553
+      },
+      "costUsd": 0.11681412500000002,
+      "cacheSavingsUsd": 0.037859624999999994,
+      "costSource": "modelPriced",
+      "records": 3,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-10-01",
+      "hourStart": "2026-10-01T17:59:00.000Z",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 29856,
+        "cachedInputTokens": 131477,
+        "cacheCreationTokens": 0,
+        "outputTokens": 17995,
+        "reasoningTokens": 7198
+      },
+      "costUsd": 0.23370462500000003,
+      "cacheSavingsUsd": 0.147911625,
+      "costSource": "modelPriced",
+      "records": 5,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-10-01",
+      "hourStart": "2026-10-01T19:59:00.000Z",
+      "provider": "claude",
+      "model": "claude-opus-4-1",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 1099,
+        "cachedInputTokens": 240979,
+        "cacheCreationTokens": 17051,
+        "outputTokens": 4787,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0,
+      "cacheSavingsUsd": 0,
+      "costSource": "unpriced",
+      "records": 5,
+      "unpricedRecords": 5,
+      "sessions": 1
+    },
+    {
+      "day": "2026-10-01",
+      "hourStart": "2026-10-01T19:59:00.000Z",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 86471,
+        "cachedInputTokens": 149304,
+        "cacheCreationTokens": 0,
+        "outputTokens": 23238,
+        "reasoningTokens": 9296
+      },
+      "costUsd": 0.35913174999999997,
+      "cacheSavingsUsd": 0.16796699999999998,
+      "costSource": "modelPriced",
+      "records": 6,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-10-01",
+      "hourStart": "2026-10-01T22:59:00.000Z",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 17116,
+        "cachedInputTokens": 96054,
+        "cacheCreationTokens": 0,
+        "outputTokens": 11492,
+        "reasoningTokens": 4597
+      },
+      "costUsd": 0.14832175000000003,
+      "cacheSavingsUsd": 0.10806075000000001,
+      "costSource": "modelPriced",
+      "records": 3,
+      "unpricedRecords": 0,
+      "sessions": 1
+    },
+    {
+      "day": "2026-10-02",
+      "hourStart": "2026-10-02T01:59:00.000Z",
+      "provider": "claude",
+      "model": "claude-opus-4-1",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+      "totals": {
+        "uncachedInputTokens": 548,
+        "cachedInputTokens": 38335,
+        "cacheCreationTokens": 8124,
+        "outputTokens": 1453,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0,
+      "cacheSavingsUsd": 0,
+      "costSource": "unpriced",
+      "records": 2,
+      "unpricedRecords": 2,
+      "sessions": 1
+    },
+    {
+      "day": "2026-10-02",
+      "hourStart": "2026-10-02T01:59:00.000Z",
+      "provider": "codex",
+      "model": "gpt-5",
+      "sourcePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+      "totals": {
+        "uncachedInputTokens": 20732,
+        "cachedInputTokens": 60778,
+        "cacheCreationTokens": 0,
+        "outputTokens": 9394,
+        "reasoningTokens": 3758
+      },
+      "costUsd": 0.12745225,
+      "cacheSavingsUsd": 0.06837525,
+      "costSource": "modelPriced",
+      "records": 4,
+      "unpricedRecords": 0,
+      "sessions": 1
+    }
+  ],
+  "sources": [
+    {
+      "fingerprint": {
+        "hostId": "HOME-PC",
+        "provider": "claude",
+        "resolvedHomePath": "/tmp/t3ui-e2e/run-pages/userhome/.claude/projects",
+        "volumeId": "2096:8017082"
+      },
+      "status": "ok",
+      "scannedFiles": 34,
+      "skippedFiles": 0,
+      "malformedRecords": 0,
+      "distinctSessions": 7,
+      "message": null
+    },
+    {
+      "fingerprint": {
+        "hostId": "HOME-PC",
+        "provider": "codex",
+        "resolvedHomePath": "/tmp/t3ui-e2e/run-pages/userhome/.codex/sessions",
+        "volumeId": "2096:8017015"
+      },
+      "status": "ok",
+      "scannedFiles": 76,
+      "skippedFiles": 0,
+      "malformedRecords": 0,
+      "distinctSessions": 10,
+      "message": null
+    },
+    {
+      "fingerprint": {
+        "hostId": "HOME-PC",
+        "provider": "grok",
+        "resolvedHomePath": "/tmp/t3ui-e2e/run-pages/userhome/.grok/sessions",
+        "volumeId": ""
+      },
+      "status": "missing",
+      "scannedFiles": 0,
+      "skippedFiles": 0,
+      "malformedRecords": 0,
+      "distinctSessions": 0,
+      "message": "No transcript directory on this environment."
+    },
+    {
+      "fingerprint": {
+        "hostId": "HOME-PC",
+        "provider": "opencode",
+        "resolvedHomePath": "/tmp/t3ui-e2e/run-pages/userhome/.local/share/opencode",
+        "volumeId": ""
+      },
+      "status": "missing",
+      "scannedFiles": 0,
+      "skippedFiles": 0,
+      "malformedRecords": 0,
+      "distinctSessions": 0,
+      "message": "No transcript directory on this environment."
+    },
+    {
+      "fingerprint": {
+        "hostId": "HOME-PC",
+        "provider": "antigravity",
+        "resolvedHomePath": "/tmp/t3ui-e2e/run-pages/userhome/.gemini/antigravity",
+        "volumeId": ""
+      },
+      "status": "missing",
+      "scannedFiles": 0,
+      "skippedFiles": 0,
+      "malformedRecords": 0,
+      "distinctSessions": 0,
+      "message": "No transcript directory on this environment."
+    },
+    {
+      "fingerprint": {
+        "hostId": "HOME-PC",
+        "provider": "antigravity",
+        "resolvedHomePath": "/tmp/t3ui-e2e/run-pages/userhome/.gemini/antigravity-cli",
+        "volumeId": ""
+      },
+      "status": "missing",
+      "scannedFiles": 0,
+      "skippedFiles": 0,
+      "malformedRecords": 0,
+      "distinctSessions": 0,
+      "message": "No transcript directory on this environment."
+    },
+    {
+      "fingerprint": {
+        "hostId": "HOME-PC",
+        "provider": "antigravity",
+        "resolvedHomePath": "/tmp/t3ui-e2e/run-pages/userhome/.gemini/antigravity-ide",
+        "volumeId": ""
+      },
+      "status": "missing",
+      "scannedFiles": 0,
+      "skippedFiles": 0,
+      "malformedRecords": 0,
+      "distinctSessions": 0,
+      "message": "No transcript directory on this environment."
+    },
+    {
+      "fingerprint": {
+        "hostId": "HOME-PC",
+        "provider": "antigravity",
+        "resolvedHomePath": "/tmp/t3ui-e2e/run-pages/userhome/.gemini/antigravity-backup",
+        "volumeId": ""
+      },
+      "status": "missing",
+      "scannedFiles": 0,
+      "skippedFiles": 0,
+      "malformedRecords": 0,
+      "distinctSessions": 0,
+      "message": "No transcript directory on this environment."
+    },
+    {
+      "fingerprint": {
+        "hostId": "HOME-PC",
+        "provider": "antigravity",
+        "resolvedHomePath": "/tmp/t3ui-e2e/run-pages/userhome/.config/antigravity",
+        "volumeId": ""
+      },
+      "status": "missing",
+      "scannedFiles": 0,
+      "skippedFiles": 0,
+      "malformedRecords": 0,
+      "distinctSessions": 0,
+      "message": "No transcript directory on this environment."
+    }
+  ],
+  "pricing": {
+    "status": "fresh",
+    "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
+    "fetchedAt": "2026-10-02T05:59:01.238Z",
+    "knownModels": 4941
+  },
+  "scanDurationMs": 15
+}
