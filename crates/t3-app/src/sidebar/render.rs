@@ -271,7 +271,7 @@ impl Sidebar {
             .rounded(radius::MD)
             .flex()
             .flex_col()
-            .child(self.render_project_header(project, animate, manual, cx))
+            .child(self.render_project_header(project, animate, manual, window, cx))
             .when(manual, |this| {
                 // Drop target: a 1px `primary/40` ring while a project is dragged over it.
                 this.child(
@@ -300,10 +300,20 @@ impl Sidebar {
         project: &SidebarProject,
         animate: bool,
         manual: bool,
+        window: &mut Window,
         cx: &mut Context<Self>,
     ) -> impl IntoElement {
         let colors = cx.colors();
         let key = project.key.clone();
+        // The header is a `button`: a Tab stop that Enter or Space toggles.
+        let focus = window
+            .use_keyed_state(
+                SharedString::from(format!("project-focus-{}", project.key)),
+                cx,
+                |_, cx| cx.focus_handle().tab_stop(true),
+            )
+            .read(cx)
+            .clone();
         let collapsed_status = (!project.expanded).then_some(project.status).flatten();
         let chevron = |rotated: bool| {
             Icon::new(IconName::ChevronRight)
@@ -414,6 +424,16 @@ impl Sidebar {
                     .cursor_pointer()
                     .type_scale(text::XS)
                     .group_hover(PROJECT_HEADER_GROUP, |style| style.bg(colors.accent))
+                    .track_focus(&focus)
+                    .on_key_down({
+                        let key = project.key.clone();
+                        cx.listener(move |this, event: &gpui_kit::KeyDownEvent, _, cx| {
+                            if matches!(event.keystroke.key.as_str(), "enter" | "space") {
+                                cx.stop_propagation();
+                                this.toggle_project(&key, cx);
+                            }
+                        })
+                    })
                     .on_click(cx.listener(move |this, _, _, cx| this.toggle_project(&key, cx)))
                     .on_mouse_down(MouseButton::Right, {
                         let key = project.key.clone();
