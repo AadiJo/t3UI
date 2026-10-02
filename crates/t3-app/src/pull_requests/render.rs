@@ -270,28 +270,34 @@ impl PullRequestsView {
         let typed = self.typed_query();
         let busy = !typed.is_empty() && (typed != self.sent_query || self.list.pending);
         let refreshing = self.invalidating || self.list.pending;
-        div().flex().flex_col().gap_3().child(
-            div()
-                .flex()
-                .flex_wrap()
-                .items_center()
-                .gap_2()
-                .child(div().min_w_0().flex_1().child(controls::search_field(
-                    &self.search,
-                    busy,
-                    window,
-                    cx,
-                )))
-                .child(controls::sort_menu(self, cx))
-                .child(controls::filters_menu(self, cx))
-                .child(controls::provider_menu(self, cx))
-                .child(controls::refresh_button(
-                    "pr-refresh",
-                    false,
-                    refreshing,
-                    cx.listener(|this, _, _, cx| this.refresh_from_host(cx)),
-                )),
-        )
+        div()
+            .flex()
+            .flex_col()
+            .gap_3()
+            .child(
+                div()
+                    .flex()
+                    .flex_wrap()
+                    .items_center()
+                    .gap_2()
+                    .child(div().min_w_0().flex_1().child(controls::search_field(
+                        &self.search,
+                        busy,
+                        window,
+                        cx,
+                    )))
+                    .child(controls::sort_menu(self, cx))
+                    .child(controls::filters_menu(self, cx))
+                    .child(controls::provider_menu(self, cx))
+                    .child(controls::refresh_button(
+                        "pr-refresh",
+                        false,
+                        refreshing,
+                        cx.listener(|this, _, _, cx| this.refresh_from_host(cx)),
+                    )),
+            )
+            // The fork's condensing marker (`-mt-3 h-px`): 1px of the column's rhythm.
+            .child(div().mt(px(-12.)).h_px().w_full())
     }
 
     fn list_body(

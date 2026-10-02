@@ -3,8 +3,8 @@
 //! `PullRequestsUnavailableState.tsx`). Spec sections 4.3-4.5.
 
 use gpui_kit::{
-    AnyElement, App, ClickEvent, FontWeight, Hsla, IntoElement, ParentElement as _, PathBuilder,
-    Pixels, Point, SharedString, Styled as _, Window, canvas, div, point,
+    AnyElement, App, ClickEvent, FontWeight, Hsla, IntoElement, LineFragment, ParentElement as _,
+    PathBuilder, Pixels, Point, SharedString, Styled as _, Window, canvas, div, point,
     prelude::FluentBuilder as _, px, relative,
 };
 use t3_ui::{
@@ -137,12 +137,14 @@ fn empty_frame() -> gpui_kit::Div {
         .p_12()
 }
 
-fn header(title: SharedString, description: SharedString, colors: &Colors) -> impl IntoElement {
+fn header(title: SharedString, description: SharedString, cx: &App) -> impl IntoElement {
+    let colors = cx.colors();
+    let description_width = balanced_width(&description, text::SM.0, HEADER_WIDTH, cx);
     div()
         .flex()
         .flex_col()
         .items_center()
-        .max_w(px(384.))
+        .max_w(HEADER_WIDTH)
         .text_center()
         .child(
             div()
@@ -154,10 +156,38 @@ fn header(title: SharedString, description: SharedString, colors: &Colors) -> im
         .child(
             div()
                 .mt_1()
+                .max_w(description_width)
                 .type_scale(text::SM)
                 .text_color(colors.muted_foreground)
                 .child(description),
         )
+}
+
+/// `EmptyHeader`'s `max-w-sm`.
+const HEADER_WIDTH: Pixels = px(384.);
+
+/// The width CSS `text-balance` settles on: the narrowest width that still wraps `text` into as
+/// many lines as `max` does, so the lines come out even instead of one long and one short.
+fn balanced_width(text: &str, size: Pixels, max: Pixels, cx: &App) -> Pixels {
+    let mut wrapper = cx
+        .text_system()
+        .line_wrapper(gpui_kit::font(t3_ui::tokens::font::SANS), size);
+    let fragments = [LineFragment::text(text)];
+    let mut lines_at = |width: Pixels| wrapper.wrap_line(&fragments, width).count() + 1;
+    let lines = lines_at(max);
+    if lines <= 1 {
+        return max;
+    }
+    let (mut narrow, mut wide) = (max / lines as f32 * 0.8, max);
+    for _ in 0..12 {
+        let middle = (narrow + wide) / 2.;
+        if lines_at(middle) <= lines {
+            wide = middle;
+        } else {
+            narrow = middle;
+        }
+    }
+    wide + px(1.)
 }
 
 fn actions(actions: Vec<StateAction>) -> Option<impl IntoElement> {
@@ -181,7 +211,7 @@ pub fn empty_state(
     let colors = cx.colors();
     empty_frame()
         .child(branch_mark(colors))
-        .child(header(title.into(), description.into(), colors))
+        .child(header(title.into(), description.into(), cx))
         .children(actions(buttons))
         .into_any_element()
 }
@@ -197,7 +227,7 @@ pub fn unavailable_state(
     let colors = cx.colors();
     empty_frame()
         .child(media_card(colors))
-        .child(header(title.into(), message.into(), colors))
+        .child(header(title.into(), message.into(), cx))
         .children(actions(buttons))
         .into_any_element()
 }

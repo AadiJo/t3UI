@@ -51,7 +51,7 @@ const REVIEW_OPTIONS: [(Option<&str>, &str); 5] = [
 ];
 
 /// `PullRequestSearchInput`: an input group with the search glyph (a spinner while a search
-/// is on its way), 32px tall.
+/// is on its way): a 32px input inside a 1px border.
 pub fn search_field(
     state: &Entity<InputState>,
     busy: bool,
@@ -66,7 +66,7 @@ pub fn search_field(
         .items_center()
         .w_full()
         .min_w_0()
-        .h_8()
+        .h(px(34.))
         .rounded(radius::CONTROL)
         .border_1()
         .border_color(if focused { colors.ring } else { colors.input })
@@ -99,9 +99,18 @@ pub fn search_field(
                 .text_color(colors.foreground)
                 .map(|this| {
                     if busy {
-                        this.child(Spinner::new("pr-search-busy").size(px(16.)))
+                        this.child(
+                            div()
+                                .mx(px(-2.))
+                                .child(Spinner::new("pr-search-busy").size(px(16.))),
+                        )
                     } else {
-                        this.child(Icon::new(IconName::Search).size(px(16.)).opacity(0.8))
+                        this.child(
+                            Icon::new(IconName::Search)
+                                .size(px(16.))
+                                .mx(px(-2.))
+                                .opacity(0.8),
+                        )
                     }
                 }),
         )
@@ -111,8 +120,8 @@ pub fn search_field(
                 .text_size(px(14.))
                 .pl(px(8.))
                 .pr(px(11.))
-                .h(px(30.))
-                .line_height(px(30.))
+                .h(px(32.))
+                .line_height(px(32.))
                 .flex_1(),
         )
 }
