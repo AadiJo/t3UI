@@ -261,7 +261,7 @@ impl PlanSurface {
     }
 
     /// 48px header: the Plan/Tasks badge, the plan's time, and the actions menu.
-    fn render_header(&self, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render_header(&self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let colors = cx.colors();
         let format = self.context.app_state.read(cx).settings().timestamp_format;
         let timestamp = self
@@ -289,7 +289,8 @@ impl PlanSurface {
                     .items_center()
                     .gap(px(8.))
                     .child(
-                        Badge::new(self.view.label().to_uppercase())
+                        Badge::empty()
+                            .child(render::badge_text(self.view.label(), window))
                             .variant(BadgeVariant::Info)
                             .size(BadgeSize::Sm)
                             .rounded(px(8.))
@@ -359,7 +360,12 @@ impl PlanSurface {
 
     /// The proposed plan: a disclosure titled by the plan's first heading, and when open, a
     /// card with the plan body.
-    fn render_proposed_plan(&self, markdown: &str, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render_proposed_plan(
+        &self,
+        markdown: &str,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement {
         let colors = cx.colors();
         let muted = colors.muted_foreground;
         let expanded = self.expanded;
@@ -389,7 +395,7 @@ impl PlanSurface {
                         .color(muted.opacity(0.4)),
                     )
                     .child(
-                        render::section_label(plan_title(markdown).unwrap_or("Full Plan"))
+                        render::section_label(plan_title(markdown).unwrap_or("Full Plan"), window)
                             .flex_1()
                             .min_w_0()
                             .text_color(muted.opacity(0.4))
@@ -448,7 +454,7 @@ impl Render for PlanSurface {
                     .flex()
                     .flex_col()
                     .child(
-                        render::section_label("Steps")
+                        render::section_label("Steps", window)
                             .mb(px(8.))
                             .text_color(colors.muted_foreground.opacity(0.4)),
                     )
@@ -458,7 +464,7 @@ impl Render for PlanSurface {
         }
         if let Some(plan) = self.view.proposed_plan.clone() {
             sections.push(
-                self.render_proposed_plan(&plan.plan_markdown, cx)
+                self.render_proposed_plan(&plan.plan_markdown, window, cx)
                     .into_any_element(),
             );
         }
@@ -472,7 +478,7 @@ impl Render for PlanSurface {
             .size_full()
             .min_h_0()
             .bg(colors.card.opacity(0.5))
-            .child(self.render_header(cx))
+            .child(self.render_header(window, cx))
             .child(
                 div().flex_1().min_h_0().child(
                     ScrollArea::new("plan-scroll").child(

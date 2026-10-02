@@ -4,9 +4,10 @@
 use std::{cell::Cell, f32::consts::TAU, rc::Rc, time::Duration};
 
 use gpui_kit::{
-    Animation, AnimationExt as _, AnyElement, App, Bounds, Div, ElementId, FontWeight, IntoElement,
-    ParentElement as _, Pixels, SharedString, StrikethroughStyle, Styled as _, Transformation,
-    Window, canvas, div, prelude::FluentBuilder as _, px, radians,
+    Animation, AnimationExt as _, AnyElement, App, Bounds, Div, ElementId, Font, FontWeight,
+    IntoElement, ParentElement as _, Pixels, SharedString, StrikethroughStyle, Styled as _,
+    TextRun, Transformation, Window, black, canvas, div, font, prelude::FluentBuilder as _, px,
+    radians,
 };
 use t3_ui::{Colors, Icon, IconName, tokens::motion};
 
@@ -14,33 +15,69 @@ use super::logic::{PlanStep, StepStatus};
 
 /// `tracking-widest` (0.1em) at 10px.
 const WIDEST_10: Pixels = px(1.);
+/// `tracking-wide` (0.025em) at 10px.
+const WIDE_10: Pixels = px(0.25);
 
 /// `text-[10px] font-semibold tracking-widest uppercase` (the `Steps` heading and the plan
-/// title), 15px lines. GPUI has no letter spacing, so each glyph is a box with the tracking as
-/// the gap; words stay together and wrap as units. Callers set the color.
-pub(super) fn section_label(text: &str) -> Div {
-    let upper = text.to_uppercase();
-    let words: Vec<&str> = upper.split_whitespace().collect();
-    let last = words.len().saturating_sub(1);
+/// title), 15px lines. Callers set the color.
+pub(super) fn section_label(text: &str, window: &mut Window) -> Div {
+    tracked_text(&text.to_uppercase(), px(10.), WIDEST_10, window)
+        .line_height(px(15.))
+        .font_weight(FontWeight::SEMIBOLD)
+}
+
+/// The header badge text: `text-[10px] font-semibold tracking-wide uppercase`.
+pub(super) fn badge_text(text: &str, window: &mut Window) -> Div {
+    tracked_text(&text.to_uppercase(), px(10.), WIDE_10, window)
+}
+
+/// Semibold sans text with CSS `letter-spacing`, which GPUI lacks. The text is shaped once
+/// (keeping kerning) and each glyph gets a box exactly its advance plus `tracking` wide, so
+/// GPUI's rounding of measured text up to whole device pixels cannot accumulate across glyphs.
+/// Words stay together and wrap as units; a space keeps its own tracking, as in CSS.
+fn tracked_text(text: &str, size: Pixels, tracking: Pixels, window: &mut Window) -> Div {
+    let run = TextRun {
+        len: text.len(),
+        font: Font {
+            weight: FontWeight::SEMIBOLD,
+            ..font(t3_ui::tokens::font::SANS)
+        },
+        color: black(),
+        background_color: None,
+        underline: None,
+        strikethrough: None,
+    };
+    let line =
+        window
+            .text_system()
+            .shape_line(SharedString::from(text.to_owned()), size, &[run], None);
+    let glyph = |start: usize, ch: char| {
+        let width = line.x_for_index(start + ch.len_utf8()) - line.x_for_index(start);
+        div()
+            .flex_none()
+            .w(width + tracking)
+            .when(ch != ' ', |glyph| {
+                glyph.child(SharedString::from(ch.to_string()))
+            })
+    };
+    let mut words: Vec<Div> = Vec::new();
+    let mut word: Option<Div> = None;
+    for (start, ch) in text.char_indices() {
+        let current = word.take().unwrap_or_else(|| div().flex().flex_none());
+        let current = current.child(glyph(start, ch));
+        if ch == ' ' {
+            words.push(current);
+        } else {
+            word = Some(current);
+        }
+    }
+    words.extend(word);
     div()
         .flex()
         .flex_wrap()
-        .text_size(px(10.))
-        .line_height(px(15.))
+        .text_size(size)
         .font_weight(FontWeight::SEMIBOLD)
-        .children(words.iter().enumerate().map(|(index, word)| {
-            div()
-                .flex()
-                .flex_none()
-                .gap(WIDEST_10)
-                .mr(WIDEST_10)
-                .children(
-                    word.chars()
-                        .map(|ch| div().child(SharedString::from(ch.to_string()))),
-                )
-                // The space keeps its own tracking, like CSS letter-spacing.
-                .when(index < last, |word| word.child("\u{a0}"))
-        }))
+        .children(words)
 }
 
 /// One step: `flex items-center gap-2.5 rounded-lg px-2.5 py-2`, tinted by status, with a
