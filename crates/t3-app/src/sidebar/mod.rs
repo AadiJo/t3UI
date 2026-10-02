@@ -29,6 +29,7 @@ pub use pulse::{PulseClock, pulse_opacity};
 
 use crate::state::{
     AppState, Environment, EnvironmentKind, NewThreadRequest, Route,
+    favicons::FaviconStore,
     vcs::{VcsKey, VcsStatusStore},
 };
 
@@ -54,15 +55,18 @@ pub struct Sidebar {
     scroll: ScrollHandle,
     focus: FocusHandle,
     vcs: Entity<VcsStatusStore>,
-    _subscriptions: [Subscription; 2],
+    favicons: Entity<FaviconStore>,
+    _subscriptions: [Subscription; 3],
 }
 
 impl Sidebar {
     pub fn new(app_state: Entity<AppState>, _window: &mut Window, cx: &mut Context<Self>) -> Self {
         let vcs = VcsStatusStore::global(cx);
+        let favicons = FaviconStore::global(cx);
         let subscriptions = [
             cx.observe(&app_state, |this, _, cx| this.rebuild(cx)),
             cx.observe(&vcs, |_, _, cx| cx.notify()),
+            cx.observe(&favicons, |_, _, cx| cx.notify()),
         ];
         let mut sidebar = Self {
             app_state,
@@ -78,6 +82,7 @@ impl Sidebar {
             scroll: ScrollHandle::new(),
             focus: cx.focus_handle(),
             vcs,
+            favicons,
             _subscriptions: subscriptions,
         };
         sidebar.rebuild(cx);
@@ -121,6 +126,20 @@ impl Sidebar {
         let interest = self.vcs_interest();
         self.vcs
             .update(cx, |store, cx| store.set_interest("sidebar", interest, cx));
+        let favicon_keys: Vec<_> = self
+            .model
+            .projects
+            .iter()
+            .map(|project| {
+                let representative = &project.representative;
+                (
+                    representative.project_ref.environment_id.clone(),
+                    representative.project.workspace_root.clone(),
+                )
+            })
+            .collect();
+        self.favicons
+            .update(cx, |store, cx| store.request(favicon_keys, cx));
         cx.notify();
     }
 

@@ -22,7 +22,7 @@ use gpui_kit::{
     AnyView, AppContext as _, Context, CursorStyle, Entity, FocusHandle, InteractiveElement as _,
     IntoElement, KeyDownEvent, ModifiersChangedEvent, MouseButton, MouseDownEvent, MouseMoveEvent,
     ParentElement as _, Pixels, Render, StatefulInteractiveElement as _, Styled as _, Subscription,
-    Window, div, prelude::FluentBuilder as _, px,
+    Window, base::TextSelectionLayer, div, prelude::FluentBuilder as _, px,
 };
 use t3_logic::keybindings::{Command, ShortcutContext};
 use t3_ui::{
@@ -400,6 +400,9 @@ impl Render for Workspace {
                 cx.listener(|this, _, _, cx| this.end_rail_drag(cx)),
             )
             .when(dragging, |this| this.cursor(CursorStyle::ResizeLeftRight))
+            // Window text selection (markdown drag-select and copy). Zero-sized; must stay the
+            // first child so its element id keeps the selection alive between frames.
+            .child(TextSelectionLayer)
             // Sidebar gap: reserves flex space for the fixed sidebar.
             .child(div().h_full().flex_shrink_0().w(width * progress))
             // Main column.

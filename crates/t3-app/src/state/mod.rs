@@ -16,6 +16,7 @@
 
 pub mod boot;
 mod environment;
+pub mod favicons;
 pub mod fixtures;
 mod route;
 mod store;

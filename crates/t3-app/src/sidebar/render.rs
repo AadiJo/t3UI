@@ -3,9 +3,9 @@
 use gpui_kit::component::input::Input;
 use gpui_kit::{
     AnyElement, App, AppContext as _, ClickEvent, Context, FontWeight, Hsla,
-    InteractiveElement as _, IntoElement, MouseButton, ParentElement as _, Render, SharedString,
-    StatefulInteractiveElement as _, Styled as _, Transformation, Window, div,
-    prelude::FluentBuilder as _, px, radians,
+    InteractiveElement as _, IntoElement, MouseButton, ObjectFit, ParentElement as _, Render,
+    SharedString, StatefulInteractiveElement as _, Styled as _, StyledImage as _, Transformation,
+    Window, div, img, prelude::FluentBuilder as _, px, radians,
 };
 use t3_logic::{
     keybindings::Command,
@@ -306,6 +306,10 @@ impl Sidebar {
     ) -> impl IntoElement {
         let colors = cx.colors();
         let key = project.key.clone();
+        let favicon = self.favicons.read(cx).loaded(
+            &project.representative.project_ref.environment_id,
+            &project.representative.project.workspace_root,
+        );
         // The header is a `button`: a Tab stop that Enter or Space toggles.
         let focus = window
             .use_keyed_state(
@@ -443,12 +447,22 @@ impl Sidebar {
                         })
                     })
                     .child(leading)
-                    // ProjectFavicon: the folder fallback shows until `assets.createUrl` resolves.
-                    .child(
-                        Icon::new(IconName::Folder)
-                            .size(px(14.))
-                            .color(colors.muted_foreground_50),
-                    )
+                    // ProjectFavicon: the folder fallback shows until the favicon loads, and for
+                    // projects without one.
+                    .map(|this| match favicon {
+                        Some(image) => this.child(
+                            img(image)
+                                .flex_none()
+                                .size(px(14.))
+                                .rounded(radius::SM)
+                                .object_fit(ObjectFit::Contain),
+                        ),
+                        None => this.child(
+                            Icon::new(IconName::Folder)
+                                .size(px(14.))
+                                .color(colors.muted_foreground_50),
+                        ),
+                    })
                     .child(
                         div()
                             .flex_1()
