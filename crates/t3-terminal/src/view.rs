@@ -13,9 +13,9 @@ use alacritty_terminal::{
 };
 use gpui_kit::{
     App, Bounds, ClipboardItem, Context, EntityInputHandler, EventEmitter, FocusHandle, Focusable,
-    IntoElement, KeyDownEvent, MouseDownEvent, MouseMoveEvent, MouseUpEvent, ParentElement as _,
-    Pixels, Point, Render, ScrollWheelEvent, SharedString, Size, Styled as _, Task, UTF16Selection,
-    Window, div, point, px, size,
+    IntoElement, KeyBinding, KeyDownEvent, MouseDownEvent, MouseMoveEvent, MouseUpEvent, NoAction,
+    ParentElement as _, Pixels, Point, Render, ScrollWheelEvent, SharedString, Size, Styled as _,
+    Task, UTF16Selection, Window, div, point, px, size,
 };
 use gpui_kit::{InteractiveElement as _, MouseButton as GpuiMouseButton};
 
@@ -40,6 +40,27 @@ const SCROLLBAR_HIDE_DELAY: Duration = Duration::from_millis(500);
 const MULTI_CLICK_MENU_DELAY: Duration = Duration::from_millis(260);
 /// `terminal.write` accepts at most 65,536 UTF-16 units; chunks stay well under that.
 const MAX_INPUT_CHARS: usize = 16_384;
+
+/// Key context of a focused terminal, for app bindings that must not fire inside it.
+pub const KEY_CONTEXT: &str = "Terminal";
+
+/// Registers the terminal's key bindings. Call once at startup, after `gpui_kit::init`.
+///
+/// Bindings dispatch before the view's key handler, and gpui-kit's `Root` binds Tab and
+/// Shift+Tab to focus navigation and the copy shortcut (Cmd+C, or Ctrl+C off macOS, which is
+/// SIGINT in a shell). Inside a terminal those keys belong to the PTY, so they are unbound in
+/// [`KEY_CONTEXT`]. App shortcuts bound elsewhere still win, which is how the fork lets
+/// `terminal.*` and `diff.toggle` bubble out of xterm.
+pub fn init(cx: &mut App) {
+    cx.bind_keys([
+        KeyBinding::new("tab", NoAction, Some(KEY_CONTEXT)),
+        KeyBinding::new("shift-tab", NoAction, Some(KEY_CONTEXT)),
+        #[cfg(target_os = "macos")]
+        KeyBinding::new("cmd-c", NoAction, Some(KEY_CONTEXT)),
+        #[cfg(not(target_os = "macos"))]
+        KeyBinding::new("ctrl-c", NoAction, Some(KEY_CONTEXT)),
+    ]);
+}
 
 /// Events the app wires to RPCs and menus.
 #[derive(Clone, Debug, PartialEq)]
@@ -141,6 +162,8 @@ pub struct TerminalView {
     /// Whether the cursor is in its visible blink phase.
     blink_on: bool,
     blink_task: Option<Task<()>>,
+    /// Whether `blink_task` is still ticking; it stops itself once the view is not painted.
+    blinking: bool,
     /// Set by paint and cleared by each blink tick, so blinking stops while hidden.
     painted_since_blink: bool,
     drag: Option<Drag>,
@@ -193,6 +216,7 @@ impl TerminalView {
             geometry: None,
             blink_on: true,
             blink_task: None,
+            blinking: false,
             painted_since_blink: false,
             drag: None,
             pending_link: None,
@@ -350,7 +374,7 @@ impl TerminalView {
     pub(crate) fn did_paint(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.sync_focus(window, cx);
         self.painted_since_blink = true;
-        if self.blink_task.is_none() && self.should_blink() {
+        if !self.blinking && self.should_blink() {
             self.restart_blink(cx);
         }
     }
@@ -446,7 +470,8 @@ impl TerminalView {
     fn restart_blink(&mut self, cx: &mut Context<Self>) {
         self.blink_on = true;
         self.blink_task = None;
-        if !self.should_blink() {
+        self.blinking = self.should_blink();
+        if !self.blinking {
             return;
         }
         self.painted_since_blink = true;
@@ -456,7 +481,7 @@ impl TerminalView {
                 let keep_going = this.update(cx, |view, cx| {
                     if !view.painted_since_blink || !view.should_blink() {
                         view.blink_on = true;
-                        view.blink_task = None;
+                        view.blinking = false;
                         return false;
                     }
                     view.painted_since_blink = false;
@@ -473,29 +498,31 @@ impl TerminalView {
 
     /// Flushes a synchronized update (DEC 2026) if the program never ends it.
     fn schedule_sync_flush(&mut self, cx: &mut Context<Self>) {
-        let Some(deadline) = self.session.sync_deadline() else {
-            self.sync_task = None;
-            return;
-        };
-        if self.sync_task.is_some() {
+        if self.sync_task.is_some() || self.session.sync_deadline().is_none() {
             return;
         }
         self.sync_task = Some(cx.spawn(async move |this, cx| {
-            let wait = deadline.saturating_duration_since(Instant::now());
-            cx.background_executor().timer(wait).await;
-            this.update(cx, |view, cx| {
-                view.sync_task = None;
-                if view
-                    .session
-                    .sync_deadline()
-                    .is_some_and(|d| d <= Instant::now())
-                {
-                    view.session.flush_sync();
-                    cx.notify();
+            // Sleeps until each pending deadline; ends once no update is buffering.
+            while let Ok(Some(deadline)) =
+                this.read_with(cx, |view, _| view.session.sync_deadline())
+            {
+                let wait = deadline.saturating_duration_since(Instant::now());
+                cx.background_executor().timer(wait).await;
+                let flushed = this.update(cx, |view, cx| {
+                    if view
+                        .session
+                        .sync_deadline()
+                        .is_some_and(|d| d <= Instant::now())
+                    {
+                        view.session.flush_sync();
+                        cx.notify();
+                    }
+                });
+                if flushed.is_err() {
+                    return;
                 }
-                view.schedule_sync_flush(cx);
-            })
-            .ok();
+            }
+            this.update(cx, |view, _| view.sync_task = None).ok();
         }));
     }
 
@@ -917,7 +944,7 @@ impl Render for TerminalView {
         div()
             .size_full()
             .track_focus(&self.focus_handle)
-            .key_context("Terminal")
+            .key_context(KEY_CONTEXT)
             .on_key_down(cx.listener(Self::on_key_down))
             .child(TerminalElement::new(cx.entity()))
     }
