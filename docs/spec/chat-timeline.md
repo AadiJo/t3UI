@@ -895,7 +895,7 @@ approval", "App permission approval" (permission), "File change approval"; butto
 | Checkpoints with `assistantMessageId`, files | thread detail | `OrchestrationCheckpointSummary` (`assistant_message_id`, `files` decoded) |
 | Message `context` records (chips) | `OrchestrationMessage.context` | `OrchestrationMessageContext`; records keep kind-specific fields untyped in `fields` (`t3-protocol/src/orchestration.rs:561-576`); typed accessors per kind needed by the chip renderer |
 | Attachment image URLs | `assets.createUrl {_tag:"attachment", attachmentId}` | `methods::AssetsCreateUrl` |
-| Worktree setup snapshot | `worktree-setup` activity payload + live setup stream | **missing** typed decoder for `WorktreeSetupSnapshot` (`contracts:worktreeSetup.ts`) and the live stream |
+| Worktree setup snapshot | recorded: `worktree-setup` activity payload; live: `subscribeWorktreeSetup {threadId}` stream (snapshot per change, null when dropped), cancel: `worktreeSetup.cancel {threadId}` (upstream `contracts/src/rpc.ts:452-453,1086-1100`) | **missing**: typed `WorktreeSetupSnapshot` (`contracts:worktreeSetup.ts`), both RPCs in `t3-protocol/src/methods.rs` |
 | Queued messages | client-side store | local (composer agent) |
 | Agent panel model | derived from task activities | **missing** port of `crt:state/subagentRuntime.ts` |
 | Plan save | `projects.writeFile` | `t3_protocol` `ProjectWriteFileInput` / `ProjectWriteFileResult` exist |
