@@ -328,9 +328,8 @@ impl Sidebar {
                 toast::show(Toast::success("Path copied").description(path), cx);
             }
             ProjectMenuItem::Remove => self.remove_project(member, window, cx),
-            // The rename and grouping dialogs need the dialog primitive; until it lands these
-            // are inert.
-            ProjectMenuItem::Rename | ProjectMenuItem::GroupInto => {}
+            ProjectMenuItem::Rename => self.open_rename_project(member, window, cx),
+            ProjectMenuItem::GroupInto => self.open_project_grouping(member, cx),
         }
     }
 

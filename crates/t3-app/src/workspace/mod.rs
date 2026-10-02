@@ -26,7 +26,7 @@ use gpui_kit::{
 };
 use t3_logic::keybindings::{Command, ShortcutContext};
 use t3_ui::{
-    ActiveColors as _, Icon, IconName,
+    ActiveColors as _, Icon, IconName, TooltipExt as _,
     tokens::{font, layout, motion, radius},
     window::NoiseOverlay,
 };
@@ -34,7 +34,6 @@ use t3_ui::{
 pub use main_column::{MainViewKey, build_main_view, collapsed_titlebar_inset};
 
 use crate::{
-    chrome::text_tooltip,
     keybindings::{ShortcutScope, resolve_key_down, shortcut_label},
     sidebar::Sidebar,
     state::AppState,
@@ -160,6 +159,11 @@ impl Workspace {
         window.request_animation_frame();
         let eased = motion::ease_standard(t);
         collapse.from + (self.open_progress - collapse.from) * eased
+    }
+
+    /// The sidebar view.
+    pub fn sidebar(&self) -> &Entity<Sidebar> {
+        &self.sidebar
     }
 
     /// Toggles the sidebar (`sidebar.toggle`, the titlebar toggle).
@@ -330,7 +334,7 @@ impl Workspace {
                     .text_color(colors.foreground)
                     .when(open, |this| this.bg(colors.accent))
                     .hover(|style| style.bg(colors.accent))
-                    .tooltip(text_tooltip(tooltip))
+                    .tooltip_text(tooltip)
                     .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                     .on_click(cx.listener(|this, _, _, cx| this.toggle_sidebar(cx)))
                     .child(
@@ -431,7 +435,7 @@ impl Render for Workspace {
                             .w(RAIL_WIDTH)
                             .when(open, |this| {
                                 this.cursor(CursorStyle::ResizeLeft)
-                                    .tooltip(text_tooltip("Drag to resize sidebar"))
+                                    .tooltip_text("Drag to resize sidebar")
                                     .on_mouse_down(
                                         MouseButton::Left,
                                         cx.listener(Self::start_rail_drag),

@@ -9,7 +9,10 @@ use gpui_kit::{
     AnyView, App, AppContext as _, Context, IntoElement, ParentElement as _, Render, Styled as _,
     Window, div,
 };
-use t3_app::state::{AppState, Route, fixtures};
+use t3_app::{
+    state::{AppState, Route, fixtures},
+    toast::{self, Toast, ToastActionStyle},
+};
 use t3_ui::{ActiveColors as _, ThemeMode};
 
 use super::Scene;
@@ -51,10 +54,22 @@ fn workspace(
     cx: &mut App,
     adjust: impl FnOnce(&mut AppState, &mut gpui_kit::Context<AppState>),
 ) -> AnyView {
+    workspace_with(fixture, window, cx, adjust, |_, _, _| {})
+}
+
+/// Like [`workspace`], then lets `after` act on the mounted workspace (open dialogs, toasts).
+fn workspace_with(
+    fixture: &str,
+    window: &mut Window,
+    cx: &mut App,
+    adjust: impl FnOnce(&mut AppState, &mut gpui_kit::Context<AppState>),
+    after: impl FnOnce(&gpui_kit::Entity<t3_app::Workspace>, &mut Window, &mut App),
+) -> AnyView {
     let state = fixtures::load(fixture, cx).expect("fixture should decode");
     state.update(cx, adjust);
-    let workspace = cx.new(|cx| t3_app::Workspace::new(window, cx)).into();
-    cx.new(|_| Backdrop(workspace)).into()
+    let workspace = cx.new(|cx| t3_app::Workspace::new(window, cx));
+    after(&workspace, window, cx);
+    cx.new(|_| Backdrop(workspace.into())).into()
 }
 
 /// Headless captures have no native window material behind the translucent glass, so paint the
@@ -94,6 +109,63 @@ pub fn scenes() -> Vec<Scene> {
                 state.replace_route(Route::Index, cx);
                 state.set_sidebar_open(false, cx);
             })
+        }),
+        Scene::new(
+            "sidebar-rename-project-dark",
+            ThemeMode::Dark,
+            |window, cx| {
+                workspace_with(
+                    &recorded_fixture(),
+                    window,
+                    cx,
+                    |_, _| {},
+                    |workspace, window, cx| {
+                        let sidebar = workspace.read(cx).sidebar().clone();
+                        sidebar.update(cx, |sidebar, cx| {
+                            let key = sidebar.model().projects[0].key.clone();
+                            sidebar.open_project_rename(&key, window, cx);
+                        });
+                    },
+                )
+            },
+        ),
+        Scene::new("workspace-toasts-dark", ThemeMode::Dark, |window, cx| {
+            workspace_with(
+                &recorded_fixture(),
+                window,
+                cx,
+                |_, _| {},
+                |_, _, cx| {
+                    toast::show(
+                        Toast::success("Path copied")
+                            .description("/tmp/t3ui-e2e/run-nightly/repos/aurora-web"),
+                        cx,
+                    );
+                    toast::show(
+                        Toast::warning("Project is not empty")
+                            .description("Delete all threads in this project before removing it.")
+                            .stacked()
+                            .action("Delete anyway", ToastActionStyle::Destructive, |_, _| {}),
+                        cx,
+                    );
+                },
+            )
+        }),
+        Scene::new("workspace-toasts-light", ThemeMode::Light, |window, cx| {
+            workspace_with(
+                &recorded_fixture(),
+                window,
+                cx,
+                |_, _| {},
+                |_, _, cx| {
+                    toast::show(
+                        Toast::error("Failed to archive thread")
+                            .description("fixture-host is not connected.")
+                            .stacked(),
+                        cx,
+                    );
+                },
+            )
         }),
         Scene::new("workspace-empty-dark", ThemeMode::Dark, |window, cx| {
             workspace(EMPTY, window, cx, |_, _| {})

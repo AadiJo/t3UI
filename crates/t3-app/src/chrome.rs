@@ -2,7 +2,7 @@
 //! drag region, and text tooltips.
 
 use gpui_kit::{
-    AnyView, App, ElementId, InteractiveElement as _, IntoElement, MouseButton, Pixels, Stateful,
+    App, ElementId, InteractiveElement as _, IntoElement, MouseButton, Pixels, Stateful,
     StatefulInteractiveElement as _, Styled, Window, WindowControlArea, div, px,
 };
 
@@ -57,14 +57,6 @@ pub fn drag_region(
                 window.titlebar_double_click();
             }
         })
-}
-
-/// Builds a plain text tooltip view.
-pub fn text_tooltip(
-    text: impl Into<gpui_kit::SharedString>,
-) -> impl Fn(&mut Window, &mut App) -> AnyView {
-    let text = text.into();
-    move |window, cx| gpui_kit::component::tooltip::Tooltip::new(text.clone()).build(window, cx)
 }
 
 /// A child slot that renders nothing (keeps `.child(...)` chains branch-free).

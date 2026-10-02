@@ -7,8 +7,10 @@
 //! lists, and jump-hint visibility.
 
 mod menus;
+mod project_dialogs;
 mod pulse;
 mod render;
+mod sort_menu;
 
 use std::{collections::HashSet, time::Duration};
 
@@ -43,6 +45,8 @@ pub struct Sidebar {
     jump_hint_timer: Option<Task<()>>,
     /// The thread row being renamed inline.
     rename: Option<menus::Rename>,
+    /// The open project rename or grouping dialog.
+    project_dialog: Option<project_dialogs::ProjectDialog>,
     /// The row showing the archive "Confirm" pill (`confirmThreadArchive`).
     confirming_archive: Option<ThreadRef>,
     pulse: PulseClock,
@@ -67,6 +71,7 @@ impl Sidebar {
             jump_hints_visible: false,
             jump_hint_timer: None,
             rename: None,
+            project_dialog: None,
             confirming_archive: None,
             pulse: PulseClock::default(),
             scroll: ScrollHandle::new(),

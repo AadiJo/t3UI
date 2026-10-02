@@ -16,13 +16,13 @@ use t3_logic::{
 };
 use t3_protocol::orchestration::PullRequestState;
 use t3_ui::{
-    ActiveColors as _, Colors, Icon, IconName,
+    ActiveColors as _, Colors, Icon, IconName, TooltipExt as _,
     tokens::{StatusColor, layout, radius, text},
 };
 
-use super::{Sidebar, pulse_opacity};
+use super::{Sidebar, pulse_opacity, sort_menu::sort_menu};
 use crate::{
-    chrome::{TypeScale as _, drag_region, text_tooltip, under_xs},
+    chrome::{TypeScale as _, drag_region, under_xs},
     keybindings::shortcut_label,
 };
 
@@ -92,6 +92,7 @@ impl Render for Sidebar {
             // SidebarSeparator: an invisible 1px spacer (spec section 0).
             .child(div().h(px(1.)).mx_2().flex_shrink_0())
             .child(self.render_footer(cx))
+            .children(self.render_project_dialog(cx))
     }
 }
 
@@ -207,7 +208,7 @@ impl Sidebar {
                 .cursor_pointer()
                 .text_color(colors.muted_foreground_60)
                 .hover(|style| style.bg(colors.accent).text_color(colors.foreground))
-                .tooltip(text_tooltip(tooltip))
+                .tooltip_text(tooltip)
                 .child(Icon::new(icon).size(px(14.)))
         };
         div()
@@ -229,11 +230,7 @@ impl Sidebar {
                     .flex()
                     .items_center()
                     .gap_1()
-                    .child(icon_button(
-                        "sidebar-sort-options",
-                        IconName::ArrowUpDown,
-                        "Sidebar options",
-                    ))
+                    .child(sort_menu(self.app_state.read(cx).settings(), cx))
                     .child(
                         icon_button("sidebar-add-project", IconName::FolderPlus, "Add project")
                             .on_click(cx.listener(|this, _, _, cx| {
@@ -322,7 +319,7 @@ impl Sidebar {
                             .group_hover(PROJECT_HEADER_GROUP, |style| style.opacity(1.))
                             .child(chevron(false)),
                     )
-                    .tooltip(text_tooltip(status.label()))
+                    .tooltip_text(status.label())
                 }
                 None => this.child(chevron(project.expanded)),
             });
@@ -432,7 +429,7 @@ impl Sidebar {
                             .rounded(radius::MD)
                             .text_color(colors.muted_foreground_60)
                             .group_hover(PROJECT_HEADER_GROUP, |style| style.opacity(0.))
-                            .tooltip(text_tooltip(tooltip))
+                            .tooltip_text(tooltip)
                             .child(Icon::new(icon).size(px(12.))),
                     )
                 },
@@ -453,7 +450,7 @@ impl Sidebar {
                             IconName::SquarePen,
                             cx,
                         )
-                        .tooltip(text_tooltip(new_thread_label))
+                        .tooltip_text(new_thread_label)
                         .on_click(cx.listener(
                             move |this, event: &ClickEvent, window, cx| {
                                 cx.stop_propagation();
@@ -807,7 +804,7 @@ impl Sidebar {
                                         .rounded(radius::SM)
                                         .cursor_pointer()
                                         .text_color(color)
-                                        .tooltip(text_tooltip(badge.tooltip.clone()))
+                                        .tooltip_text(badge.tooltip.clone())
                                         .on_mouse_down(MouseButton::Left, |_, _, cx| {
                                             cx.stop_propagation()
                                         })
@@ -832,7 +829,7 @@ impl Sidebar {
                                         .type_scale(under_xs(10.))
                                         .font_weight(FontWeight::NORMAL)
                                         .text_color(color.text)
-                                        .tooltip(text_tooltip(status.label()))
+                                        .tooltip_text(status.label())
                                         .child(
                                             div()
                                                 .size(px(6.))
@@ -880,7 +877,7 @@ impl Sidebar {
                                         .flex_1()
                                         .min_w_0()
                                         .truncate()
-                                        .tooltip(text_tooltip(thread.title.clone()))
+                                        .tooltip_text(thread.title.clone())
                                         .child(thread.title.clone()),
                                 ),
                             }),
@@ -901,7 +898,7 @@ impl Sidebar {
                                         )))
                                         .flex()
                                         .items_center()
-                                        .tooltip(text_tooltip(tooltip))
+                                        .tooltip_text(tooltip)
                                         .child(
                                             Icon::new(IconName::FolderGit2)
                                                 .size(px(12.))
@@ -984,7 +981,7 @@ impl Sidebar {
                     return this;
                 }
                 // Archive control: fades in over the meta on row hover.
-                let tooltip = (!confirm_archive).then(|| text_tooltip("Archive"));
+                let tooltip = (!confirm_archive).then_some("Archive");
                 this.child(
                     div()
                         .absolute()
@@ -1001,7 +998,7 @@ impl Sidebar {
                                 IconName::Archive,
                                 cx,
                             )
-                            .when_some(tooltip, |this, tooltip| this.tooltip(tooltip))
+                            .when_some(tooltip, |this, tooltip| this.tooltip_text(tooltip))
                             .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                             .on_click(cx.listener(
                                 move |this, _, window, cx| {
