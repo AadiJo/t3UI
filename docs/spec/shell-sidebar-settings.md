@@ -3,6 +3,11 @@
 > **Stale UI warning (2026-10-02):** this spec was written against a July checkout of the fork
 > (`ddeeb09`), 4,601 commits behind the real target (`fe7d3092c`, see AGENTS.md). UI details may be
 > wrong until a "Refreshed against fe7d3092c" note appears here. Protocol facts are unaffected.
+>
+> **Superseded (2026-10-02):** the app root, window, layout, sidebar, keybindings, app menu,
+> toasts, menus, dialogs and persistence sections are replaced by `shell.md` and `sidebar.md`
+> (refreshed against fe7d3092c). Only the settings and command palette sections still live here
+> until their own refreshed specs land.
 
 
 Sources: fork `~/L-Projects/t3code-again` @ `ddeeb09d`, upstream `~/L-Projects/t3UI-refs/t3code-upstream` @ `b33eda13`.
