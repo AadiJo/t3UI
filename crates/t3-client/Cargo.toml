@@ -34,6 +34,7 @@ reqwest = { version = "0.13", default-features = false, features = ["json", "gzi
 
 [dev-dependencies]
 tracing-subscriber.workspace = true
+t3-logic.workspace = true
 
 [lints]
 workspace = true

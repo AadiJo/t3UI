@@ -7135,6 +7135,7 @@ dependencies = [
  "security-framework",
  "serde",
  "serde_json",
+ "t3-logic",
  "t3-protocol",
  "thiserror 2.0.21",
  "tokio",
