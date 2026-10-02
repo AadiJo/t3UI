@@ -9,7 +9,8 @@ Branch `shell` holds one unlanded WIP commit: utility routes (`PullRequests`, `U
 | --- | --- |
 | `t3-logic/src/keybindings/` (matcher, parser, defaults, labels, `Command`) | reusable logic (defaults are July's; the server sends the real list) |
 | `t3-logic/src/{settings,ui_state,time,paths,refs}.rs` | reusable logic; `ClientSettings` lacks fe7d3092c fields and drops unknown keys on write |
-| `t3-logic/src/sidebar/` (grouping, sort, status, selection, PR badge) | July-era rules = `LegacySidebar.tsx`; no settle/snooze/pin, has the old Error pill |
+| `t3-logic/src/sidebar/` `build_sidebar` (grouping, sort, selection, PR badge) | the legacy project-grouped layout = `LegacySidebar.tsx` (`legacySidebarEnabled`) |
+| `t3-logic/src/sidebar/` `build_inbox`, `snooze.rs`, `order.rs`, `status.rs` | the fork's default sectioned sidebar (see "Inbox sidebar" below); not rendered by `t3-app` yet |
 | `t3-app/src/state/` (`AppState`, `Route`, `Environment`, `boot`, `fixtures`, `vcs`, `favicons`) | reusable mechanics |
 | `t3-app/src/keybindings/` (root resolver, `ShortcutScope`, app menu) | reusable mechanics |
 | `t3-app/src/workspace/` (collapse, rail resize, `build_main_view`, key dispatch) | reusable mechanics; `index_view.rs` is July-era visuals |
@@ -58,3 +59,24 @@ Branch `shell` holds one unlanded WIP commit: utility routes (`PullRequests`, `U
   app never ran against a server: there is no Linux GPUI build and no macOS host. Archive,
   delete, rename, project remove, VCS streams, favicons, and saved-environment boot are
   compile-verified only.
+
+## Inbox sidebar (logic ready, view not built)
+
+Added by the client agent after the shell handoff; ported from fork `Sidebar.tsx` and
+client-runtime `threadSettled.ts` / `threadSort.ts` (identical to upstream b33eda13).
+
+- `build_inbox(&InboxInputs) -> InboxModel { pinned, active, working, snoozed, settled,
+  draggable, active_reorderable, next_wake_at }`. Each row is an `InboxThread` with `status`
+  (pill), `row_status`, `unread`, `woke`, `recedes`, and `snooze_wake_label`.
+- Pass each environment's `capabilities` from its server config: without `threadSnooze` /
+  `threadSettlement` nothing classifies as snoozed / settled. Rebuild at `next_wake_at`.
+- Beta Working shelf: `ClientSettings::sidebar_working_shelf_enabled`. Keep one `InboxReturns` per
+  window and call `observe(all threads, now)` before every build (`reset()` when the beta is off).
+- Status pills now follow the fork for both layouts: no Error pill, new `Connecting` and
+  `Monitoring` (both use the Working hue), and an unvisited thread has no unseen completion.
+- Snooze menu: `resolve_snooze_presets(chrono::Local::now())`, `can_snooze`, custom dialog via
+  `resolve_custom_snooze`. Drag/move reorders: `plan_pinned_reorder` / `plan_pinned_move` give
+  `(thread id, order key)` writes for `commands::reorder_pinned_thread` / `reorder_active_thread`.
+- Not ported (view state): the optimistic drop override (`applySidebarThreadDrop`), search,
+  the project scope menu, multi-select menus.
+

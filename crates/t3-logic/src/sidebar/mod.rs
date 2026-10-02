@@ -1,12 +1,21 @@
-//! The sidebar's derived model: projects from every environment grouped into rows, ordered and
-//! sorted, each with its visible threads and status roll-ups (spec section 2.6-2.13).
+//! The sidebar's derived models. Two layouts, picked by the client setting
+//! `legacySidebarEnabled`:
 //!
-//! [`build_sidebar`] is a pure function of the shell data, settings, and UI state. The app
+//! - [`build_inbox`] (default): one inbox across environments, split into Pinned, the inbox,
+//!   the beta Working shelf, Snoozed, and Settled. Snooze, settle, and order-key rules are in
+//!   `snooze.rs` and `order.rs` (client-runtime `threadSettled.ts` / `threadSort.ts`).
+//! - [`build_sidebar`] (legacy): projects from every environment grouped into rows, ordered and
+//!   sorted, each with its visible threads and status roll-ups (spec section 2.6-2.13).
+//!
+//! Both are pure. [`build_sidebar`] is a pure function of the shell data, settings, and UI state. The app
 //! rebuilds it when any input changes and renders straight from the result, so rendering does no
 //! sorting or status work.
 
+mod inbox;
+mod order;
 mod pull_request;
 mod selection;
+mod snooze;
 mod sort;
 mod status;
 
@@ -20,12 +29,28 @@ use t3_protocol::{
     orchestration::{OrchestrationProjectShell, OrchestrationThreadShell},
 };
 
+pub use inbox::{
+    InboxEnvironment, InboxInputs, InboxModel, InboxReturns, InboxThread, build_inbox,
+};
+pub use order::{
+    MoveDirection, ThreadRow, generate_spread_pin_order_keys, pin_order_key_between,
+    plan_pinned_move, plan_pinned_reorder, resolve_settled_thread_timestamp, sort_active_threads,
+    sort_inbox_threads_by_return, sort_pinned_threads, sort_settled_threads,
+};
 pub use pull_request::{PullRequestBadge, change_request_short_name, pull_request_badge};
 pub use selection::ThreadSelection;
+pub use snooze::{
+    CustomSnooze, QUEUED_TURN_START_GRACE_MS, SnoozePreset, SnoozePresetId, SnoozeUnit, can_snooze,
+    effective_snoozed, has_queued_turn_start, local_snooze_date, local_snooze_time,
+    raised_hand_while_snoozed, resolve_custom_snooze, resolve_snooze_presets, snooze_wake_label,
+    thread_woke_at,
+};
 pub use sort::{compare_threads, locale_compare, order_by_preferred, thread_sort_timestamp};
 pub use status::{
-    ThreadStatus, has_unseen_completion, highest_status, resolve_thread_status,
-    with_optimistic_work,
+    RecedeInput, SidebarThreadStatus, ThreadStatus, format_working_duration_label,
+    has_unseen_completion, highest_status, is_sidebar_thread_working,
+    resolve_sidebar_thread_status, resolve_thread_status, resolve_working_started_at,
+    should_recede_sidebar_thread, with_optimistic_work,
 };
 
 use crate::{
@@ -585,5 +610,7 @@ pub fn build_sidebar(inputs: &SidebarInputs<'_>) -> SidebarModel {
     }
 }
 
+#[cfg(test)]
+mod inbox_tests;
 #[cfg(test)]
 mod tests;

@@ -134,6 +134,12 @@ pub struct ClientSettings {
     pub favorites: Vec<ModelFavorite>,
     #[serde(deserialize_with = "lenient")]
     pub provider_model_preferences: BTreeMap<String, ProviderModelPreferences>,
+    /// The project-grouped sidebar (`build_sidebar`) instead of the sectioned inbox.
+    #[serde(deserialize_with = "lenient")]
+    pub legacy_sidebar_enabled: bool,
+    /// Beta: fold threads busy with work that does not need the user into a Working shelf.
+    #[serde(deserialize_with = "lenient")]
+    pub sidebar_working_shelf_enabled: bool,
     #[serde(deserialize_with = "lenient")]
     pub sidebar_project_grouping_mode: ProjectGroupingMode,
     /// Per physical project key (`<environmentId>:<normalized path>`).
@@ -161,6 +167,8 @@ impl Default for ClientSettings {
             diff_ignore_whitespace: true,
             favorites: Vec::new(),
             provider_model_preferences: BTreeMap::new(),
+            legacy_sidebar_enabled: false,
+            sidebar_working_shelf_enabled: false,
             sidebar_project_grouping_mode: ProjectGroupingMode::default(),
             sidebar_project_grouping_overrides: BTreeMap::new(),
             sidebar_project_sort_order: ProjectSortOrder::default(),

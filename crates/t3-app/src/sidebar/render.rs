@@ -52,8 +52,10 @@ fn status_color(colors: &Colors, status: ThreadStatus) -> StatusColor {
     match status {
         ThreadStatus::PendingApproval => colors.status.pending_approval,
         ThreadStatus::AwaitingInput => colors.status.awaiting_input,
-        ThreadStatus::Error => colors.status.error,
-        ThreadStatus::Working => colors.status.working,
+        // Connecting and Monitoring share Working's sky hue in the fork.
+        ThreadStatus::Working | ThreadStatus::Connecting | ThreadStatus::Monitoring => {
+            colors.status.working
+        }
         ThreadStatus::PlanReady => colors.status.plan_ready,
         ThreadStatus::Completed => colors.status.completed,
     }

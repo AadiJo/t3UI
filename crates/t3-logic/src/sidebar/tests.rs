@@ -14,9 +14,10 @@
 //! 6. Preview: only the first N threads render until "Show more"; the hidden-status dot reflects
 //!    only hidden threads.
 //! 7. Collapsed rows render nothing except a pinned route thread, and still roll up status.
-//! 8. Status priority and unread: approval > input > error > working (incl. starting) > plan
-//!    ready > completed; completion is unread until visited, and a visit 1ms before completion
-//!    (mark unread) stays unread. Roll-ups keep the first thread on priority ties.
+//! 8. Status priority and unread (fork pill rules): approval > input > working / connecting >
+//!    plan ready > completed, with no Error pill; a completion is unread only after a recorded
+//!    visit older than it, and a visit 1ms before completion (mark unread) stays unread.
+//!    Roll-ups keep the first thread on priority ties.
 //! 9. Keyboard order: previous/next from nothing picks the ends, stops at the ends, and does
 //!    nothing for a route thread outside the visible list; jumps cover only the first 9.
 
@@ -65,7 +66,7 @@ fn project(
     )
 }
 
-fn thread(
+pub(super) fn thread(
     id: &str,
     project_id: &str,
     updated_at: &str,
@@ -426,8 +427,10 @@ fn status_priority_and_unread() {
             visited,
         )
     };
+    // Never visited: nothing unseen (fork `hasUnseenCompletion`).
+    assert_eq!(visited("2026-01-02T00:00:00.000Z", None), None);
     assert_eq!(
-        visited("2026-01-02T00:00:00.000Z", None),
+        visited("2026-01-02T00:00:00.000Z", Some("2026-01-01T00:00:00.000Z")),
         Some(ThreadStatus::Completed)
     );
     assert_eq!(
@@ -450,13 +453,11 @@ fn status_priority_and_unread() {
         status(json!({"hasPendingUserInput": true, "session": session("error")})),
         Some(ThreadStatus::AwaitingInput)
     );
-    assert_eq!(
-        status(json!({"session": session("error")})),
-        Some(ThreadStatus::Error)
-    );
+    // No Error pill in the fork: a failure shows as the row status, not a pill.
+    assert_eq!(status(json!({"session": session("error")})), None);
     assert_eq!(
         status(json!({"session": session("starting")})),
-        Some(ThreadStatus::Working)
+        Some(ThreadStatus::Connecting)
     );
     assert_eq!(
         status(json!({
@@ -480,10 +481,10 @@ fn status_priority_and_unread() {
 
     assert_eq!(
         highest_status([
-            Some(ThreadStatus::Error),
+            Some(ThreadStatus::Working),
             Some(ThreadStatus::PendingApproval)
         ]),
-        Some(ThreadStatus::Error)
+        Some(ThreadStatus::PendingApproval)
     );
     assert_eq!(
         highest_status([
@@ -498,8 +499,8 @@ fn status_priority_and_unread() {
         Some(ThreadStatus::Working)
     );
     assert_eq!(
-        with_optimistic_work(Some(ThreadStatus::Error), true),
-        Some(ThreadStatus::Error)
+        with_optimistic_work(Some(ThreadStatus::AwaitingInput), true),
+        Some(ThreadStatus::AwaitingInput)
     );
 }
 
