@@ -128,7 +128,8 @@ pub fn scenes() -> Vec<Scene> {
                     },
                 )
             },
-        ),
+        )
+        .settle(),
         Scene::new("workspace-toasts-dark", ThemeMode::Dark, |window, cx| {
             workspace_with(
                 &recorded_fixture(),
@@ -150,7 +151,8 @@ pub fn scenes() -> Vec<Scene> {
                     );
                 },
             )
-        }),
+        })
+        .settle(),
         Scene::new("workspace-toasts-light", ThemeMode::Light, |window, cx| {
             workspace_with(
                 &recorded_fixture(),
@@ -166,7 +168,8 @@ pub fn scenes() -> Vec<Scene> {
                     );
                 },
             )
-        }),
+        })
+        .settle(),
         Scene::new("workspace-empty-dark", ThemeMode::Dark, |window, cx| {
             workspace(EMPTY, window, cx, |_, _| {})
         }),
