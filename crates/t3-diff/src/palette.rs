@@ -123,8 +123,19 @@ pub struct DiffPalette {
     pub deletion_emphasis: Rgba,
     /// Diagonal stripes of an empty split side (`--diffs-bg-buffer`).
     pub buffer_stripe: Rgba,
-    /// Gutter cell next to an empty split side (`--diffs-bg-context-gutter`).
+    /// Gutter cell next to an empty split side and beside comment cards (host
+    /// `--diffs-bg-context-gutter`).
     pub buffer_gutter: Rgba,
+    /// Comment card rows and the horizontal scrollbar thumb (host `--diffs-bg-context`;
+    /// T3's `--diffs-bg-context-override` sits below the host and never applies).
+    pub annotation: Rgba,
+    /// Selection tint (`--diffs-selection-base`, the theme's modified color) and the number
+    /// text of selected lines (`--diffs-selection-number-fg`).
+    pub selection: Rgba,
+    pub selection_number_text: Rgba,
+    /// The vertical scrollbar thumb (`index.css` `::-webkit-scrollbar-thumb`) and its hover.
+    pub scrollbar_thumb: Rgba,
+    pub scrollbar_thumb_hover: Rgba,
     /// Centered placeholder text (`muted-foreground/70`).
     pub placeholder: Rgba,
     /// Raw-patch fallback text (`muted-foreground/90`) and reason (`muted-foreground/75`).
@@ -199,6 +210,11 @@ impl DiffPalette {
             deletion_emphasis: deletion.alpha(weight(0.15, 0.20)),
             buffer_stripe: host_bg.mix_lab(0.92, mixer),
             buffer_gutter: host_context.mix_lab(weight(0.90, 0.45), host_bg),
+            annotation: host_context,
+            selection: modified,
+            selection_number_text: modified.mix_lab(weight(0.65, 0.75), mixer),
+            scrollbar_thumb: pick(Rgba::hex(0x00000026), Rgba::hex(0xFFFFFF1A)),
+            scrollbar_thumb_hover: pick(Rgba::hex(0x00000040), Rgba::hex(0xFFFFFF2E)),
             placeholder: tokens.muted_foreground.alpha(0.70),
             raw_text: tokens.muted_foreground.alpha(0.90),
             raw_reason: tokens.muted_foreground.alpha(0.75),
@@ -210,6 +226,17 @@ impl DiffPalette {
     /// Colors of the spec fallback tokens.
     pub fn from_spec(appearance: Appearance) -> Self {
         Self::new(&AppTokens::from_spec(appearance), appearance)
+    }
+
+    /// A selected code cell (or comment row) over `bg`: `color-mix(in lab, bg 82% / 75%,
+    /// selection)`.
+    pub fn selected_code(&self, bg: Rgba) -> Rgba {
+        bg.mix_lab(self.appearance.pick(0.82, 0.75), self.selection)
+    }
+
+    /// A selected number cell (or comment-row gutter) over `bg`: 75% / 60% of `bg`.
+    pub fn selected_number(&self, bg: Rgba) -> Rgba {
+        bg.mix_lab(self.appearance.pick(0.75, 0.60), self.selection)
     }
 
     /// Colors of a line kind.
@@ -315,6 +342,24 @@ mod tests {
         assert_close(palette.surface, 0xffffffff);
         assert_close(palette.deleted.code, 0xfffdfdff);
         assert_close(palette.text, 0x0a0a0aff);
+    }
+
+    #[test]
+    fn dark_selection_and_comment_rows_match_chromium() {
+        // Measured on the reference with lines 13..16 of ChatView.tsx selected and a draft
+        // comment open under them.
+        let palette = DiffPalette::from_spec(Appearance::Dark);
+        assert_close(palette.annotation, 0x1c1c1cff);
+        assert_close(palette.buffer_gutter, 0x131313ff);
+        assert_close(palette.selection_number_text, 0x72b6ffff);
+        assert_close(palette.selected_number(palette.context.number), 0x2c4b6dff);
+        assert_close(palette.selected_number(palette.deleted.number), 0x304b6dff);
+        assert_close(palette.selected_number(palette.added.number), 0x2a4d6dff);
+        assert_close(palette.selected_number(palette.buffer_gutter), 0x274667ff);
+        assert_close(palette.selected_code(palette.context.code), 0x28384cff);
+        assert_close(palette.selected_code(palette.deleted.code), 0x2b384cff);
+        assert_close(palette.selected_code(palette.added.code), 0x26394dff);
+        assert_close(palette.selected_code(palette.annotation), 0x29394dff);
     }
 
     #[test]
