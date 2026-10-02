@@ -7,6 +7,10 @@
 //! 2. A peer that stops reading fills the TCP send buffer; an unbounded write then blocks the
 //!    socket task forever, freezing keepalive, interrupts, and close. Every write and the close
 //!    handshake need a deadline that ends the session.
+//! 3. Acking a chunk on receipt (before the consumer pulls it) tells the server to keep
+//!    sending, so a slow or stalled consumer buffers without bound. The Ack must wait until the
+//!    consumer takes the chunk (`next` or `try_next`), so at most one chunk per stream is
+//!    queued and the server's own backpressure applies.
 
 mod support;
 
@@ -95,4 +99,60 @@ async fn a_peer_that_stops_reading_cannot_freeze_the_connection() {
             Err(RpcError::Disconnected(_))
         ));
     }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn chunks_are_acked_only_when_the_consumer_pulls_them() {
+    let server = FakeServer::bind().await;
+    let (conn, mut peer) = connect(&server).await;
+    let mut stream = conn.subscribe::<TestStream>(&Empty {});
+    let id = peer.expect_request("test.stream").await;
+
+    peer.send(json!({"_tag": "Chunk", "requestId": id, "values": [1, 2]}))
+        .await;
+    assert!(
+        peer.recv_within(Duration::from_millis(500)).await.is_err(),
+        "acked a chunk the consumer has not pulled"
+    );
+
+    // Pulling the first item takes the whole chunk and acks it once.
+    assert_eq!(stream.next().await.unwrap().unwrap(), json!(1));
+    let ack = peer
+        .recv_within(Duration::from_secs(2))
+        .await
+        .expect("no ack after the consumer pulled the chunk")
+        .unwrap();
+    assert_eq!(ack, json!({"_tag": "Ack", "requestId": id}));
+    assert_eq!(stream.next().await.unwrap().unwrap(), json!(2));
+    assert!(peer.recv_within(Duration::from_millis(300)).await.is_err());
+
+    // `try_next` acks too.
+    peer.send(json!({"_tag": "Chunk", "requestId": id, "values": [3]}))
+        .await;
+    let item = tokio::time::timeout(Duration::from_secs(2), async {
+        loop {
+            if let Some(item) = stream.try_next() {
+                return item;
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .unwrap();
+    assert_eq!(item.unwrap().unwrap(), json!(3));
+    let ack = peer
+        .recv_within(Duration::from_secs(2))
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(ack["_tag"], "Ack");
+
+    // Dropping the subscription interrupts it on the server.
+    drop(stream);
+    let interrupt = peer
+        .recv_within(Duration::from_secs(2))
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(interrupt, json!({"_tag": "Interrupt", "requestId": id}));
 }

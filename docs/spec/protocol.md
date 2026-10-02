@@ -940,7 +940,7 @@ Keep `t3_state` free of IO so the reducers can be driven by recorded frame logs 
 
 - One task owns the WebSocket. It holds `HashMap<String, Pending>` where `Pending` is either `Unary(oneshot::Sender<Exit>)` or `Stream(mpsc::Sender<StreamMsg>)`.
 - Outgoing: serialize one message per text frame. Allocate ids from an `AtomicU64`, send as strings.
-- Incoming `Chunk`: push each value into the stream's channel, then send `Ack` with the identical id string. With a bounded channel, the `send().await` before the Ack is your backpressure; keep the bound modest (16 to 64) and never block the socket task on UI work.
+- Incoming `Chunk`: hand the values to the stream's consumer without blocking the socket task, and send `Ack` (identical id string) when the consumer takes them. The server sends nothing more until then, so at most one chunk per stream is queued client-side; a stalled consumer makes the server buffer, and eventually fail the stream with "resume from the last received sequence" (1.5), instead of this process growing.
 - Incoming `Exit`: remove the entry; complete the oneshot or close the stream channel with the exit.
 - Incoming `Defect`: fail every pending entry (1.7), then close the socket so the supervisor reconnects. Streams that survived on the server would otherwise stay allocated and un-acked (their entries are gone, so nobody can Interrupt them) while followers resubscribe on top.
 - Incoming `Pong`: clear the ping flag.

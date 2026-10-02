@@ -1,11 +1,15 @@
 //! Effect RPC client over one WebSocket.
 //!
 //! [`RpcConnection::connect`] opens the socket and starts a task on the networking runtime that
-//! owns it. That task routes server frames to callers by request id, acks every stream chunk
-//! (the server sends nothing more on a stream until it gets the ack), and pings every 5 seconds;
+//! owns it. That task routes server frames to callers by request id and pings every 5 seconds;
 //! three consecutive missed pongs close the connection, matching upstream's patched
 //! `makePinger`. A server `Defect` fails every in-flight request and closes the connection
 //! (protocol.md 1.7), so the supervisor reconnects and subscriptions start clean.
+//!
+//! Backpressure: the server sends one chunk per stream and waits for its Ack. A chunk is acked
+//! when the [`Subscription`] consumer takes it, not when it arrives, so a slow consumer holds
+//! at most one chunk per stream and the server buffers (or fails the stream with "resume from
+//! the last received sequence") instead of this process. Every write has a deadline.
 //!
 //! ```ignore
 //! let conn = RpcConnection::connect(request).await?;
@@ -208,6 +212,10 @@ enum Command {
         pending: Pending,
     },
     Interrupt {
+        id: u64,
+    },
+    /// The consumer took a chunk of stream `id`; ack it so the server sends the next one.
+    Ack {
         id: u64,
     },
     Close,
@@ -439,6 +447,8 @@ impl<M: Stream> Subscription<M> {
         match event {
             Some(StreamEvent::Values(values)) => {
                 self.buffered.extend(values);
+                // Taking the chunk is the consumer's signal for the next one.
+                let _ = self.shared.commands.send(Command::Ack { id: self.id });
                 None
             }
             Some(StreamEvent::End(outcome)) => {
@@ -488,6 +498,14 @@ async fn run_socket(
                     pending.insert(id, entry);
                     let frame = ClientFrame::Request { id: id.to_string(), tag: tag.to_owned(), payload, headers: vec![] };
                     if let Err(error) = send(&mut socket, &frame).await { break error; }
+                }
+                // Only ack streams still in flight: never after their Exit (protocol.md 1.5).
+                Some(Command::Ack { id }) => {
+                    if matches!(pending.get(&id), Some(Pending::Stream(_)))
+                        && let Err(error) = send(&mut socket, &ClientFrame::Ack { request_id: id.to_string() }).await
+                    {
+                        break error;
+                    }
                 }
                 Some(Command::Interrupt { id }) => {
                     if pending.remove(&id).is_some()
@@ -593,14 +611,14 @@ async fn handle_frame(
                 // Unknown or finished id: do not ack (protocol.md 1.5).
                 _ => return Ok(()),
             };
-            // Ack so the server sends the next chunk; interrupt if nobody is listening anymore.
-            let reply = if delivered {
-                ClientFrame::Ack { request_id }
+            // The Ack is sent when the consumer takes the chunk (`Command::Ack`). If nobody is
+            // listening anymore, cancel the stream instead.
+            if delivered {
+                Ok(())
             } else {
                 pending.remove(&id);
-                ClientFrame::Interrupt { request_id }
-            };
-            send(socket, &reply).await
+                send(socket, &ClientFrame::Interrupt { request_id }).await
+            }
         }
         ServerFrame::Exit { request_id, exit } => {
             let Ok(id) = request_id.parse::<u64>() else {
