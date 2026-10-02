@@ -430,7 +430,7 @@ All placeholder text is `flex-1 centered px-20 text-center text-xs muted-foregro
 
 **Options passed** (`DiffPanel.tsx:843-852`):
 - `diffStyle` is `unified` or `split`.
-- `lineDiffType: "none"`: **no word-level highlighting in the panel.**
+- `lineDiffType: "none"` is passed, **but changed words are still emphasized**: with the worker pool active, Pierre takes render options from the pool, whose default is `word-alt` (verified by rendering the real components in Chromium). Pairs are the i-th deletion and i-th addition of a change run; spans come from jsdiff 8 `diffWordsWithSpace` with Pierre's `word-alt` joining (`utils/parseDiffDecorations.js`), skipped for lines over 1000 chars. Emphasis bg is the host-level `--diffs-bg-{addition,deletion}-emphasis` (base color at 20% dark / 15% light), radius 3px.
 - `overflow` is `wrap` or `scroll`.
 - `theme` is `pierre-dark` or `pierre-light`; `themeType` follows the app.
 - `stickyHeaders: true`.
@@ -439,7 +439,9 @@ All placeholder text is `flex-1 centered px-20 text-center text-xs muted-foregro
 
 **Geometry.**
 - Per-file cards are full-width, with 8px between cards and 8px above the first and below the last.
-- Card: 1px `border`, radius 8px, `overflow: clip`, bg `mix(card 92%, background)` (`index.css:1058-1064`).
+- Cards are **flat**: no border, no radius. `index.css:1058-1064` targets `.diff-render-surface > diffs-container`, but Pierre 1.3's CodeView nests the containers two divs deep, so the rule never matches. The 8px gaps show the viewport color.
+- The scroll container shows the app's 6px styled scrollbar (`index.css` `::-webkit-scrollbar`), so cards are `W - 6` wide while the content overflows.
+- No gap between a header and the file's first row.
 - Base font: mono (the `--font-mono` stack: `"SF Mono", "SFMono-Regular", "JetBrains Mono", Consolas, "Liberation Mono", Menlo, monospace`) at **13px with a 20px line height**. Tab size 2.
 - Rows are 20px in scroll mode. In wrap mode they use `pre-wrap` and `word-break: break-word`.
 - **Scroll mode:** each file's code area scrolls horizontally on its own (each side separately in split mode). The gutter is `position: sticky; left: 0` at z 3, so line numbers stay put. A `scrollbar-gutter: stable` horizontal scrollbar sits under each file. Annotation cards are sticky-left too, sized to the visible content width.
@@ -457,7 +459,7 @@ All placeholder text is `flex-1 centered px-20 text-center text-xs muted-foregro
 **Gutter.**
 - **Unified mode has ONE line-number column.** It shows the addition line number when present, else the deletion line number (Pierre `renderers/DiffHunksRenderer.js:521`).
 - Split mode has a number column on each side. Each half has a 1px `--diffs-bg` border on the inner edge, so the divider is 2px total.
-- Number cell: right-aligned, padding left 2ch and right 1ch, min content width 3ch, color `fg-number` = `lab-mix(fg 65%, bg)`.
+- Number cell: right-aligned, padding left 2ch and right 1ch, min content width = digits of the file's largest line number (`--diffs-min-number-column-width-default`), color `fg-number` = `lab-mix(fg 65%, #0a0a0a / #fff)` (`#9d9d9d` dark, see the note on host-level variables below).
 - The column's right border is 2px of `--diffs-bg`.
 - Bars indicator: a 4px-wide strip at the left edge of the number cell.
   - Addition: solid addition-base.
@@ -485,12 +487,13 @@ Line backgrounds are a lab-mix of the line's base bg (`--diffs-bg`, or the decor
 | context | `--diffs-bg` (no change) | n/a | n/a | lab-mix with `mix(background 94%, foreground)` at 91% / 97% |
 | addition | `mix(background 92%, success)`; number cell target `mix(background 88%, success)` | 80% / 88% | 85% / 91% | 70% / 80% |
 | deletion | `mix(background 92%, destructive)`; number cell target `mix(background 88%, destructive)` | 80% / 88% | 85% / 91% | 75% / 80% |
-| separator | `mix(background 95%, foreground)` | n/a | n/a | n/a |
+| separator | host-level: `lab-mix(#0a0a0a 85%, #fff)` dark (`#2b2b2b`), `lab-mix(#fff 96%, #000)` light; T3's override does not apply | n/a | n/a | n/a |
 | annotation row | `--diffs-bg-context` = `mix(background 97%, foreground)` | n/a | n/a | n/a |
 
 - Number text on addition and deletion rows uses addition-base or deletion-base respectively.
 - Selected lines mix the row bg with modified-base: code cells 82% light / 75% dark; number cells 75% / 60%. Selected number fg = `lab-mix(modified-base 65%/75%, black/white)`.
 - Source: `@pierre/diffs/dist/style.js`, one minified CSS string (base layer). Split it on `}` to read the rules quoted here.
+- **Host-level variables ignore T3's overrides.** Pierre declares `--diffs-bg-separator`, `--diffs-fg-number`, `--diffs-bg-buffer`, `--diffs-bg-context(-gutter)`, `--diffs-bg-deletion` and the emphasis colors on the shadow host, where `--diffs-bg` is still the Pierre theme background (`#0a0a0a` / `#ffffff`) and T3's `*-override` variables (declared on `[data-diff]`, below the host) are not visible. Descendants inherit those computed values. Rules evaluated on line elements (line and number backgrounds, hover) do see T3's overrides. Measured: separator `#2b2b2b`, numbers `#9d9d9d`, addition number cell `#191d1c`, addition code `#191c1b`.
 
 **Syntax highlighting.**
 - Shiki, using the TextMate grammars, with themes `pierre-dark` and `pierre-light` from `@pierre/theme` 1.0.3 (MIT; `node_modules/.pnpm/@pierre+theme@1.0.3/.../themes/pierre-dark.json`, 248 tokenColor rules). It runs in a worker pool: size = clamp(floor(cores/2), 2, 6), AST LRU of 240, token transformer enabled.
@@ -548,6 +551,8 @@ Sources: `AnnotatableCodeView.tsx`, `reviewCommentContext.ts`, `LocalCommentAnno
 The fence grows to (longest backtick run + 1), with a minimum of 3. Attributes are escaped with `&amp; &quot; &lt; &gt;`. See `reviewCommentContext.ts:178-215`. This serialization is shared with the composer spec.
 
 ### 2.8 Changed-files card in the timeline (`components/chat/ChangedFilesTree.tsx`)
+
+**The live card is `AssistantChangedFilesSectionInner` in `MessagesTimeline.tsx:1710-1780`, not `ChangedFilesCard`** (which nothing renders). Its card is `mt-8 rounded-lg border border/80 bg-card/45 p-10`; the header row (`mb-6`, 24px) has a `text-[10px] uppercase tracking-[0.12em] muted-foreground/65` label `Changed files ({n})`, a `•`, and an aligned `DiffStatLabel` (uppercased, so `+1.5K`), then the two outline xs buttons (gap 6px). The tree gets `allDirectoriesExpanded` = the per-turn override from `uiStateStore` (undefined by default, so per-directory defaults apply), and tree rows measure 24.5px (11px names on the inherited 1.5 line height). The `ChangedFilesCard` description below is kept for reference.
 
 Rendered under each assistant turn that changed files. It lives in the chat column, but it is the main way into the diff panel.
 
