@@ -16,6 +16,9 @@
 //! 9. Commands serialize optional keys as `null` (the server rejects `null` for optionalKey),
 //!    use the wrong `type` string, or the wrong field casing.
 //! 10. Typed errors lose the fields the UI needs (`requiredScope`, `bootstrapThreadDisposition`).
+//! 11. A provider that omits `supportsConversationRollback`, `supportsTextGeneration`, or
+//!     `showInteractionModeToggle` decodes as unsupported. The web client treats absent as
+//!     supported (`!== false`), so "Edit from here" and the mode toggle would vanish.
 
 use serde_json::{Value, json};
 use t3_protocol::{
@@ -347,4 +350,33 @@ fn commands_omit_absent_optionals_and_use_wire_names() {
             "runtimeMode": "full-access", "interactionMode": "default", "createdAt": "x",
         })
     );
+}
+
+#[test]
+fn optional_provider_capabilities_default_to_supported() {
+    let base = json!({
+        "instanceId": "codex", "driver": "codex", "enabled": true, "installed": true,
+        "version": "1", "status": "ready", "auth": {"status": "authenticated"},
+        "checkedAt": "x", "models": [], "slashCommands": [], "skills": [],
+    });
+    let absent: t3_protocol::server::ServerProvider = serde_json::from_value(base.clone()).unwrap();
+    assert!(absent.supports_conversation_rollback);
+    assert!(absent.supports_text_generation);
+    assert!(absent.show_interaction_mode_toggle);
+    // These two are opt-in (`=== true` / `!== true` in the web client).
+    assert!(!absent.reports_context_window);
+    assert!(!absent.requires_new_thread_for_model_change);
+
+    let mut explicit = base;
+    for key in [
+        "supportsConversationRollback",
+        "supportsTextGeneration",
+        "showInteractionModeToggle",
+    ] {
+        explicit[key] = json!(false);
+    }
+    let explicit: t3_protocol::server::ServerProvider = serde_json::from_value(explicit).unwrap();
+    assert!(!explicit.supports_conversation_rollback);
+    assert!(!explicit.supports_text_generation);
+    assert!(!explicit.show_interaction_mode_toggle);
 }

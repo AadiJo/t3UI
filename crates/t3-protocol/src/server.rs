@@ -232,15 +232,18 @@ pub struct ServerProvider {
     pub accent_color: Option<String>,
     pub badge_label: Option<String>,
     pub continuation: Option<ProviderContinuation>,
-    #[serde(default)]
+    /// Absent means true (the web client checks `!== false`).
+    #[serde(default = "crate::schema::default_true")]
     pub show_interaction_mode_toggle: bool,
     #[serde(default)]
     pub reports_context_window: bool,
     #[serde(default)]
     pub requires_new_thread_for_model_change: bool,
-    #[serde(default)]
+    /// Gates "Edit from here". Absent means true.
+    #[serde(default = "crate::schema::default_true")]
     pub supports_conversation_rollback: bool,
-    #[serde(default)]
+    /// Absent means true.
+    #[serde(default = "crate::schema::default_true")]
     pub supports_text_generation: bool,
     pub setup: Option<ProviderSetup>,
     #[serde(default)]

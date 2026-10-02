@@ -144,6 +144,12 @@ impl<'de> serde::de::Visitor<'de> for StrVisitor {
     }
 }
 
+/// `#[serde(default = "crate::schema::default_true")]` for `optional(Boolean)` fields the
+/// client reads as `!== false`.
+pub fn default_true() -> bool {
+    true
+}
+
 /// `deserialize_with` for `ForwardCompatibleArray(X)` fields: elements that fail to decode are
 /// dropped instead of failing the whole document (`packages/contracts/src/baseSchemas.ts:110`).
 pub fn forward_compatible<'de, D, T>(deserializer: D) -> Result<Vec<T>, D::Error>
