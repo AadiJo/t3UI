@@ -4,3 +4,6 @@
 .DS_Store
 /e2e/.state
 /e2e/node_modules
+
+# Reference screenshots live in the "reference-assets" GitHub Release (script/fetch-references.sh)
+/docs/reference/*.png

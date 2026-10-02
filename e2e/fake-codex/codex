@@ -1,0 +1,566 @@
+#!/usr/bin/env node
+// Fake `codex` CLI for T3 Code end-to-end runs. Node built-ins only.
+//
+// T3 spawns this file in place of the real OpenAI Codex CLI (point the server
+// setting `providers.codex.binaryPath` at it). It speaks the Codex app-server
+// JSON-RPC protocol on stdio and replays scripted turns from ./scenarios.cjs,
+// selected by the user's prompt text. Nothing here talks to the network.
+//
+// Invocations the server makes (see e2e/README.md for sources):
+//   codex app-server [-c k=v ...]   long-lived JSON-RPC session or status probe
+//   codex exec ... --output-schema F --output-last-message O -   title/commit text generation
+//   codex --version                 upstream boot probe, must print "codex-cli X.Y.Z"
+//   codex app-server --help         upstream boot probe, must exit 0
+//
+// Env:
+//   FAKE_CODEX_LOG=<file>     append every JSON-RPC message (in/out) as JSONL
+//   FAKE_CODEX_SPEED=<n>      delay multiplier for scripted pacing (default 1, 0 = no delays)
+//
+// Protocol rules that matter (violations are silently dropped by T3):
+//   - stdout carries only newline-delimited JSON; no "jsonrpc" field needed
+//   - notifications have no "id" key at all
+//   - item/started needs startedAtMs, item/completed needs completedAtMs
+//   - the turn/start response precedes turn/started, same turn id everywhere
+
+"use strict";
+
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+const readline = require("node:readline");
+const crypto = require("node:crypto");
+const { findScenario, generateText } = require("./scenarios.cjs");
+
+const CLI_VERSION = "0.159.0";
+const LOG_FILE = process.env.FAKE_CODEX_LOG;
+const SPEED = process.env.FAKE_CODEX_SPEED === undefined ? 1 : Number(process.env.FAKE_CODEX_SPEED);
+const FIRST_TOKEN_MS = 600; // scaled by SPEED like every other delay
+
+// Models advertised through model/list. The fork defaults to gpt-5.4 (chat)
+// and gpt-5.4-mini (text generation); upstream to gpt-6-astra and gpt-6-luna.
+const EFFORTS = [
+  { reasoningEffort: "low", description: "Fastest responses with light reasoning" },
+  { reasoningEffort: "medium", description: "Balanced speed and depth" },
+  { reasoningEffort: "high", description: "Deeper reasoning for complex tasks" },
+  { reasoningEffort: "xhigh", description: "Maximum reasoning depth" },
+];
+const FAST_TIER = [{ id: "fast", name: "Fast", description: "Priority processing at higher cost" }];
+const MODELS = [
+  model("gpt-5.4", "Latest frontier agentic coding model.", { isDefault: true, tiers: FAST_TIER }),
+  model("gpt-5.4-mini", "Smaller, faster model for quick edits.", { effort: "low" }),
+  model("gpt-6-astra", "Next-generation coding model.", { tiers: FAST_TIER }),
+  model("gpt-6-luna", "Lightweight next-generation model.", { effort: "low" }),
+];
+
+function model(slug, description, { isDefault = false, effort = "medium", tiers } = {}) {
+  return {
+    id: slug,
+    model: slug,
+    displayName: slug,
+    description,
+    hidden: false,
+    isDefault,
+    defaultReasoningEffort: effort,
+    supportedReasoningEfforts: EFFORTS,
+    inputModalities: ["text", "image"],
+    ...(tiers ? { serviceTiers: tiers, defaultServiceTier: null } : {}),
+  };
+}
+
+function log(direction, message) {
+  if (!LOG_FILE) return;
+  try {
+    fs.appendFileSync(LOG_FILE, JSON.stringify({ t: Date.now(), pid: process.pid, direction, message }) + "\n");
+  } catch {
+    // Logging must never break the protocol.
+  }
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms * SPEED));
+
+// ---------------------------------------------------------------------------
+// codex exec: one-shot structured text generation (thread titles, commits...)
+// ---------------------------------------------------------------------------
+
+function runExec(args) {
+  const valueOf = (flag) => {
+    const index = args.indexOf(flag);
+    return index >= 0 ? args[index + 1] : undefined;
+  };
+  const schemaPath = valueOf("--output-schema");
+  const outputPath = valueOf("--output-last-message");
+  const prompt = fs.readFileSync(0, "utf8");
+  const schema = schemaPath ? JSON.parse(fs.readFileSync(schemaPath, "utf8")) : { properties: {} };
+  const result = generateText(prompt, Object.keys(schema.properties ?? {}));
+  log("exec", { args, result });
+  if (outputPath) fs.writeFileSync(outputPath, JSON.stringify(result));
+  process.stdout.write(JSON.stringify(result) + "\n");
+}
+
+// ---------------------------------------------------------------------------
+// codex app-server: JSON-RPC over stdio
+// ---------------------------------------------------------------------------
+
+function runAppServer() {
+  const session = {
+    threadId: null,
+    cwd: process.cwd(),
+    model: "gpt-5.4",
+    createdAt: Math.floor(Date.now() / 1000),
+    turns: [], // [{ id, items: [], status }] for thread/read and thread/turns/list
+    activeTurn: null, // { id, aborted, abort() }
+  };
+  const outbound = new Map(); // our request id -> resolve(result)
+  let nextOutboundId = 1;
+
+  const send = (message) => {
+    log("out", message);
+    process.stdout.write(JSON.stringify(message) + "\n");
+  };
+  const respond = (id, result) => send({ id, result });
+  const respondError = (id, code, message) => send({ id, error: { code, message } });
+  const notify = (method, params) => send({ method, params });
+  const requestFromT3 = (method, params) => {
+    const id = `fake-req-${nextOutboundId++}`;
+    send({ id, method, params });
+    return new Promise((resolve) => outbound.set(id, resolve));
+  };
+
+  const threadObject = () => ({
+    id: session.threadId,
+    sessionId: session.threadId,
+    preview: "",
+    ephemeral: false,
+    modelProvider: "openai",
+    createdAt: session.createdAt,
+    updatedAt: Math.floor(Date.now() / 1000),
+    status: { type: "idle" },
+    path: null,
+    cwd: session.cwd,
+    cliVersion: CLI_VERSION,
+    source: "appServer",
+    name: null,
+    turns: session.turns,
+    projectId: null, // required by upstream, ignored by the fork
+  });
+
+  const sandboxPolicy = (mode) =>
+    mode === "read-only"
+      ? { type: "readOnly" }
+      : mode === "workspace-write"
+        ? { type: "workspaceWrite" }
+        : { type: "dangerFullAccess" };
+
+  const threadResponse = (params) => ({
+    thread: threadObject(),
+    model: session.model,
+    modelProvider: "openai",
+    serviceTier: null,
+    cwd: session.cwd,
+    approvalPolicy: params.approvalPolicy ?? "never",
+    approvalsReviewer: params.approvalsReviewer ?? "user",
+    sandbox: sandboxPolicy(params.sandbox),
+    reasoningEffort: "medium",
+  });
+
+  const handlers = {
+    initialize: () => ({
+      userAgent: `codex_cli_rs/${CLI_VERSION} (${os.type()} ${os.release()}; ${os.arch()}) fake-codex`,
+      codexHome: process.env.CODEX_HOME || path.join(os.homedir(), ".codex"),
+      platformFamily: process.platform === "win32" ? "windows" : "unix",
+      platformOs: process.platform === "darwin" ? "macos" : process.platform,
+    }),
+    // planType must be one of the fork's enum values; "pro" is valid in both versions.
+    "account/read": () => ({
+      account: { type: "chatgpt", email: "fake-codex@t3ui.invalid", planType: "pro" },
+      requiresOpenaiAuth: true,
+    }),
+    "account/rateLimits/read": () => {
+      const now = Math.floor(Date.now() / 1000);
+      return {
+        rateLimits: {
+          limitId: "codex",
+          planType: "pro",
+          primary: { usedPercent: 12, windowDurationMins: 300, resetsAt: now + 3 * 3600 },
+          secondary: { usedPercent: 31, windowDurationMins: 10080, resetsAt: now + 4 * 86400 },
+        },
+        rateLimitsByLimitId: null,
+      };
+    },
+    "skills/list": (params) => ({
+      data: (params?.cwds ?? [session.cwd]).map((cwd) => ({
+        cwd,
+        errors: [],
+        skills: [
+          {
+            name: "changelog",
+            description: "Draft a changelog entry from recent commits",
+            enabled: true,
+            path: path.join(process.env.CODEX_HOME || path.join(os.homedir(), ".codex"), "skills/changelog/SKILL.md"),
+            scope: "user",
+          },
+        ],
+      })),
+    }),
+    "model/list": () => ({ data: MODELS, nextCursor: null }),
+    "thread/start": (params) => {
+      session.threadId = crypto.randomUUID();
+      session.cwd = params.cwd ?? session.cwd;
+      session.model = params.model ?? session.model;
+      return threadResponse(params);
+    },
+    // Each session is a fresh process, so resuming just adopts the requested id.
+    "thread/resume": (params) => {
+      session.threadId = params.threadId;
+      session.cwd = params.cwd ?? session.cwd;
+      session.model = params.model ?? session.model;
+      return threadResponse(params);
+    },
+    "thread/read": () => ({ thread: threadObject() }),
+    "thread/turns/list": () => ({ data: session.turns, nextCursor: null }),
+    "thread/rollback": (params) => {
+      session.turns = session.turns.slice(0, Math.max(0, session.turns.length - (params.numTurns ?? 0)));
+      return { thread: threadObject() };
+    },
+    "thread/revert": () => ({}),
+    "thread/compact/start": () => ({}),
+    "thread/inject_items": () => ({}),
+    "config/mcpServer/reload": () => ({}),
+    "account/rateLimitResetCredit/consume": () => ({}),
+    "feedback/upload": () => ({ threadId: session.threadId }),
+    "turn/interrupt": () => {
+      session.activeTurn?.abort();
+      return {};
+    },
+  };
+
+  function startTurn(id, params) {
+    const turnId = crypto.randomUUID();
+    const prompt = (params.input ?? [])
+      .filter((part) => part.type === "text")
+      .map((part) => part.text)
+      .join("\n");
+    const mode = params.collaborationMode?.mode === "plan" ? "plan" : "default";
+    const scenario = findScenario(prompt, { mode });
+    const turn = { id: turnId, aborted: false, wake: null };
+    turn.abort = () => {
+      turn.aborted = true;
+      turn.wake?.();
+    };
+    session.activeTurn = turn;
+    if (params.model) session.model = params.model;
+
+    respond(id, { turn: { id: turnId, items: [], status: "inProgress", error: null } });
+    notify("turn/started", { threadId: session.threadId, turn: { id: turnId, items: [], status: "inProgress" } });
+    notify("thread/status/changed", { threadId: session.threadId, status: { type: "active", activeFlags: [] } });
+    log("scenario", { scenario: scenario.id, mode, prompt });
+
+    const ctx = makeTurnContext({ session, turn, params, notify, requestFromT3 });
+    // Model "time to first token". T3 captures the pre-turn git baseline
+    // asynchronously after turn/started; editing files before that lands makes
+    // the turn's diff unavailable, so never start a scenario instantly.
+    ctx
+      .pause(FIRST_TOKEN_MS)
+      .then(() => scenario.run(ctx))
+      .then(() => ({ status: "completed", error: null }))
+      .catch((error) => {
+        if (error === INTERRUPTED) return { status: "interrupted", error: null };
+        log("error", { message: String(error?.stack ?? error) });
+        return { status: "failed", error: { message: String(error?.message ?? error) } };
+      })
+      .then(({ status, error }) => {
+        session.turns.push({ id: turnId, items: [], status });
+        if (session.activeTurn === turn) session.activeTurn = null;
+        notify("turn/completed", { threadId: session.threadId, turn: { id: turnId, items: [], status, error } });
+        notify("thread/status/changed", { threadId: session.threadId, status: { type: "idle" } });
+      });
+  }
+
+  const rl = readline.createInterface({ input: process.stdin, crlfDelay: Infinity });
+  rl.on("line", (line) => {
+    if (!line.trim()) return;
+    let message;
+    try {
+      message = JSON.parse(line);
+    } catch {
+      return;
+    }
+    log("in", message);
+    const isRequest = typeof message.method === "string" && "id" in message;
+    if (isRequest) {
+      if (message.method === "turn/start") return startTurn(message.id, message.params ?? {});
+      const handler = handlers[message.method];
+      if (!handler) return respondError(message.id, -32601, `Method not found: ${message.method}`);
+      try {
+        respond(message.id, handler(message.params ?? {}));
+      } catch (error) {
+        respondError(message.id, -32603, String(error?.message ?? error));
+      }
+      return;
+    }
+    if (typeof message.method === "string") return; // notifications from T3 ("initialized")
+    if ("id" in message) {
+      const resolve = outbound.get(String(message.id));
+      if (resolve) {
+        outbound.delete(String(message.id));
+        resolve(message.error ? { error: message.error } : (message.result ?? {}));
+      }
+    }
+  });
+  rl.on("close", () => process.exit(0));
+  process.on("SIGTERM", () => process.exit(0));
+  process.on("SIGINT", () => process.exit(0));
+}
+
+// ---------------------------------------------------------------------------
+// Turn context: the small API scenarios use to emit realistic Codex events.
+// ---------------------------------------------------------------------------
+
+const INTERRUPTED = Symbol("interrupted");
+
+function makeTurnContext({ session, turn, params, notify, requestFromT3 }) {
+  let itemCounter = 0;
+  const nextItemId = (prefix) => `${prefix}_${turn.id.slice(0, 8)}_${++itemCounter}`;
+  const base = () => ({ threadId: session.threadId, turnId: turn.id });
+  const checkAborted = () => {
+    if (turn.aborted) throw INTERRUPTED;
+  };
+  const pause = async (ms) => {
+    checkAborted();
+    await sleep(ms);
+    checkAborted();
+  };
+  const itemStarted = (item) => notify("item/started", { ...base(), startedAtMs: Date.now(), item });
+  const itemCompleted = (item) => notify("item/completed", { ...base(), completedAtMs: Date.now(), item });
+  const chunks = (text, size) => text.match(new RegExp(`[\\s\\S]{1,${size}}`, "g")) ?? [];
+  // Real Codex reports commands wrapped in a login shell; the web UI unwraps it.
+  const shell = (command) => `/bin/bash -lc '${command.replace(/'/g, `'\\''`)}'`;
+  const approvalPolicy = params.approvalPolicy ?? "never";
+
+  const ctx = {
+    cwd: session.cwd,
+    mode: params.collaborationMode?.mode === "plan" ? "plan" : "default",
+    /** True when T3 runs this thread in approval-required mode ("untrusted"). */
+    requiresApproval: approvalPolicy === "untrusted",
+    pause,
+
+    /** Reasoning summary. Rendered by upstream only; the fork drops reasoning deltas. */
+    async reasoning(summary) {
+      const id = nextItemId("rs");
+      itemStarted({ type: "reasoning", id, summary: [], content: [] });
+      notify("item/reasoning/summaryPartAdded", { ...base(), itemId: id, summaryIndex: 0 });
+      for (const delta of chunks(summary, 48)) {
+        notify("item/reasoning/summaryTextDelta", { ...base(), itemId: id, summaryIndex: 0, delta });
+        await pause(8);
+      }
+      itemCompleted({ type: "reasoning", id, summary: [summary], content: [] });
+      await pause(40);
+    },
+
+    /** Todo list shown in the plan/todo panel. steps: [[text, "pending"|"inProgress"|"completed"]] */
+    todo(steps, explanation = null) {
+      notify("turn/plan/updated", {
+        ...base(),
+        explanation,
+        plan: steps.map(([step, status]) => ({ step, status })),
+      });
+    },
+
+    /** Streamed assistant message. phase "commentary" for progress notes, "final_answer" otherwise. */
+    async message(text, { phase = "final_answer" } = {}) {
+      const id = nextItemId("msg");
+      itemStarted({ type: "agentMessage", id, text: "", phase });
+      for (const delta of chunks(text, 64)) {
+        notify("item/agentMessage/delta", { ...base(), itemId: id, delta });
+        await pause(6);
+      }
+      itemCompleted({ type: "agentMessage", id, text, phase });
+      await pause(30);
+    },
+
+    /**
+     * Command execution with scripted output. `action` is a Codex commandAction
+     * ({type:"read"|"listFiles"|"search"|"unknown", ...}); `approval` asks T3
+     * first and returns the decision. `hang: true` never completes (until interrupt).
+     */
+    async command(command, { output = "", exitCode = 0, action, approval, reason, hang = false, durationMs = 180 } = {}) {
+      const id = nextItemId("call");
+      const item = {
+        type: "commandExecution",
+        id,
+        command: shell(command),
+        cwd: session.cwd,
+        commandActions: [action ?? { type: "unknown", command }],
+        status: "inProgress",
+        aggregatedOutput: null,
+        exitCode: null,
+        durationMs: null,
+        processId: null,
+        source: "agent",
+      };
+      itemStarted(item);
+      let decision = "accept";
+      if (approval) {
+        const answer = await requestFromT3("item/commandExecution/requestApproval", {
+          ...base(),
+          itemId: id,
+          startedAtMs: Date.now(),
+          command: item.command,
+          cwd: session.cwd,
+          reason: reason ?? null,
+          commandActions: item.commandActions,
+        });
+        decision = answer?.decision ?? "cancel";
+        if (decision === "decline" || decision === "cancel") {
+          itemCompleted({ ...item, status: "declined" });
+          if (decision === "cancel") throw INTERRUPTED;
+          return decision;
+        }
+      }
+      for (const delta of chunks(output, 120)) {
+        notify("item/commandExecution/outputDelta", { ...base(), itemId: id, delta });
+        await pause(15);
+      }
+      if (hang) await ctx.waitUntilInterrupted();
+      await pause(40);
+      itemCompleted({
+        ...item,
+        status: exitCode === 0 ? "completed" : "failed",
+        aggregatedOutput: output,
+        exitCode,
+        durationMs,
+      });
+      await pause(30);
+      return decision;
+    },
+
+    /**
+     * Apply file edits to the real workspace (T3 builds diffs from git
+     * checkpoints, so the files must actually change) and report a fileChange
+     * item. files: [{ path, content }] where content null deletes the file.
+     */
+    async applyPatch(files) {
+      const id = nextItemId("call");
+      const changes = files.map(({ path: relative, content }) => {
+        const absolute = path.join(session.cwd, relative);
+        const existed = fs.existsSync(absolute);
+        const before = existed ? fs.readFileSync(absolute, "utf8") : "";
+        const kind = content === null ? { type: "delete" } : existed ? { type: "update", move_path: null } : { type: "add" };
+        return { path: absolute, kind, diff: simpleDiff(relative, before, content ?? ""), content };
+      });
+      const wire = changes.map(({ content, ...change }) => change);
+      itemStarted({ type: "fileChange", id, status: "inProgress", changes: wire });
+      await pause(60);
+      for (const change of changes) {
+        if (change.content === null) fs.rmSync(change.path, { force: true });
+        else {
+          fs.mkdirSync(path.dirname(change.path), { recursive: true });
+          fs.writeFileSync(change.path, change.content);
+        }
+      }
+      notify("item/fileChange/outputDelta", {
+        ...base(),
+        itemId: id,
+        delta: `Success. Updated the following files:\n${files.map((f) => `M ${f.path}`).join("\n")}\n`,
+      });
+      itemCompleted({ type: "fileChange", id, status: "completed", changes: wire });
+      notify("turn/diff/updated", { ...base(), diff: wire.map((change) => change.diff).join("") });
+      await pause(40);
+    },
+
+    async webSearch(query) {
+      const id = nextItemId("ws");
+      itemStarted({ type: "webSearch", id, query: "", action: { type: "other" } });
+      await pause(120);
+      itemCompleted({ type: "webSearch", id, query, action: { type: "search", query, queries: null } });
+      await pause(30);
+    },
+
+    async mcpTool(server, tool, args, resultText) {
+      const id = nextItemId("call");
+      const item = { type: "mcpToolCall", id, server, tool, arguments: args, status: "inProgress", result: null, error: null, durationMs: null };
+      itemStarted(item);
+      notify("item/mcpToolCall/progress", { ...base(), itemId: id, message: `Calling ${server}.${tool}` });
+      await pause(120);
+      itemCompleted({
+        ...item,
+        status: "completed",
+        result: { content: [{ type: "text", text: resultText }], structuredContent: null },
+        durationMs: 214,
+      });
+      await pause(30);
+    },
+
+    /** Plan-mode proposed plan. T3 renders the plan item's markdown as a plan card. */
+    async proposedPlan(markdown) {
+      const id = nextItemId("plan");
+      itemStarted({ type: "plan", id, text: "" });
+      for (const delta of chunks(markdown, 80)) {
+        notify("item/plan/delta", { ...base(), itemId: id, delta });
+        await pause(6);
+      }
+      itemCompleted({ type: "plan", id, text: markdown });
+      await pause(30);
+    },
+
+    /** Ask the user a multiple-choice question; resolves with T3's answers map. */
+    async askUser(questions) {
+      const answer = await requestFromT3("item/tool/requestUserInput", {
+        ...base(),
+        itemId: nextItemId("call"),
+        isBlocking: true, // required upstream, ignored by the fork
+        questions: questions.map((question) => ({ isOther: true, isSecret: false, ...question })),
+      });
+      checkAborted();
+      return answer?.answers ?? {};
+    },
+
+    tokenUsage(total, contextWindow = 272000) {
+      const breakdown = {
+        totalTokens: total,
+        inputTokens: Math.round(total * 0.86),
+        cachedInputTokens: Math.round(total * 0.6),
+        outputTokens: Math.round(total * 0.14),
+        reasoningOutputTokens: Math.round(total * 0.05),
+      };
+      notify("thread/tokenUsage/updated", {
+        ...base(),
+        tokenUsage: { total: breakdown, last: breakdown, modelContextWindow: contextWindow },
+      });
+    },
+
+    /** Park the turn until T3 sends turn/interrupt (used for "still running" threads). */
+    waitUntilInterrupted() {
+      return new Promise((_, reject) => {
+        if (turn.aborted) return reject(INTERRUPTED);
+        turn.wake = () => reject(INTERRUPTED);
+      });
+    },
+  };
+  return ctx;
+}
+
+/** Minimal whole-file unified diff; only used for the (unrendered) protocol diff text. */
+function simpleDiff(relative, before, after) {
+  const a = before === "" ? [] : before.replace(/\n$/, "").split("\n");
+  const b = after === "" ? [] : after.replace(/\n$/, "").split("\n");
+  const header = `diff --git a/${relative} b/${relative}\n--- ${a.length ? `a/${relative}` : "/dev/null"}\n+++ ${b.length ? `b/${relative}` : "/dev/null"}\n`;
+  const hunk = `@@ -${a.length ? 1 : 0},${a.length} +${b.length ? 1 : 0},${b.length} @@\n`;
+  return header + hunk + a.map((line) => `-${line}\n`).join("") + b.map((line) => `+${line}\n`).join("");
+}
+
+// ---------------------------------------------------------------------------
+
+const args = process.argv.slice(2);
+if (args[0] === "--version" || args[0] === "-V") {
+  process.stdout.write(`codex-cli ${CLI_VERSION}\n`);
+} else if (args[0] === "app-server" && (args.includes("--help") || args.includes("-h"))) {
+  process.stdout.write("Run the Codex app server (fake)\n\nUsage: codex app-server [OPTIONS]\n");
+} else if (args[0] === "app-server") {
+  runAppServer();
+} else if (args[0] === "exec") {
+  runExec(args.slice(1));
+} else {
+  process.stderr.write(`fake codex: unsupported invocation: ${args.join(" ")}\n`);
+  process.exit(2);
+}
