@@ -51,6 +51,17 @@ pub enum Route {
     Draft(DraftId),
     /// `/settings/<page>`.
     Settings(SettingsPage),
+    /// `/pull-requests`: the pull request inbox (`pull_requests/`). The view keeps its own
+    /// filters; the web's search params never leave that page.
+    PullRequests,
+    /// `/usage`: token and cost usage (`usage/`).
+    Usage,
+    /// `/welcome`: first-run setup over the workspace (pages agent). `FirstRunGate` sends a
+    /// fresh install here.
+    Welcome,
+    /// `/projects/$projectKey`: legacy project links. The web redirects them to
+    /// `/settings/projects?project=<key>`; the pages agent decides how this view resolves.
+    Project(SharedString),
     /// `/pair`: connect to an environment.
     Pair,
 }
@@ -75,5 +86,15 @@ impl Route {
     /// True on any settings page; the sidebar then shows the settings nav.
     pub fn is_settings(&self) -> bool {
         matches!(self, Self::Settings(_))
+    }
+
+    /// Settings, project links, Usage, and Pull Requests (`isSidebarUtilityPage`). The
+    /// sidebar footer shows "Back" instead of the utility buttons there, and these routes are
+    /// never remembered as the place "Back" returns to.
+    pub fn is_utility_page(&self) -> bool {
+        matches!(
+            self,
+            Self::Settings(_) | Self::Project(_) | Self::Usage | Self::PullRequests
+        )
     }
 }

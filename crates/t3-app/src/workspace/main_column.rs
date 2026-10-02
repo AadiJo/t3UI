@@ -32,6 +32,10 @@ pub enum MainViewKey {
     Draft(DraftId),
     /// All settings pages share one view.
     Settings,
+    PullRequests,
+    Usage,
+    Welcome,
+    Project(SharedString),
     Pair,
 }
 
@@ -42,6 +46,10 @@ impl MainViewKey {
             Route::Thread(thread) => Self::Thread(thread.clone()),
             Route::Draft(draft) => Self::Draft(draft.clone()),
             Route::Settings(_) => Self::Settings,
+            Route::PullRequests => Self::PullRequests,
+            Route::Usage => Self::Usage,
+            Route::Welcome => Self::Welcome,
+            Route::Project(key) => Self::Project(key.clone()),
             Route::Pair => Self::Pair,
         }
     }
@@ -74,6 +82,22 @@ pub fn build_main_view(
         // settings/: SettingsView (reads the page from the route).
         Route::Settings(_) => cx
             .new(|cx| Placeholder::new("Settings", app_state.clone(), cx))
+            .into(),
+        // pull_requests/: PullRequestsView::new(app_state, window, cx).
+        Route::PullRequests => cx
+            .new(|cx| Placeholder::new("Pull Requests", app_state.clone(), cx))
+            .into(),
+        // usage/: UsageView::new(app_state, window, cx).
+        Route::Usage => cx
+            .new(|cx| Placeholder::new("Usage", app_state.clone(), cx))
+            .into(),
+        // pages: the welcome wizard over the no-projects hero.
+        Route::Welcome => cx
+            .new(|cx| Placeholder::new("Welcome", app_state.clone(), cx))
+            .into(),
+        // pages: project links (the web redirects to /settings/projects?project=<key>).
+        Route::Project(_) => cx
+            .new(|cx| Placeholder::new("Project", app_state.clone(), cx))
             .into(),
         // connections: the pairing flow.
         Route::Pair => cx

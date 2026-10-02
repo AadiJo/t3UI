@@ -25,6 +25,7 @@ use t3_ui::{
 use super::{
     Sidebar,
     drag::{ProjectDrag, ProjectDragPreview},
+    footer::utility_footer,
     pulse_opacity,
     sort_menu::sort_menu,
 };
@@ -97,7 +98,7 @@ impl Render for Sidebar {
                     this.child(self.render_content(window, cx))
                         // SidebarSeparator: an invisible 1px spacer (spec section 0).
                         .child(div().h(px(1.)).mx_2().flex_shrink_0())
-                        .child(self.render_footer(cx))
+                        .child(utility_footer(&self.app_state, cx))
                 }
             })
             .children(self.render_project_dialog(cx))
@@ -1100,35 +1101,6 @@ impl Sidebar {
                 )
             })
             .into_any_element()
-    }
-
-    /// Footer: the settings button (spec 2.14).
-    fn render_footer(&self, cx: &mut Context<Self>) -> impl IntoElement {
-        let colors = cx.colors();
-        div().p_2().flex().flex_col().gap_2().flex_shrink_0().child(
-            div()
-                .id("sidebar-settings")
-                .h_7()
-                .w_full()
-                .px_2()
-                .gap_2()
-                .flex()
-                .items_center()
-                .rounded(radius::LG)
-                .cursor_pointer()
-                .text_color(colors.muted_foreground_70)
-                .hover(|style| style.bg(colors.accent).text_color(colors.foreground))
-                .on_click(cx.listener(|this, _, _, cx| {
-                    this.app_state.update(cx, |state, cx| {
-                        state.navigate(
-                            crate::state::Route::Settings(crate::state::SettingsPage::General),
-                            cx,
-                        )
-                    });
-                }))
-                .child(Icon::new(IconName::Settings).size(px(14.)))
-                .child(div().type_scale(text::XS).child("Settings")),
-        )
     }
 }
 

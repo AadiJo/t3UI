@@ -89,6 +89,8 @@ pub struct AppState {
     store: Store,
     environments: Vec<Entity<Environment>>,
     route: Route,
+    /// The latest non-utility route, where utility pages' "Back" returns.
+    last_main_route: Route,
     back: Vec<Route>,
     forward: Vec<Route>,
     settings: ClientSettings,
@@ -122,6 +124,7 @@ impl AppState {
             store,
             environments: Vec::new(),
             route: Route::Index,
+            last_main_route: Route::Index,
             back: Vec::new(),
             forward: Vec::new(),
             settings,
@@ -161,14 +164,29 @@ impl AppState {
         let previous = std::mem::replace(&mut self.route, route);
         self.back.push(previous);
         self.forward.clear();
+        self.route_changed(cx);
+    }
+
+    /// Records the main-app route and notifies.
+    fn route_changed(&mut self, cx: &mut Context<Self>) {
+        if !self.route.is_utility_page() {
+            self.last_main_route = self.route.clone();
+        }
         cx.notify();
+    }
+
+    /// Leaves a utility page (settings, usage, pull requests) for the last main-app route, or
+    /// `/` when the app opened on a utility page (`useNavigateToMainApp`).
+    pub fn navigate_to_main_app(&mut self, cx: &mut Context<Self>) {
+        let route = self.last_main_route.clone();
+        self.navigate(route, cx);
     }
 
     /// Replaces the current route without adding history (web `navigate({replace: true})`).
     pub fn replace_route(&mut self, route: Route, cx: &mut Context<Self>) {
         if self.route != route {
             self.route = route;
-            cx.notify();
+            self.route_changed(cx);
         }
     }
 
@@ -181,7 +199,7 @@ impl AppState {
         let previous = self.back.pop().unwrap_or_default();
         let current = std::mem::replace(&mut self.route, previous);
         self.forward.push(current);
-        cx.notify();
+        self.route_changed(cx);
     }
 
     /// History forward, if any.
@@ -189,7 +207,7 @@ impl AppState {
         if let Some(next) = self.forward.pop() {
             let current = std::mem::replace(&mut self.route, next);
             self.back.push(current);
-            cx.notify();
+            self.route_changed(cx);
         }
     }
 
