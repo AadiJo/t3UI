@@ -27,8 +27,15 @@ use t3_ui::{
     IconName, Theme, TooltipExt as _,
 };
 
-use super::{ChatView, controls::small_icon, markdown::TextKind};
+use super::{
+    ChatView,
+    controls::{small_icon, tracked},
+    markdown::TextKind,
+};
 use crate::chrome::TypeScale as _;
+
+/// `tracking-[0.12em]` at 10px.
+const TRACKING_10PX: gpui_kit::Pixels = px(1.2);
 
 /// User messages longer than this collapse behind "Show full message".
 const COLLAPSE_CHARS: usize = 600;
@@ -967,9 +974,8 @@ impl ChatView {
                 .w(px(10. * 0.6 * 4.))
                 .flex()
                 .justify_end()
-                .whitespace_nowrap()
                 .text_color(color)
-                .child(text)
+                .child(tracked(&text, TRACKING_10PX))
         };
         div()
             .mt(px(8.))
@@ -992,22 +998,32 @@ impl ChatView {
                             .text_size(px(10.))
                             .line_height(px(15.))
                             .text_color(colors.muted_foreground.opacity(0.65))
-                            .child(format!("CHANGED FILES ({})", summary.files.len()))
+                            .child(tracked(
+                                &format!("CHANGED FILES ({})", summary.files.len()),
+                                TRACKING_10PX,
+                            ))
                             .when(additions > 0 || deletions > 0, |this| {
-                                this.child(div().mx(px(4.)).child("•")).child(
-                                    div()
-                                        .flex()
-                                        .gap(px(8.))
-                                        .font_family(env.mono.clone())
-                                        .child(stat_column(
-                                            format!("+{}", t3_diff::tree::format_count(additions)),
-                                            colors.success,
-                                        ))
-                                        .child(stat_column(
-                                            format!("-{}", t3_diff::tree::format_count(deletions)),
-                                            colors.destructive,
-                                        )),
-                                )
+                                this.child(div().mx(px(4.)).child(tracked("•", TRACKING_10PX)))
+                                    .child(
+                                        div()
+                                            .flex()
+                                            .gap(px(8.))
+                                            .font_family(env.mono.clone())
+                                            .child(stat_column(
+                                                format!(
+                                                    "+{}",
+                                                    t3_diff::tree::format_count(additions)
+                                                ),
+                                                colors.success,
+                                            ))
+                                            .child(stat_column(
+                                                format!(
+                                                    "-{}",
+                                                    t3_diff::tree::format_count(deletions)
+                                                ),
+                                                colors.destructive,
+                                            )),
+                                    )
                             }),
                     )
                     .child(

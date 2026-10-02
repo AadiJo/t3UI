@@ -93,3 +93,15 @@ pub(super) fn header_actions_placeholder(cx: &App) -> AnyElement {
         ))
         .into_any_element()
 }
+
+/// Text with CSS `letter-spacing` (GPUI has none): one box per character, each followed by
+/// `spacing`, the way the browser adds the spacing after every glyph.
+pub(super) fn tracked(text: &str, spacing: Pixels) -> gpui_kit::Div {
+    div().flex().flex_none().children(text.chars().map(|c| {
+        div()
+            .flex_none()
+            .mr(spacing)
+            .whitespace_nowrap()
+            .child(SharedString::from(c.to_string()))
+    }))
+}
