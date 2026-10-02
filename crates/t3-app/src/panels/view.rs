@@ -24,12 +24,10 @@ use super::{
     files::{FilePreview, FilesSurface},
     model::{Surface, SurfaceId, SurfaceKind},
     plan::PlanSurface,
-    store::{RightPanels, clamp_width},
+    store::{INLINE_MIN_WINDOW, RightPanels, clamp_width},
 };
 use crate::state::{AppEvent, AppState, Route};
 
-/// Inline layout needs a window wider than this (`RIGHT_PANEL_INLINE_LAYOUT_MEDIA_QUERY`).
-const INLINE_MIN_WINDOW: Pixels = px(980.);
 const TRANSITION_MS: f32 = 180.;
 /// The maximize button appears this long after opening starts.
 const DELAYED_CONTROL_MS: f32 = 120.;
@@ -612,6 +610,8 @@ impl RightPanel {
                 .variant(ButtonVariant::Ghost)
                 .size(ButtonSize::IconSm)
                 .icon(icon)
+                // The right-panel toggle is pressed while the panel is open.
+                .pressed(command == Command::RightPanelToggle)
                 .tooltip(tooltip)
                 .on_click(move |_, _, cx| {
                     app_state.update(cx, |state, cx| state.dispatch_command(command.clone(), cx))

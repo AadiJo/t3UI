@@ -15,6 +15,10 @@ use super::{
 };
 use crate::state::AppState;
 
+/// Inline layout needs a window wider than this (`RIGHT_PANEL_INLINE_LAYOUT_MEDIA_QUERY`); at or
+/// below it the panel is an overlay sheet.
+pub const INLINE_MIN_WINDOW: Pixels = px(980.);
+
 /// Default inline width (`PreviewPanelShell.tsx`).
 pub const DEFAULT_WIDTH: Pixels = px(540.);
 pub const MIN_WIDTH: Pixels = px(360.);
@@ -65,6 +69,13 @@ impl RightPanels {
     /// Whether `thread`'s panel is open (drives the chat header's right-panel toggle).
     pub fn is_open(&self, thread: &ThreadRef) -> bool {
         self.panel(thread).is_some_and(|panel| panel.is_open)
+    }
+
+    /// Whether the titlebar toggles (terminal, right panel) float over the panel's tab bar
+    /// instead of sitting in the chat header: the panel is open inline (spec 1.8). The chat
+    /// header drops its 60px control reserve while this holds.
+    pub fn controls_in_panel(&self, thread: &ThreadRef, window_width: Pixels) -> bool {
+        self.is_open(thread) && window_width > INLINE_MIN_WINDOW
     }
 
     /// Applies `edit` to `thread`'s panel; drops entries that end up empty.
@@ -198,4 +209,21 @@ impl RightPanels {
 pub fn clamp_width(width: Pixels, window_width: Pixels) -> Pixels {
     let max = MAX_WIDTH.min(px((f32::from(window_width) * 0.7).floor()));
     width.min(max).max(MIN_WIDTH)
+}
+
+#[cfg(test)]
+mod tests {
+    //! Failure modes: the 70% cap rounding instead of flooring, the 1400px cap missing on wide
+    //! windows, and tiny windows letting the cap drop below the 360px minimum (the fork's
+    //! `max(min, min(max, value))` keeps the minimum).
+    use super::*;
+
+    #[test]
+    fn width_bounds_follow_the_window() {
+        assert_eq!(clamp_width(DEFAULT_WIDTH, px(1440.)), px(540.));
+        assert_eq!(clamp_width(px(100.), px(1440.)), MIN_WIDTH);
+        assert_eq!(clamp_width(px(5000.), px(1441.)), px(1008.));
+        assert_eq!(clamp_width(px(5000.), px(3000.)), MAX_WIDTH);
+        assert_eq!(clamp_width(px(500.), px(400.)), MIN_WIDTH);
+    }
 }
