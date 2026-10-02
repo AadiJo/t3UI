@@ -26,6 +26,16 @@ use crate::{
     keybindings::shortcut_label,
 };
 
+/// Per-render inputs of a thread row.
+struct RowFrame {
+    /// Clock for the relative time.
+    now: i64,
+    /// Pulsing dots follow the shared clock (false in pinned-clock captures).
+    animate: bool,
+    /// Jump-hint label while the modifier is held.
+    jump: Option<String>,
+}
+
 /// `group/project-header` and `group/menu-sub-item` hover groups.
 const PROJECT_HEADER_GROUP: &str = "project-header";
 const THREAD_ROW_GROUP: &str = "thread-row";
@@ -491,7 +501,7 @@ impl Sidebar {
         &self,
         project: &SidebarProject,
         animate: bool,
-        _window: &mut Window,
+        window: &mut Window,
         cx: &mut Context<Self>,
     ) -> impl IntoElement {
         let colors = cx.colors();
@@ -505,7 +515,8 @@ impl Sidebar {
                     .iter()
                     .find(|(thread, _)| *thread == &row.thread_ref)
                     .map(|(_, label)| label.clone());
-                self.render_thread_row(row, &project.ordered_threads, jump, now, animate, cx)
+                let frame = RowFrame { now, animate, jump };
+                self.render_thread_row(row, &project.ordered_threads, frame, window, cx)
             })
             .collect();
         let small_row = |id: SharedString| {
@@ -618,13 +629,26 @@ impl Sidebar {
         &self,
         row: &SidebarThread,
         project_threads: &[t3_logic::ThreadRef],
-        jump_label: Option<String>,
-        now: i64,
-        animate: bool,
+        frame: RowFrame,
+        window: &mut Window,
         cx: &mut Context<Self>,
     ) -> AnyElement {
+        let RowFrame {
+            now,
+            animate,
+            jump: jump_label,
+        } = frame;
         let colors = cx.colors();
         let dark = colors.is_dark;
+        // `div[role=button tabindex=0]`: rows are Tab stops; Enter or Space opens the thread.
+        let focus = window
+            .use_keyed_state(
+                SharedString::from(format!("thread-focus-{}", row.thread_ref.key())),
+                cx,
+                |_, cx| cx.focus_handle().tab_stop(true),
+            )
+            .read(cx)
+            .clone();
         let selected = self.selection.contains(&row.thread_ref);
         let active = row.active;
         let thread = &row.thread;
@@ -709,9 +733,22 @@ impl Sidebar {
             .child(
                 div()
                     .id(SharedString::from(format!("thread-row-{id_suffix}")))
+                    .track_focus(&focus)
+                    .on_key_down({
+                        let thread_ref = row.thread_ref.clone();
+                        cx.listener(move |this, event: &gpui_kit::KeyDownEvent, _, cx| {
+                            if matches!(event.keystroke.key.as_str(), "enter" | "space") {
+                                cx.stop_propagation();
+                                this.navigate_to_thread(&thread_ref, cx);
+                            }
+                        })
+                    })
+                    .border_1()
+                    .border_color(gpui_kit::transparent_black())
+                    .focus_visible(|style| style.border_color(colors.ring))
                     .h_7()
                     .w_full()
-                    .px_2()
+                    .px(px(7.))
                     .gap_2()
                     .flex()
                     .items_center()
