@@ -93,7 +93,13 @@ impl Workspace {
                 px(width).max(layout::SIDEBAR_MIN_WIDTH)
             });
         let open = app_state.read(cx).sidebar_open();
+        // Root shortcuts listen on the workspace element, which is only on the key dispatch
+        // path while focus is inside it. Start focused there and return there whenever the
+        // focused element goes away (closed dialog, finished rename).
+        let focus = cx.focus_handle();
+        window.focus(&focus, cx);
         let subscriptions = vec![
+            cx.on_focus_lost(window, |this, window, cx| window.focus(&this.focus, cx)),
             cx.observe_in(&app_state, window, Self::on_app_state_changed),
             cx.observe_window_activation(window, |this, window, cx| {
                 if !window.is_window_active() {
@@ -112,7 +118,7 @@ impl Workspace {
             rail_drag: None,
             toasts: ToastLayer::global(cx),
             keybindings_notifier: KeybindingsNotifier::default(),
-            focus: cx.focus_handle(),
+            focus,
             _subscriptions: subscriptions,
         }
     }

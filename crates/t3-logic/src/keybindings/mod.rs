@@ -51,8 +51,8 @@ pub struct ShortcutEvent {
 }
 
 impl ShortcutEvent {
-    /// Builds an event from a GPUI key name (`Keystroke::key`) and the window's real modifier
-    /// state (`Window::modifiers()`).
+    /// Builds an event from a GPUI key name (`Keystroke::key`) and the physically held
+    /// modifiers (the keystroke's, with shift also taken from the window's modifier state).
     ///
     /// GPUI names keys differently from DOM `event.key` (`space`, `up`, ...) and, on macOS,
     /// reports a shifted symbol with shift cleared (Cmd+Shift+[ arrives as `{`). The web matcher

@@ -86,13 +86,15 @@ impl ShortcutScope {
     }
 }
 
-/// The real modifier state, in the resolver's terms.
-pub fn current_modifiers(window: &Window) -> Modifiers {
-    let modifiers = window.modifiers();
+/// The modifiers physically held for a key press. The keystroke's own flags are exact except
+/// shift: macOS reports Cmd+Shift+[ as `{` with shift cleared, so shift also counts when the
+/// window's modifier state (from the preceding flags-changed event) has it down.
+pub fn key_modifiers(event: &KeyDownEvent, window: &Window) -> Modifiers {
+    let modifiers = &event.keystroke.modifiers;
     Modifiers {
         meta: modifiers.platform,
         ctrl: modifiers.control,
-        shift: modifiers.shift,
+        shift: modifiers.shift || window.modifiers().shift,
         alt: modifiers.alt,
     }
 }
@@ -112,7 +114,7 @@ pub fn resolve_key_down(
     window: &Window,
     cx: &App,
 ) -> Option<ResolvedShortcut> {
-    let shortcut = ShortcutEvent::from_gpui(&event.keystroke.key, current_modifiers(window));
+    let shortcut = ShortcutEvent::from_gpui(&event.keystroke.key, key_modifiers(event, window));
     let context = ShortcutScope::context(window, cx);
     let rules = AppState::global(cx).read(cx).keybindings(cx);
     let command = resolve_command(&shortcut, &rules, &context, Platform::current())?;
