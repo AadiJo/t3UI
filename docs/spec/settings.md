@@ -214,6 +214,9 @@ SettingsSearchTargetProvider (targetId = location.hash without "#", or null)
   gradient overlay of the page background at the top of the scroll area, or clip content with an
   alpha mask; it is static (no animation).
 - Scrollbar: 6 px thumb, `--app-scrollbar-thumb` (dark: white 8%, hover 12%).
+  `scrollbar-gutter-both` compiles to `scrollbar-gutter: stable both-edges`: the scrollbar's width
+  is reserved on both the left and right edges whether or not the page scrolls, so content stays
+  centered and does not shift when a scrollbar appears.
 - `width` overrides used by pages: see each page spec (most use `readable`).
 
 ---
