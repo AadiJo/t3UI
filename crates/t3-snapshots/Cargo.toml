@@ -12,6 +12,9 @@ t3-ui.workspace = true
 t3-terminal.workspace = true
 t3-diff = { workspace = true, features = ["gpui"] }
 t3-markdown.workspace = true
+t3-client.workspace = true
+t3-logic.workspace = true
+t3-protocol.workspace = true
 gpui-kit = { workspace = true, features = ["test-support"] }
 image = { version = "0.25", default-features = false, features = ["png"] }
 anyhow.workspace = true
