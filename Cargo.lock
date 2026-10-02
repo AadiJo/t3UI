@@ -7178,6 +7178,8 @@ dependencies = [
  "gpui-kit",
  "pulldown-cmark",
  "t3-highlight",
+ "t3-ui",
+ "unicode-linebreak",
  "unicode-segmentation",
 ]
 
@@ -7201,6 +7203,7 @@ dependencies = [
  "serde_json",
  "t3-app",
  "t3-diff",
+ "t3-markdown",
  "t3-terminal",
  "t3-ui",
 ]

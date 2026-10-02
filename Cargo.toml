@@ -57,6 +57,7 @@ syntect = { version = "5.3", default-features = false, features = ["parsing", "r
 two-face = { version = "0.5.2", default-features = false, features = ["syntect-fancy"] }
 pulldown-cmark = { version = "0.13", default-features = false }
 unicode-segmentation = "1.12"
+unicode-linebreak = "0.1"
 
 [workspace.lints.rust]
 unsafe_op_in_unsafe_fn = "deny"

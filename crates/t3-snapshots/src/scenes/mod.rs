@@ -7,6 +7,7 @@
 
 mod diff;
 mod gallery;
+mod markdown;
 mod terminal;
 mod workspace;
 
@@ -52,5 +53,6 @@ pub fn all() -> Vec<Scene> {
     scenes.extend(gallery::scenes());
     scenes.extend(terminal::scenes());
     scenes.extend(diff::scenes());
+    scenes.extend(markdown::scenes());
     scenes
 }

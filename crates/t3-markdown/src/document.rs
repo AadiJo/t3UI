@@ -157,6 +157,10 @@ pub enum AtomKind {
     Favicon { host: String },
     /// A footnote reference `[^label]`, shown as its number.
     FootnoteRef { number: usize },
+    /// The `↩` link at the end of a footnote definition (added by the renderer).
+    FootnoteBackref { number: usize },
+    /// A task list item's read-only checkbox (added by the renderer).
+    TaskCheckbox { checked: bool },
     /// An image; it breaks the paragraph like the fork's `display: block` images.
     Image { url: String, alt: String },
 }

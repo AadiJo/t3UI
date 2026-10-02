@@ -9,13 +9,15 @@ description = "Chat markdown: parsing, streaming chunks and the GPUI renderer ma
 [features]
 default = ["gpui"]
 # The GPUI renderer. Off, the crate is the parser/chunker only (testable without GPUI system libs).
-gpui = ["dep:gpui-kit", "dep:t3-highlight"]
+gpui = ["dep:gpui-kit", "dep:t3-highlight", "dep:t3-ui", "dep:unicode-linebreak"]
 
 [dependencies]
 t3-highlight = { workspace = true, optional = true }
+t3-ui = { workspace = true, optional = true }
 gpui-kit = { workspace = true, optional = true }
 pulldown-cmark.workspace = true
 unicode-segmentation.workspace = true
+unicode-linebreak = { workspace = true, optional = true }
 
 [lints]
 workspace = true
