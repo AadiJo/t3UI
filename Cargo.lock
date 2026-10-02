@@ -7168,6 +7168,7 @@ dependencies = [
  "gpui-kit",
  "image",
  "t3-app",
+ "t3-terminal",
  "t3-ui",
 ]
 
@@ -7178,6 +7179,7 @@ dependencies = [
  "alacritty_terminal",
  "gpui-kit",
  "regex",
+ "t3-ui",
 ]
 
 [[package]]

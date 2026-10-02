@@ -6,6 +6,7 @@
 //! `-dark` / `-light` when a scene exists in both appearances.
 
 mod gallery;
+mod terminal;
 mod workspace;
 
 use gpui_kit::{AnyView, App, Window};
@@ -48,5 +49,6 @@ pub fn all() -> Vec<Scene> {
     let mut scenes = Vec::new();
     scenes.extend(workspace::scenes());
     scenes.extend(gallery::scenes());
+    scenes.extend(terminal::scenes());
     scenes
 }

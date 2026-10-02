@@ -15,6 +15,7 @@ publish = false
 t3-protocol = { path = "crates/t3-protocol" }
 t3-client = { path = "crates/t3-client" }
 t3-ui = { path = "crates/t3-ui" }
+t3-terminal = { path = "crates/t3-terminal" }
 t3-highlight = { path = "crates/t3-highlight" }
 t3-logic = { path = "crates/t3-logic" }
 
