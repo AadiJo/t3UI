@@ -347,9 +347,10 @@ impl TerminalView {
             }
         };
         let cell = metrics.cell;
-        let cols =
-            (((bounds.size.width - FIT_SCROLLBAR_RESERVE) / cell.width).floor() as usize).max(2);
-        let rows = ((bounds.size.height / cell.height).floor() as usize).max(1);
+        // FitAddon reads the host size with `parseInt`, dropping fractional pixels.
+        let (width, height) = (bounds.size.width.floor(), bounds.size.height.floor());
+        let cols = (((width - FIT_SCROLLBAR_RESERVE) / cell.width).floor() as usize).max(2);
+        let rows = ((height / cell.height).floor() as usize).max(1);
         if self.session.size() != (GridSize { cols, rows }) {
             self.session.resize(GridSize { cols, rows });
             self.hovered_link = None;
