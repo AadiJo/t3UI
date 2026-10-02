@@ -430,7 +430,7 @@ pub(super) fn controls_page(colors: &'static Colors, fields: &Fields) -> Vec<Any
         .header(
             CardHeader::new()
                 .title("Codex")
-                .description("OpenAI's coding agent, signed in as aadi"),
+                .description("OpenAI's coding agent, signed in as user"),
         )
         .panel(
             CardPanel::new().child(

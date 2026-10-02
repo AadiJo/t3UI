@@ -23,6 +23,10 @@ pub struct Scene {
     pub theme: ThemeMode,
     /// Window size in logical pixels. Defaults to the 1440x900 reference captures.
     pub size: (f32, f32),
+    /// Real time to let pass before the final frame, so enter animations (dialog and popover
+    /// fades, toasts) finish. Zero by default: scenes with time-based state, like the
+    /// terminal's blinking cursor, must not wait.
+    pub settle: std::time::Duration,
     pub build: fn(&mut Window, &mut App) -> AnyView,
 }
 
@@ -36,8 +40,16 @@ impl Scene {
             name,
             theme,
             size: (1440., 900.),
+            settle: std::time::Duration::ZERO,
             build,
         }
+    }
+
+    /// Waits for enter animations (500ms covers dialogs, popovers, and toasts) before the
+    /// capture.
+    pub fn settle(mut self) -> Self {
+        self.settle = std::time::Duration::from_millis(500);
+        self
     }
 
     /// Overrides the window size, e.g. for tall component sheets.

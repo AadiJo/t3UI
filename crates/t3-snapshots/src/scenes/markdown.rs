@@ -37,7 +37,7 @@ pub fn scenes() -> Vec<Scene> {
 
 fn options() -> MarkdownOptions {
     MarkdownOptions {
-        cwd: Some("/Users/aadi/t3code".into()),
+        cwd: Some("/Users/user/t3code".into()),
         ..MarkdownOptions::default()
     }
 }

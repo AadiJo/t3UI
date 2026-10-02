@@ -11,19 +11,19 @@
      {
       "id": "p-t3ui",
       "title": "t3UI",
-      "workspaceRoot": "/Users/aadi/code/t3UI",
+      "workspaceRoot": "/Users/user/code/t3UI",
       "defaultModelSelection": null,
       "scripts": [],
       "createdAt": "2026-09-01T12:00:00.000Z",
       "updatedAt": "2026-10-01T11:55:00.000Z",
       "repositoryIdentity": {
-       "canonicalKey": "github.com/aadijo/t3ui",
+       "canonicalKey": "github.com/example-org/t3ui",
        "locator": {
         "source": "git-remote",
         "remoteName": "origin",
-        "remoteUrl": "https://github.com/aadijo/t3ui.git"
+        "remoteUrl": "https://github.com/example-org/t3ui.git"
        },
-       "rootPath": "/Users/aadi/code/t3UI",
+       "rootPath": "/Users/user/code/t3UI",
        "displayName": "AadiJo/t3UI",
        "name": "t3UI"
       }
@@ -31,7 +31,7 @@
      {
       "id": "p-web",
       "title": "t3code",
-      "workspaceRoot": "/Users/aadi/code/t3code",
+      "workspaceRoot": "/Users/user/code/t3code",
       "defaultModelSelection": null,
       "scripts": [],
       "createdAt": "2026-09-01T12:00:00.000Z",
@@ -43,7 +43,7 @@
         "remoteName": "origin",
         "remoteUrl": "https://github.com/pingdotgg/t3code.git"
        },
-       "rootPath": "/Users/aadi/code/t3code",
+       "rootPath": "/Users/user/code/t3code",
        "displayName": "pingdotgg/t3code",
        "name": "t3code"
       }
@@ -51,7 +51,7 @@
      {
       "id": "p-notes",
       "title": "field-notes",
-      "workspaceRoot": "/Users/aadi/notes",
+      "workspaceRoot": "/Users/user/notes",
       "defaultModelSelection": null,
       "scripts": [],
       "createdAt": "2026-09-01T12:00:00.000Z",
@@ -60,19 +60,19 @@
      {
       "id": "p-infra",
       "title": "infra",
-      "workspaceRoot": "/Users/aadi/code/infra",
+      "workspaceRoot": "/Users/user/code/infra",
       "defaultModelSelection": null,
       "scripts": [],
       "createdAt": "2026-09-01T12:00:00.000Z",
       "updatedAt": "2026-09-19T12:00:00.000Z",
       "repositoryIdentity": {
-       "canonicalKey": "github.com/aadijo/infra",
+       "canonicalKey": "github.com/example-org/infra",
        "locator": {
         "source": "git-remote",
         "remoteName": "origin",
-        "remoteUrl": "https://github.com/aadijo/infra.git"
+        "remoteUrl": "https://github.com/example-org/infra.git"
        },
-       "rootPath": "/Users/aadi/code/infra",
+       "rootPath": "/Users/user/code/infra",
        "displayName": "AadiJo/infra",
        "name": "infra"
       }
@@ -254,7 +254,7 @@
       "runtimeMode": "full-access",
       "interactionMode": "default",
       "branch": "route-history",
-      "worktreePath": "/Users/aadi/.t3/worktrees/t3UI/route-history",
+      "worktreePath": "/Users/user/.t3/worktrees/t3UI/route-history",
       "pullRequests": [],
       "latestTurn": {
        "turnId": "turn-1",
@@ -585,7 +585,7 @@
      {
       "id": "r-ml",
       "title": "embedding-evals",
-      "workspaceRoot": "/home/aadi/embedding-evals",
+      "workspaceRoot": "/home/user/embedding-evals",
       "defaultModelSelection": null,
       "scripts": [],
       "createdAt": "2026-09-01T12:00:00.000Z",
@@ -670,7 +670,7 @@
  },
  "ui": {
   "projectExpandedById": {
-   "env-local:/Users/aadi/notes": false
+   "env-local:/Users/user/notes": false
   },
   "threadLastVisitedAtById": {
    "env-local:t-fonts": "2026-10-01T07:01:00.000Z",
@@ -685,7 +685,7 @@
  "vcs": [
   {
    "environmentId": "env-local",
-   "cwd": "/Users/aadi/.t3/worktrees/t3UI/route-history",
+   "cwd": "/Users/user/.t3/worktrees/t3UI/route-history",
    "local": {
     "isRepo": true,
     "sourceControlProvider": {
@@ -710,7 +710,7 @@
     "pr": {
      "number": 42,
      "title": "Route history and settings back",
-     "url": "https://github.com/aadijo/t3ui/pull/42",
+     "url": "https://github.com/example-org/t3ui/pull/42",
      "baseRef": "main",
      "headRef": "route-history",
      "state": "open"
@@ -719,7 +719,7 @@
   },
   {
    "environmentId": "env-local",
-   "cwd": "/Users/aadi/code/t3code",
+   "cwd": "/Users/user/code/t3code",
    "local": {
     "isRepo": true,
     "sourceControlProvider": {
@@ -744,7 +744,7 @@
     "pr": {
      "number": 1187,
      "title": "Composer drafts survive reloads",
-     "url": "https://github.com/aadijo/t3ui/pull/1187",
+     "url": "https://github.com/example-org/t3ui/pull/1187",
      "baseRef": "main",
      "headRef": "drafts-persist",
      "state": "merged"

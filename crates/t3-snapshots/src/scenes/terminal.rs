@@ -266,7 +266,7 @@ const SHELL: Fixture = Fixture {
             ),
         ];
         for (mode, links, size, name) in entries {
-            out += &format!("{mode}  {links} aadi  staff  {size:>5} Oct  1 09:12 {name}\r\n");
+            out += &format!("{mode}  {links} user  staff  {size:>5} Oct  1 09:12 {name}\r\n");
         }
         out += &prompt("t3UI", "main");
         out += "git log --oneline -3\r\n";
@@ -291,7 +291,7 @@ const TESTS: Fixture = Fixture {
         let mut out = String::new();
         out += &prompt("web", "terminal");
         out += "bun run test\r\n\r\n";
-        out += " \x1b[46;30m RUN \x1b[49;39m \x1b[36mv3.2.4 \x1b[39m\x1b[90m/Users/aadi/t3code/apps/web\x1b[39m\r\n\r\n";
+        out += " \x1b[46;30m RUN \x1b[49;39m \x1b[36mv3.2.4 \x1b[39m\x1b[90m/Users/user/t3code/apps/web\x1b[39m\r\n\r\n";
         out += " \x1b[32m✓\x1b[39m src/terminal-links.test.ts \x1b[2m(\x1b[22m\x1b[2m12 tests\x1b[22m\x1b[2m)\x1b[22m\x1b[32m 4\x1b[2mms\x1b[22m\x1b[39m\r\n";
         out += " \x1b[32m✓\x1b[39m src/keybindings.test.ts \x1b[2m(\x1b[22m\x1b[2m48 tests\x1b[22m\x1b[2m)\x1b[22m\x1b[32m 9\x1b[2mms\x1b[22m\x1b[39m\r\n";
         out += " \x1b[33m❯\x1b[39m src/composer.test.ts \x1b[2m(\x1b[22m\x1b[2m6 tests\x1b[22m\x1b[2m | \x1b[22m\x1b[31m1 failed\x1b[39m\x1b[2m)\x1b[22m\x1b[33m 21\x1b[2mms\x1b[22m\x1b[39m\r\n";

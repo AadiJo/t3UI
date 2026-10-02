@@ -20,12 +20,12 @@ import { execFileSync } from "node:child_process";
 const OUT = process.env.T3_MD_REF_OUT ?? "/tmp/markdown-reference";
 // The fork checkout to render with (its apps/web sources and node_modules). This was written
 // against the July checkout; ChatMarkdown.tsx has changed a lot since, so expect to adapt it.
-const FORK = process.env.T3_FORK ?? "/home/aadi/L-Projects/t3UI-refs/t3code-fork";
+const FORK = process.env.T3_FORK ?? `${process.env.HOME}/L-Projects/t3UI-refs/t3code-fork`;
 const WEB_SRC = `${FORK}/apps/web/src/`;
 const P = `${FORK}/node_modules/.pnpm`;
-const SAMPLE = "/home/aadi/L-Projects/t3UI-worktrees/markdown/crates/t3-markdown/fixtures/sample.md";
-const COMPILE = "/home/aadi/L-Projects/t3UI-worktrees/markdown/docs/spec/tools/compile.mjs";
-const CWD = "/Users/aadi/t3code";
+const SAMPLE = new URL("../../../../crates/t3-markdown/fixtures/sample.md", import.meta.url).pathname;
+const COMPILE = new URL("../../../../docs/spec/tools/compile.mjs", import.meta.url).pathname;
+const CWD = "/Users/user/t3code";
 
 // Let Node import the fork's plain .ts helpers (markdown-links, terminal-links,
 // filePathDisplay, pierre-icons, composerInlineChip) straight from source.

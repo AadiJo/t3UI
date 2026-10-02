@@ -1,6 +1,6 @@
 # Markdown rendering check
 
-This message exercises **every element** the chat renders, with *emphasis*, ***both at once***, ~~struck text~~, and `inline code`. Links look like [the GPUI docs](https://www.gpui.rs/) and bare URLs such as https://github.com/AadiJo/t3UI become links too. File references render as chips: [ChatMarkdown.tsx](apps/web/src/components/ChatMarkdown.tsx), [main.rs](/Users/aadi/t3code/crates/app/src/main.rs:42) and [lib.rs](crates/t3-ui/src/lib.rs#L12C3).
+This message exercises **every element** the chat renders, with *emphasis*, ***both at once***, ~~struck text~~, and `inline code`. Links look like [the GPUI docs](https://www.gpui.rs/) and bare URLs such as https://github.com/AadiJo/t3UI become links too. File references render as chips: [ChatMarkdown.tsx](apps/web/src/components/ChatMarkdown.tsx), [main.rs](/Users/user/t3code/crates/app/src/main.rs:42) and [lib.rs](crates/t3-ui/src/lib.rs#L12C3).
 
 A second paragraph with a long unbroken token `crates/t3-markdown/src/really/deeply/nested/module/path/that/keeps/going/and/going.rs` to check wrapping, followed by a footnote reference.[^1]
 
