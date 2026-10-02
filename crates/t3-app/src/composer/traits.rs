@@ -4,9 +4,9 @@
 //! ellipsis menu.
 
 use gpui_kit::{
-    AnyElement, App, Context, FontWeight, InteractiveElement as _, IntoElement,
-    ParentElement as _, SharedString, StatefulInteractiveElement as _, Styled as _, Window,
-    deferred, div, prelude::FluentBuilder as _, px,
+    AnyElement, App, Context, FontWeight, InteractiveElement as _, IntoElement, ParentElement as _,
+    SharedString, StatefulInteractiveElement as _, Styled as _, Window, deferred, div,
+    prelude::FluentBuilder as _, px,
 };
 use t3_logic::composer::{
     prompt,
@@ -24,7 +24,10 @@ use super::{Composer, ComposerEvent, style};
 
 impl Composer {
     /// The selected model and its descriptors with the composer's picks applied.
-    fn trait_descriptors(&self, cx: &App) -> Option<(ServerProviderModel, Vec<ProviderOptionDescriptor>)> {
+    fn trait_descriptors(
+        &self,
+        cx: &App,
+    ) -> Option<(ServerProviderModel, Vec<ProviderOptionDescriptor>)> {
         let (config, resolved) = self.resolved_model(cx)?;
         let provider = Self::selected_provider(&config, &resolved)?;
         let model = providers::resolve_model(&provider.models, &resolved.model)?.clone();
@@ -58,15 +61,18 @@ impl Composer {
         let colors = cx.colors();
         let parts = providers::traits_label(&descriptors, self.ultrathink(&descriptors, cx));
         let open = self.traits_open;
-        let label = div()
-            .flex()
-            .min_w_0()
-            .flex_1()
-            .truncate()
-            .children(parts.iter().enumerate().flat_map(|(index, part)| {
-                let separator = (index > 0).then(|| div().child(" · ").into_any_element());
-                separator.into_iter().chain(std::iter::once(trait_part(part)))
-            }));
+        let label =
+            div()
+                .flex()
+                .min_w_0()
+                .flex_1()
+                .truncate()
+                .children(parts.iter().enumerate().flat_map(|(index, part)| {
+                    let separator = (index > 0).then(|| div().child(" · ").into_any_element());
+                    separator
+                        .into_iter()
+                        .chain(std::iter::once(trait_part(part)))
+                }));
         let trigger = style::ghost_trigger("composer-traits-trigger", open, colors)
             .min_w_0()
             .max_w(px(192.))
@@ -292,17 +298,31 @@ impl Composer {
                 let menu = div()
                     .flex()
                     .flex_col()
-                    .when(has_traits, |this| this.child(self.render_traits_menu(&descriptors, cx)))
+                    .when(has_traits, |this| {
+                        this.child(self.render_traits_menu(&descriptors, cx))
+                    })
                     .when_some(plan, |this, (label, open)| {
                         this.child(
                             MenuPopup::new().compact().child(
-                                MenuItem::new("compact-plan", format!("{} {} sidebar", if open { "Hide" } else { "Show" }, label.to_lowercase()))
-                                    .icon(IconName::ListTodo)
-                                    .on_click(cx.listener(|_, _, _, cx| cx.emit(ComposerEvent::TogglePlanSidebar))),
+                                MenuItem::new(
+                                    "compact-plan",
+                                    format!(
+                                        "{} {} sidebar",
+                                        if open { "Hide" } else { "Show" },
+                                        label.to_lowercase()
+                                    ),
+                                )
+                                .icon(IconName::ListTodo)
+                                .on_click(cx.listener(
+                                    |_, _, _, cx| cx.emit(ComposerEvent::TogglePlanSidebar),
+                                )),
                             ),
                         )
                     });
-                this.child(deferred(div().absolute().bottom(px(32.)).left_0().child(menu)).with_priority(2))
+                this.child(
+                    deferred(div().absolute().bottom(px(32.)).left_0().child(menu))
+                        .with_priority(2),
+                )
             })
             .into_any_element()
     }
@@ -311,7 +331,9 @@ impl Composer {
 /// One label part; reasoning "Ultra" is purple.
 fn trait_part(part: &TraitLabelPart) -> AnyElement {
     div()
-        .when(part.ultra, |this| this.text_color(style::palette::PURPLE_400))
+        .when(part.ultra, |this| {
+            this.text_color(style::palette::PURPLE_400)
+        })
         .child(part.label.clone())
         .into_any_element()
 }

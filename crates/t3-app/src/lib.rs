@@ -40,6 +40,7 @@ pub fn run() {
         .run(|cx| {
             gpui_kit::init(cx);
             let app_state = state::AppState::init(state::Store::user_data(), cx);
+            composer::init(state::Store::user_data(), cx);
             state::boot::start_saved_environments(&app_state, cx);
             let theme = theme_mode(app_state.read(cx).ui().theme);
             t3_ui::init(theme, cx);

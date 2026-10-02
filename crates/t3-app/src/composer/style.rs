@@ -10,8 +10,6 @@ use t3_ui::{ActiveColors as _, Colors, tokens::hex};
 
 /// `max-w-3xl`: the composer, banners, and branch toolbar column.
 pub const COLUMN_MAX_WIDTH: Pixels = px(768.);
-/// `chat-composer-horizontal-inset` at ≥640px.
-pub const HORIZONTAL_INSET: Pixels = px(20.);
 /// Editor font size and `leading-relaxed` line height.
 pub const EDITOR_TEXT: Pixels = px(14.);
 pub const EDITOR_LINE_HEIGHT: Pixels = px(22.75);
@@ -29,8 +27,6 @@ pub mod palette {
     pub const FUCHSIA_700: Hsla = hex(0xA800B7FF);
     pub const BLUE_400: Hsla = hex(0x51A2FFFF);
     pub const YELLOW_500: Hsla = hex(0xF0B100FF);
-    pub const AMBER_300: Hsla = hex(0xFFD230FF);
-    pub const AMBER_600: Hsla = hex(0xE17100FF);
     pub const PURPLE_400: Hsla = hex(0xC27AFFFF);
     pub const RED_500: Hsla = hex(0xFB2C36FF);
 }
@@ -52,7 +48,9 @@ pub fn tracked_text(text: &str, tracking: Pixels) -> Div {
             if ch == ' ' {
                 div().w(tracking).into_any_element()
             } else {
-                div().child(SharedString::from(ch.to_string())).into_any_element()
+                div()
+                    .child(SharedString::from(ch.to_string()))
+                    .into_any_element()
             }
         }))
 }

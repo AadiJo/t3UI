@@ -106,7 +106,8 @@ impl DraftStore {
 
     /// The global store if it exists. Reads during render use this so they never create it.
     pub fn global_ref(cx: &App) -> Option<Entity<Self>> {
-        cx.try_global::<GlobalDrafts>().map(|global| global.0.clone())
+        cx.try_global::<GlobalDrafts>()
+            .map(|global| global.0.clone())
     }
 
     /// The draft for `key`, if any.
@@ -156,7 +157,10 @@ impl DraftStore {
 
     /// The last model picked in any composer, which seeds new drafts.
     pub fn sticky(&self) -> (&[ModelSelection], Option<&ProviderInstanceId>) {
-        (&self.sticky_cache, self.file.sticky_active_provider.as_ref())
+        (
+            &self.sticky_cache,
+            self.file.sticky_active_provider.as_ref(),
+        )
     }
 
     /// Records a model pick as the sticky choice.
@@ -274,7 +278,9 @@ impl DraftStore {
             delay.await;
             this.update(cx, |this, cx| {
                 this.pending_write = None;
-                this.store.write(DRAFTS_FILE, this.file.to_json(), cx).detach();
+                this.store
+                    .write(DRAFTS_FILE, this.file.to_json(), cx)
+                    .detach();
             })
             .ok();
         }));

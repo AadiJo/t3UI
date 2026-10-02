@@ -5,10 +5,9 @@
 use std::{cell::Cell, f32::consts::PI};
 
 use gpui_kit::{
-    AnyElement, App, Context, FontWeight, InteractiveElement as _, IntoElement,
-    ParentElement as _, PathBuilder, Pixels, Point, SharedString,
-    StatefulInteractiveElement as _, Styled as _, Window, canvas, div, point,
-    prelude::FluentBuilder as _, px, svg,
+    AnyElement, App, Context, FontWeight, InteractiveElement as _, IntoElement, ParentElement as _,
+    PathBuilder, Pixels, Point, SharedString, StatefulInteractiveElement as _, Styled as _, Window,
+    canvas, div, point, prelude::FluentBuilder as _, px, svg,
 };
 use t3_logic::composer::{
     pending::{self, ContextWindow},
@@ -16,8 +15,8 @@ use t3_logic::composer::{
 };
 use t3_protocol::orchestration::ApprovalDecision;
 use t3_ui::{
-    ActiveColors as _, Button, ButtonSize, ButtonVariant, Icon, IconName, Spinner,
-    TooltipExt as _, tokens::shadow,
+    ActiveColors as _, Button, ButtonSize, ButtonVariant, Icon, IconName, Spinner, TooltipExt as _,
+    tokens::shadow,
 };
 
 use super::{Composer, ComposerEvent, style};
@@ -37,17 +36,21 @@ impl Composer {
     fn footer_compact(&self) -> (bool, bool) {
         let width = FORM_WIDTH.with(Cell::get);
         let wide_actions = !self.pending.user_inputs.is_empty();
-        let footer = width < if wide_actions {
-            COMPACT_WIDTH_WIDE_ACTIONS
-        } else {
-            COMPACT_WIDTH
-        };
+        let footer = width
+            < if wide_actions {
+                COMPACT_WIDTH_WIDE_ACTIONS
+            } else {
+                COMPACT_WIDTH
+            };
         let actions = wide_actions && width < COMPACT_WIDTH_WIDE_ACTIONS;
         (footer, actions)
     }
 
     /// Records the form width after layout; re-renders when it crosses a threshold.
-    pub(super) fn measure_form(&self, cx: &mut Context<Self>) -> impl Fn(gpui_kit::Bounds<Pixels>, &mut Window, &mut App) + 'static {
+    pub(super) fn measure_form(
+        &self,
+        cx: &mut Context<Self>,
+    ) -> impl Fn(gpui_kit::Bounds<Pixels>, &mut Window, &mut App) + 'static {
         let entity = cx.entity_id();
         move |bounds, _, cx| {
             let width = f32::from(bounds.size.width);
@@ -59,11 +62,19 @@ impl Composer {
         }
     }
 
-    pub(super) fn render_footer(&mut self, window: &mut Window, cx: &mut Context<Self>) -> AnyElement {
+    pub(super) fn render_footer(
+        &mut self,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> AnyElement {
         if let Some(approval) = self.pending.approvals.first() {
             let request_id = approval.request_id.clone();
             let responding = self.responding.contains(&request_id);
-            let button = |id: &'static str, label: &'static str, variant: ButtonVariant, decision: ApprovalDecision, cx: &mut Context<Self>| {
+            let button = |id: &'static str,
+                          label: &'static str,
+                          variant: ButtonVariant,
+                          decision: ApprovalDecision,
+                          cx: &mut Context<Self>| {
                 let request_id = request_id.clone();
                 Button::new(id)
                     .variant(variant)
@@ -81,8 +92,20 @@ impl Composer {
                 .gap(px(8.))
                 .px(px(12.))
                 .pb(px(12.))
-                .child(button("approval-cancel", "Cancel turn", ButtonVariant::Ghost, ApprovalDecision::Cancel, cx))
-                .child(button("approval-decline", "Decline", ButtonVariant::DestructiveOutline, ApprovalDecision::Decline, cx))
+                .child(button(
+                    "approval-cancel",
+                    "Cancel turn",
+                    ButtonVariant::Ghost,
+                    ApprovalDecision::Cancel,
+                    cx,
+                ))
+                .child(button(
+                    "approval-decline",
+                    "Decline",
+                    ButtonVariant::DestructiveOutline,
+                    ApprovalDecision::Decline,
+                    cx,
+                ))
                 .child(button(
                     "approval-session",
                     "Always allow this session",
@@ -90,7 +113,13 @@ impl Composer {
                     ApprovalDecision::AcceptForSession,
                     cx,
                 ))
-                .child(button("approval-accept", "Approve once", ButtonVariant::Default, ApprovalDecision::Accept, cx))
+                .child(button(
+                    "approval-accept",
+                    "Approve once",
+                    ButtonVariant::Default,
+                    ApprovalDecision::Accept,
+                    cx,
+                ))
                 .into_any_element();
         }
 
@@ -149,7 +178,9 @@ impl Composer {
     /// latest turn, or the plan panel is open.
     pub(super) fn plan_toggle(&self, _: &App) -> Option<(SharedString, bool)> {
         let thread = self.thread.as_ref().and_then(|state| state.thread.as_ref());
-        let latest_turn = thread.and_then(|thread| thread.latest_turn.as_ref()).map(|turn| &turn.turn_id);
+        let latest_turn = thread
+            .and_then(|thread| thread.latest_turn.as_ref())
+            .map(|turn| &turn.turn_id);
         let active_plan = thread.is_some_and(|thread| {
             thread.activities.iter().any(|activity| {
                 activity.kind == "turn.plan.updated" && activity.turn_id.as_ref() == latest_turn
@@ -169,7 +200,12 @@ impl Composer {
         })
     }
 
-    fn render_plan_toggle(&self, label: SharedString, open: bool, cx: &mut Context<Self>) -> AnyElement {
+    fn render_plan_toggle(
+        &self,
+        label: SharedString,
+        open: bool,
+        cx: &mut Context<Self>,
+    ) -> AnyElement {
         let colors = cx.colors();
         let rest = style::alpha(colors.muted_foreground, 0.7);
         let hover = style::alpha(colors.foreground, 0.8);
@@ -196,7 +232,8 @@ impl Composer {
                 if open {
                     this.bg(fill).text_color(colors.foreground)
                 } else {
-                    this.text_color(rest).hover(move |style| style.bg(fill).text_color(hover))
+                    this.text_color(rest)
+                        .hover(move |style| style.bg(fill).text_color(hover))
                 }
             })
             .child(
@@ -291,7 +328,12 @@ impl Composer {
                 .shadow(highlight)
                 .cursor_pointer()
                 .hover(move |style| style.bg(fill_hover))
-                .child(svg().path("icons/composer/stop.svg").size(px(11.)).text_color(colors.card))
+                .child(
+                    svg()
+                        .path("icons/composer/stop.svg")
+                        .size(px(11.))
+                        .text_color(colors.card),
+                )
                 .tooltip_text("Stop generation")
                 .on_click(cx.listener(|this, _, _, cx| this.interrupt(cx)))
                 .into_any_element();
@@ -344,7 +386,10 @@ impl Composer {
                 pending::format_tokens(usage.used_tokens),
                 pending::format_tokens(max)
             ),
-            _ => format!("Context Window · {}", pending::format_tokens(usage.used_tokens)),
+            _ => format!(
+                "Context Window · {}",
+                pending::format_tokens(usage.used_tokens)
+            ),
         };
         div()
             .id("composer-context-meter")

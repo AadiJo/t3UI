@@ -37,10 +37,13 @@ use gpui_kit::{
     FocusHandle, Focusable, Image, ImageFormat, InteractiveElement as _, IntoElement,
     ParentElement as _, Render, SharedString, StatefulInteractiveElement as _, Styled as _,
     StyledImage as _, Subscription, Task, TaskExt as _, Window,
+    base::ElementExt as _,
     base::input::{
         Enter, IndentInline, InputEvent, MoveDown, MoveUp, Paste, Textarea, TextareaState,
     },
-    div, img, prelude::FluentBuilder as _, px,
+    div, img,
+    prelude::FluentBuilder as _,
+    px,
 };
 use t3_client::{PendingRequests, ThreadState, commands};
 use t3_logic::{
@@ -78,7 +81,7 @@ use crate::{
 pub use branch_toolbar::BranchToolbar;
 pub use drafts::{ComposerTarget, DraftStore};
 use model_picker::{ModelPicker, ModelPickerEvent};
-use style::{COLUMN_MAX_WIDTH, EDITOR_LINE_HEIGHT, EDITOR_MIN_HEIGHT, EDITOR_TEXT, HORIZONTAL_INSET};
+use style::{EDITOR_LINE_HEIGHT, EDITOR_MIN_HEIGHT, EDITOR_TEXT};
 
 /// Registers the draft store. Call once at startup, after `AppState::init`.
 pub fn init(store: crate::state::Store, cx: &mut App) {
@@ -153,7 +156,6 @@ pub struct Composer {
     dragging: bool,
     /// Ignore editor change events while the composer itself rewrites the text.
     applying: bool,
-    branch_toolbar: Entity<BranchToolbar>,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -176,8 +178,6 @@ impl Composer {
         let editor = editor::new_editor(window, cx);
         let drafts = DraftStore::global(cx);
         let app_state = AppState::global(cx);
-        let branch_toolbar =
-            cx.new(|cx| BranchToolbar::new(environment.clone(), target.clone(), cx));
         let subscriptions = vec![
             cx.subscribe_in(&editor, window, Self::on_editor_event),
             cx.observe(&environment, |this, _, cx| {
@@ -186,11 +186,15 @@ impl Composer {
             }),
             cx.observe(&drafts, |_, _, cx| cx.notify()),
             cx.observe(&app_state, |_, _, cx| cx.notify()),
-            cx.subscribe_in(&app_state, window, |this, _, event: &AppEvent, window, cx| {
-                if let AppEvent::Command(command) = event {
-                    this.on_command(command, window, cx);
-                }
-            }),
+            cx.subscribe_in(
+                &app_state,
+                window,
+                |this, _, event: &AppEvent, window, cx| {
+                    if let AppEvent::Command(command) = event {
+                        this.on_command(command, window, cx);
+                    }
+                },
+            ),
         ];
         let mut composer = Self {
             environment,
@@ -213,7 +217,6 @@ impl Composer {
             plan_panel_open: false,
             dragging: false,
             applying: false,
-            branch_toolbar,
             _subscriptions: subscriptions,
         };
         composer.restore_draft(window, cx);
@@ -242,10 +245,15 @@ impl Composer {
             .unwrap_or_default();
         self.pending = t3_client::pending_requests(activities);
         self.context_window = pending::latest_context_window(activities);
-        self.responding
-            .retain(|id| self.pending.approvals.iter().any(|a| &a.request_id == id)
-                || self.pending.user_inputs.iter().any(|q| &q.request_id == id));
-        let active = self.pending.user_inputs.first().map(|input| &input.request_id);
+        self.responding.retain(|id| {
+            self.pending.approvals.iter().any(|a| &a.request_id == id)
+                || self.pending.user_inputs.iter().any(|q| &q.request_id == id)
+        });
+        let active = self
+            .pending
+            .user_inputs
+            .first()
+            .map(|input| &input.request_id);
         if self.question.request_id.as_ref() != active {
             self.question = QuestionState {
                 request_id: active.cloned(),
@@ -275,7 +283,12 @@ impl Composer {
 
     /// Type-to-focus (`chat.md` 2.4): appends `text` and focuses. Refused while connecting, while
     /// an approval or question is pending, or while the environment is unavailable.
-    pub fn type_to_focus(&mut self, text: &str, window: &mut Window, cx: &mut Context<Self>) -> bool {
+    pub fn type_to_focus(
+        &mut self,
+        text: &str,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> bool {
         if !self.connected(cx) || !self.pending.is_empty() {
             return false;
         }
@@ -313,6 +326,49 @@ impl Composer {
                 cx,
             );
         });
+    }
+
+    /// Replaces the prompt (chips included) and puts the caret at the end, as if typed.
+    pub fn set_prompt(&mut self, text: &str, window: &mut Window, cx: &mut Context<Self>) {
+        self.editor.update(cx, |state, cx| {
+            state.set_value(text.to_owned(), window, cx);
+            let end = text.len();
+            state.set_selected_range(end..end, cx);
+        });
+        self.on_prompt_changed(window, cx);
+    }
+
+    /// Attaches an image (paste, drop, or a host's own source). Limits apply.
+    pub fn add_image(
+        &mut self,
+        name: impl Into<String>,
+        mime_type: impl Into<String>,
+        bytes: Vec<u8>,
+        cx: &mut Context<Self>,
+    ) {
+        self.attach_image(name.into(), mime_type.into(), bytes, cx);
+    }
+
+    /// Opens the model picker (also `/model` and ⇧⌘M).
+    pub fn show_model_picker(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.model_picker.is_none() {
+            self.open_model_picker(window, cx);
+        }
+    }
+
+    /// Opens the traits menu.
+    pub fn show_traits(&mut self, cx: &mut Context<Self>) {
+        self.traits_open = true;
+        cx.notify();
+    }
+
+    /// Shows `entries` as the `@` results for the current query without a server (scenes).
+    #[doc(hidden)]
+    pub fn preview_path_results(&mut self, entries: Vec<ProjectEntry>, cx: &mut Context<Self>) {
+        self.path_search.task = None;
+        self.path_search.loading = false;
+        self.path_search.entries = entries;
+        cx.notify();
     }
 
     // -----------------------------------------------------------------------------------------
@@ -357,9 +413,15 @@ impl Composer {
 
     fn project_id(&self, cx: &App) -> Option<t3_protocol::ProjectId> {
         match &self.target {
-            ComposerTarget::Thread(_) => self.shell_thread(cx).map(|thread| thread.project_id.clone()),
-            ComposerTarget::Draft(id) => DraftStore::global_ref(cx)
-                .and_then(|drafts| drafts.read(cx).draft_thread(id).map(|d| d.project_id.clone())),
+            ComposerTarget::Thread(_) => self
+                .shell_thread(cx)
+                .map(|thread| thread.project_id.clone()),
+            ComposerTarget::Draft(id) => DraftStore::global_ref(cx).and_then(|drafts| {
+                drafts
+                    .read(cx)
+                    .draft_thread(id)
+                    .map(|d| d.project_id.clone())
+            }),
         }
     }
 
@@ -369,9 +431,15 @@ impl Composer {
         let environment = self.environment.read(cx);
         let root = environment.project(&project_id)?.workspace_root.clone();
         let worktree = match &self.target {
-            ComposerTarget::Thread(_) => self.shell_thread(cx).and_then(|t| t.worktree_path.clone()),
-            ComposerTarget::Draft(id) => DraftStore::global_ref(cx)
-                .and_then(|drafts| drafts.read(cx).draft_thread(id).and_then(|d| d.worktree_path.clone())),
+            ComposerTarget::Thread(_) => {
+                self.shell_thread(cx).and_then(|t| t.worktree_path.clone())
+            }
+            ComposerTarget::Draft(id) => DraftStore::global_ref(cx).and_then(|drafts| {
+                drafts
+                    .read(cx)
+                    .draft_thread(id)
+                    .and_then(|d| d.worktree_path.clone())
+            }),
         };
         Some(worktree.unwrap_or(root))
     }
@@ -382,7 +450,13 @@ impl Composer {
         let drafts = DraftStore::global_ref(cx)?.read(cx);
         let draft = drafts.draft(&self.target.key());
         let draft_selections: Vec<ModelSelection> = draft
-            .map(|draft| draft.model_selection_by_provider.values().cloned().collect())
+            .map(|draft| {
+                draft
+                    .model_selection_by_provider
+                    .values()
+                    .cloned()
+                    .collect()
+            })
             .unwrap_or_default();
         let shell_thread = self.shell_thread(cx);
         let session_instance = self
@@ -446,7 +520,11 @@ impl Composer {
             return None;
         }
         let shapes: Vec<(&str, bool)> = shapes.iter().map(|(id, m)| (id.as_str(), *m)).collect();
-        Some(pending::progress(&shapes, &self.question.answers, self.question.index))
+        Some(pending::progress(
+            &shapes,
+            &self.question.answers,
+            self.question.index,
+        ))
     }
 
     fn live_terminal_contexts(&self, cx: &App) -> usize {
@@ -505,10 +583,12 @@ impl Composer {
             .read(cx)
             .tokens()
             .iter()
-            .filter_map(|span| match chips::ChipKind::from_token_id(span.token().id()) {
-                Some(chips::ChipKind::Terminal { context_id, .. }) => Some(context_id),
-                _ => None,
-            })
+            .filter_map(
+                |span| match chips::ChipKind::from_token_id(span.token().id()) {
+                    Some(chips::ChipKind::Terminal { context_id, .. }) => Some(context_id),
+                    _ => None,
+                },
+            )
             .collect();
         DraftStore::global(cx).update(cx, |drafts, cx| {
             drafts.update_draft(
@@ -527,7 +607,11 @@ impl Composer {
 
     fn save_images(&self, cx: &mut Context<Self>) {
         let key = self.target.key();
-        let images: Vec<DraftImage> = self.images.iter().map(|image| image.draft.clone()).collect();
+        let images: Vec<DraftImage> = self
+            .images
+            .iter()
+            .map(|image| image.draft.clone())
+            .collect();
         DraftStore::global(cx).update(cx, |drafts, cx| {
             drafts.update_draft(&key, |draft| draft.attachments = images, cx)
         });
@@ -544,8 +628,13 @@ impl Composer {
             .unwrap_or_default()
     }
 
-    fn selected_provider<'a>(config: &'a ServerConfig, resolved: &ResolvedModel) -> Option<&'a ServerProvider> {
-        resolved.provider_index.and_then(|index| config.providers.get(index))
+    fn selected_provider<'a>(
+        config: &'a ServerConfig,
+        resolved: &ResolvedModel,
+    ) -> Option<&'a ServerProvider> {
+        resolved
+            .provider_index
+            .and_then(|index| config.providers.get(index))
     }
 
     // -----------------------------------------------------------------------------------------
@@ -584,8 +673,14 @@ impl Composer {
 
     fn active_question_id(&self) -> Option<String> {
         let input = self.pending.user_inputs.first()?;
-        let index = self.question.index.min(input.questions.len().saturating_sub(1));
-        input.questions.get(index).map(|question| question.id.clone())
+        let index = self
+            .question
+            .index
+            .min(input.questions.len().saturating_sub(1));
+        input
+            .questions
+            .get(index)
+            .map(|question| question.id.clone())
     }
 
     fn update_trigger(&mut self, cx: &mut Context<Self>) {
@@ -635,7 +730,9 @@ impl Composer {
                 image_only: None,
             };
             let result = cx
-                .background_spawn(async move { client.request::<ProjectsSearchEntries>(&input).await })
+                .background_spawn(
+                    async move { client.request::<ProjectsSearchEntries>(&input).await },
+                )
                 .await;
             this.update(cx, |this, cx| {
                 if this.path_search.query.as_deref() != Some(query.as_str()) {
@@ -746,7 +843,7 @@ impl Composer {
         if self.select_active_menu_item(window, cx) {
             return;
         }
-        if self.pending.user_inputs.first().is_some() {
+        if !self.pending.user_inputs.is_empty() {
             self.advance_question(cx);
             return;
         }
@@ -786,7 +883,14 @@ impl Composer {
         };
         let favorites = AppState::global(cx).read(cx).settings().favorites.clone();
         let picker = cx.new(|cx| {
-            ModelPicker::new(config, resolved.instance_id.clone(), resolved.model.clone(), favorites, window, cx)
+            ModelPicker::new(
+                config,
+                resolved.instance_id.clone(),
+                resolved.model.clone(),
+                favorites,
+                window,
+                cx,
+            )
         });
         self._subscriptions.push(cx.subscribe_in(
             &picker,
@@ -902,7 +1006,10 @@ impl Composer {
         let Some(input) = self.pending.user_inputs.first() else {
             return;
         };
-        let index = self.question.index.min(input.questions.len().saturating_sub(1));
+        let index = self
+            .question
+            .index
+            .min(input.questions.len().saturating_sub(1));
         let Some(question) = input.questions.get(index) else {
             return;
         };
@@ -913,7 +1020,9 @@ impl Composer {
         if !multi {
             // Single-select advances after 200ms, like the web.
             cx.spawn(async move |this, cx| {
-                cx.background_executor().timer(Duration::from_millis(200)).await;
+                cx.background_executor()
+                    .timer(Duration::from_millis(200))
+                    .await;
                 this.update(cx, |this, cx| this.advance_question(cx)).ok();
             })
             .detach();
@@ -953,7 +1062,11 @@ impl Composer {
         };
         self.responding.insert(input.request_id.clone());
         let task = self.environment.read(cx).dispatch(
-            commands::respond_to_user_input(thread.thread_id.clone(), input.request_id.clone(), answers),
+            commands::respond_to_user_input(
+                thread.thread_id.clone(),
+                input.request_id.clone(),
+                answers,
+            ),
             cx,
         );
         let request_id = input.request_id;
@@ -1024,8 +1137,14 @@ impl Composer {
         }
     }
 
-    fn attach_image(&mut self, name: String, mime_type: String, bytes: Vec<u8>, cx: &mut Context<Self>) {
-        if self.pending.user_inputs.first().is_some() {
+    fn attach_image(
+        &mut self,
+        name: String,
+        mime_type: String,
+        bytes: Vec<u8>,
+        cx: &mut Context<Self>,
+    ) {
+        if !self.pending.user_inputs.is_empty() {
             crate::toast::show(
                 crate::toast::Toast::info("Attach images after answering plan questions."),
                 cx,
@@ -1038,10 +1157,7 @@ impl Composer {
             cx.emit(ComposerEvent::Error(error.to_string().into()));
             return;
         }
-        let data_url = format!(
-            "data:{mime_type};base64,{}",
-            base64_encode(&bytes)
-        );
+        let data_url = format!("data:{mime_type};base64,{}", base64_encode(&bytes));
         let Some(image) = image_from_data_url(DraftImage {
             id: uuid_like(),
             name,
@@ -1110,7 +1226,10 @@ impl Composer {
             options,
         };
         let text = send::outgoing_text(&self.materialized_prompt(&prompt_text, cx), images.len());
-        let title = send::title_seed(&prompt_text, images.first().map(|image| image.draft.name.as_str()));
+        let title = send::title_seed(
+            &prompt_text,
+            images.first().map(|image| image.draft.name.as_str()),
+        );
 
         let environment_id = self.environment.read(cx).id().clone();
         let (thread_id, bootstrap, extra_commands) = match &self.target {
@@ -1135,7 +1254,11 @@ impl Composer {
                             RuntimeMode::FullAccess,
                         ));
                     }
-                    if shell.interaction_mode.as_ref().is_some_and(|mode| *mode != InteractionMode::Default) {
+                    if shell
+                        .interaction_mode
+                        .as_ref()
+                        .is_some_and(|mode| *mode != InteractionMode::Default)
+                    {
                         extra.push(commands::set_interaction_mode(
                             thread.thread_id.clone(),
                             InteractionMode::Default,
@@ -1164,7 +1287,10 @@ impl Composer {
                         project_root.map(|project_cwd| BootstrapPrepareWorktree {
                             project_cwd,
                             base_branch,
-                            branch: Some(format!("t3/{}", &draft.thread_id.as_str()[..8.min(draft.thread_id.as_str().len())])),
+                            branch: Some(format!(
+                                "t3/{}",
+                                &draft.thread_id.as_str()[..8.min(draft.thread_id.as_str().len())]
+                            )),
                             start_from_origin: draft.start_from_origin.then_some(true),
                             require_worktree: None,
                         })
@@ -1265,9 +1391,8 @@ impl Composer {
                 match result {
                     Ok(()) => {
                         if let ComposerTarget::Draft(id) = &target {
-                            DraftStore::global(cx).update(cx, |drafts, cx| {
-                                drafts.mark_promoted(id, &thread_ref, cx)
-                            });
+                            DraftStore::global(cx)
+                                .update(cx, |drafts, cx| drafts.mark_promoted(id, &thread_ref, cx));
                             cx.emit(ComposerEvent::ThreadStarted(thread_ref.clone()));
                         }
                         cx.emit(ComposerEvent::Sent {
@@ -1308,7 +1433,12 @@ impl Composer {
     /// (`lib/terminalContext.ts`): `@label` inline, the selected text appended.
     fn materialized_prompt(&self, prompt_text: &str, cx: &App) -> String {
         let contexts = DraftStore::global_ref(cx)
-            .and_then(|drafts| drafts.read(cx).draft(&self.target.key()).map(|d| d.terminal_contexts.clone()))
+            .and_then(|drafts| {
+                drafts
+                    .read(cx)
+                    .draft(&self.target.key())
+                    .map(|d| d.terminal_contexts.clone())
+            })
             .unwrap_or_default();
         if contexts.is_empty() {
             return prompt_text.replace(prompt::TERMINAL_CONTEXT_PLACEHOLDER, "");
@@ -1365,7 +1495,12 @@ impl Composer {
         else {
             return;
         };
-        if self.environment.read(cx).thread(&promoted.thread_id).is_none() {
+        if self
+            .environment
+            .read(cx)
+            .thread(&promoted.thread_id)
+            .is_none()
+        {
             return;
         }
         let thread = ThreadRef::new(promoted.environment_id, promoted.thread_id);
@@ -1458,7 +1593,9 @@ impl Render for Composer {
         } else {
             shadow::COMPOSER_LIGHT.to_vec()
         };
-        let disabled = self.is_connecting(cx) || self.approval_active() || (unavailable && self.pending.user_inputs.is_empty());
+        let disabled = self.is_connecting(cx)
+            || self.approval_active()
+            || (unavailable && self.pending.user_inputs.is_empty());
         let placeholder: SharedString = if let Some(approval) = self.pending.approvals.first() {
             approval
                 .detail
@@ -1469,21 +1606,29 @@ impl Render for Composer {
             "Type your own answer, or leave this blank to use the selected option".into()
         } else if unavailable {
             let environment = self.environment.read(cx);
-            format!("{}: {}", environment.label(), environment.status().status_text()).into()
+            format!(
+                "{}: {}",
+                environment.label(),
+                environment.status().status_text()
+            )
+            .into()
         } else if self.thread_started(cx) && self.session_status(cx).is_none() {
             "Ask for follow-up changes or attach images".into()
         } else {
             "Ask anything, @tag files/folders, $use skills, or / for commands".into()
         };
         let prompt_empty = self.editor.read(cx).value().is_empty();
-        self.editor.update(cx, |state, cx| state.set_disabled(disabled, cx));
+        self.editor
+            .update(cx, |state, cx| state.set_disabled(disabled, cx));
 
         let content = div()
             .relative()
             .px(px(16.))
             .pb(px(8.))
             .pt(if has_header { px(12.) } else { px(16.) })
-            .when(self.menu_open(), |this| this.child(self.render_command_menu(window, cx)))
+            .when(self.menu_open(), |this| {
+                this.child(self.render_command_menu(window, cx))
+            })
             .when(!has_header && !self.images.is_empty(), |this| {
                 this.child(self.render_images(cx))
             })
@@ -1538,17 +1683,27 @@ impl Render for Composer {
             .rounded(px(20.))
             .border_1()
             .border_color(border)
-            .bg(if self.dragging { colors.accent_45 } else { colors.card })
+            .bg(if self.dragging {
+                colors.accent_45
+            } else {
+                colors.card
+            })
             .shadow(shadows)
             .when(unavailable, |this| this.opacity(0.75))
             .when(has_header, |this| this.child(self.render_header_panel(cx)))
             .child(content)
             .child(self.render_footer(window, cx));
 
-        let frame = div()
+        // The slot is the frame (`rounded-[22px] p-px`); the host centers it in the 768px column.
+        div()
             .id("composer-frame")
+            .track_focus(&self.focus_handle)
+            .relative()
+            .w_full()
+            .min_w_0()
             .rounded(px(22.))
             .p(px(1.))
+            .on_prepaint(self.measure_form(cx))
             .on_drag_move::<ExternalPaths>(cx.listener(|this, _, _, cx| {
                 if !this.dragging {
                     this.dragging = true;
@@ -1560,25 +1715,7 @@ impl Render for Composer {
                 this.attach_paths(paths, cx);
                 this.focus(window, cx);
             }))
-            .child(surface);
-
-        div()
-            .id("composer")
-            .track_focus(&self.focus_handle)
-            .w_full()
-            .flex()
-            .flex_col()
-            .child(
-                div().w_full().px(HORIZONTAL_INSET).child(
-                    div()
-                        .mx_auto()
-                        .w_full()
-                        .max_w(COLUMN_MAX_WIDTH)
-                        .min_w_0()
-                        .child(frame),
-                ),
-            )
-            .child(self.render_lower_chrome(cx))
+            .child(surface)
     }
 }
 
@@ -1627,26 +1764,15 @@ impl Composer {
                             .bg(colors.background.opacity(0.8))
                             .hover(|style| style.bg(colors.background.opacity(0.9)))
                             .cursor_pointer()
-                            .child(Icon::new(IconName::X).size(px(14.)).color(colors.foreground))
-                            .on_click(cx.listener(move |this, _, _, cx| this.remove_image(&id, cx))),
+                            .child(
+                                Icon::new(IconName::X)
+                                    .size(px(14.))
+                                    .color(colors.foreground),
+                            )
+                            .on_click(
+                                cx.listener(move |this, _, _, cx| this.remove_image(&id, cx)),
+                            ),
                     )
             }))
-    }
-
-    /// The band under the composer that holds the branch toolbar (`chat-composer-lower-chrome`).
-    fn render_lower_chrome(&self, cx: &App) -> impl IntoElement {
-        let colors = cx.colors();
-        let is_repo = self.branch_toolbar.read(cx).is_repo(cx);
-        div()
-            .mt(px(-1.))
-            .pt(px(1.))
-            .mr(px(6.))
-            .bg(colors.composer_glass)
-            .pb(if is_repo { px(4.) } else { px(16.) })
-            .child(
-                div()
-                    .px(HORIZONTAL_INSET)
-                    .when(is_repo, |this| this.child(self.branch_toolbar.clone())),
-            )
     }
 }

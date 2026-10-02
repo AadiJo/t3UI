@@ -16,7 +16,11 @@ impl Composer {
     pub(super) fn render_header_panel(&mut self, cx: &mut Context<Self>) -> AnyElement {
         let colors = cx.colors();
         let body = if let Some(approval) = self.pending.approvals.first() {
-            self.render_approval_panel(approval.request_kind.as_str(), self.pending.approvals.len(), cx)
+            self.render_approval_panel(
+                approval.request_kind.as_str(),
+                self.pending.approvals.len(),
+                cx,
+            )
         } else {
             self.render_question_panel(cx)
         };
@@ -67,12 +71,20 @@ impl Composer {
         let Some(input) = self.pending.user_inputs.first().cloned() else {
             return div().into_any_element();
         };
-        let index = self.question.index.min(input.questions.len().saturating_sub(1));
+        let index = self
+            .question
+            .index
+            .min(input.questions.len().saturating_sub(1));
         let Some(question) = input.questions.get(index).cloned() else {
             return div().into_any_element();
         };
         let responding = self.responding.contains(&input.request_id);
-        let draft = self.question.answers.get(&question.id).cloned().unwrap_or_default();
+        let draft = self
+            .question
+            .answers
+            .get(&question.id)
+            .cloned()
+            .unwrap_or_default();
         let custom_active = !draft.custom.trim().is_empty();
         div()
             .px(px(20.))
@@ -124,96 +136,111 @@ impl Composer {
                 )
             })
             .child(
-                div()
-                    .mt(px(12.))
-                    .flex()
-                    .flex_col()
-                    .gap(px(6.))
-                    .children(question.options.iter().enumerate().map(|(option_index, option)| {
-                        let selected = !custom_active && draft.selected.contains(&option.label);
-                        let label = option.label.clone();
-                        div()
-                            .id(SharedString::from(format!("question-option-{option_index}")))
-                            .group("question-option")
-                            .flex()
-                            .items_center()
-                            .gap(px(12.))
-                            .w_full()
-                            .rounded(px(10.))
-                            .border_1()
-                            .px(px(12.))
-                            .py(px(8.))
-                            .map(|this| {
-                                if selected {
-                                    this.border_color(colors.primary.opacity(0.3))
-                                        .bg(colors.primary.opacity(0.08))
-                                        .text_color(colors.foreground)
-                                } else {
-                                    this.border_color(gpui_kit::transparent_black())
-                                        .bg(colors.muted.opacity(0.22))
-                                        .text_color(style::alpha(colors.foreground, 0.85))
-                                        .hover(|style| {
-                                            style
-                                                .border_color(colors.border.opacity(0.45))
-                                                .bg(colors.muted.opacity(0.34))
-                                        })
-                                }
-                            })
-                            .when(responding, |this| this.opacity(0.5))
-                            .when(!responding, |this| {
-                                this.cursor_pointer().on_click(cx.listener(move |this, _, _, cx| {
-                                    this.toggle_question_option(label.clone(), cx)
-                                }))
-                            })
-                            .child(
-                                div()
-                                    .flex()
-                                    .flex_col()
-                                    .gap(px(2.))
-                                    .flex_1()
-                                    .min_w_0()
-                                    .child(
-                                        div()
-                                            .text_size(px(14.))
-                                            .line_height(px(20.))
-                                            .font_weight(FontWeight::MEDIUM)
-                                            .child(option.label.clone()),
-                                    )
-                                    .when(option.description != option.label, |this| {
+                div().mt(px(12.)).flex().flex_col().gap(px(6.)).children(
+                    question
+                        .options
+                        .iter()
+                        .enumerate()
+                        .map(|(option_index, option)| {
+                            let selected = !custom_active && draft.selected.contains(&option.label);
+                            let label = option.label.clone();
+                            div()
+                                .id(SharedString::from(format!(
+                                    "question-option-{option_index}"
+                                )))
+                                .group("question-option")
+                                .flex()
+                                .items_center()
+                                .gap(px(12.))
+                                .w_full()
+                                .rounded(px(10.))
+                                .border_1()
+                                .px(px(12.))
+                                .py(px(8.))
+                                .map(|this| {
+                                    if selected {
+                                        this.border_color(colors.primary.opacity(0.3))
+                                            .bg(colors.primary.opacity(0.08))
+                                            .text_color(colors.foreground)
+                                    } else {
+                                        this.border_color(gpui_kit::transparent_black())
+                                            .bg(colors.muted.opacity(0.22))
+                                            .text_color(style::alpha(colors.foreground, 0.85))
+                                            .hover(|style| {
+                                                style
+                                                    .border_color(colors.border.opacity(0.45))
+                                                    .bg(colors.muted.opacity(0.34))
+                                            })
+                                    }
+                                })
+                                .when(responding, |this| this.opacity(0.5))
+                                .when(!responding, |this| {
+                                    this.cursor_pointer().on_click(cx.listener(
+                                        move |this, _, _, cx| {
+                                            this.toggle_question_option(label.clone(), cx)
+                                        },
+                                    ))
+                                })
+                                .child(
+                                    div()
+                                        .flex()
+                                        .flex_col()
+                                        .gap(px(2.))
+                                        .flex_1()
+                                        .min_w_0()
+                                        .child(
+                                            div()
+                                                .text_size(px(14.))
+                                                .line_height(px(20.))
+                                                .font_weight(FontWeight::MEDIUM)
+                                                .child(option.label.clone()),
+                                        )
+                                        .when(option.description != option.label, |this| {
+                                            this.child(
+                                                div()
+                                                    .text_size(px(12.))
+                                                    .line_height(px(16.))
+                                                    .text_color(style::alpha(
+                                                        colors.muted_foreground,
+                                                        0.5,
+                                                    ))
+                                                    .child(option.description.clone()),
+                                            )
+                                        }),
+                                )
+                                .map(|this| {
+                                    if selected {
+                                        this.child(
+                                            Icon::new(IconName::Check)
+                                                .size(px(14.))
+                                                .color(colors.primary),
+                                        )
+                                    } else if option_index < 9 {
                                         this.child(
                                             div()
-                                                .text_size(px(12.))
-                                                .line_height(px(16.))
-                                                .text_color(style::alpha(colors.muted_foreground, 0.5))
-                                                .child(option.description.clone()),
+                                                .size(px(20.))
+                                                .flex_none()
+                                                .flex()
+                                                .items_center()
+                                                .justify_center()
+                                                .rounded(px(4.))
+                                                .border_1()
+                                                .border_color(colors.border.opacity(0.5))
+                                                .bg(colors.background.opacity(0.35))
+                                                .text_size(px(11.))
+                                                .font_weight(FontWeight::MEDIUM)
+                                                .text_color(style::alpha(
+                                                    colors.muted_foreground,
+                                                    0.7,
+                                                ))
+                                                .child((option_index + 1).to_string()),
                                         )
-                                    }),
-                            )
-                            .map(|this| {
-                                if selected {
-                                    this.child(Icon::new(IconName::Check).size(px(14.)).color(colors.primary))
-                                } else if option_index < 9 {
-                                    this.child(
-                                        div()
-                                            .size(px(20.))
-                                            .flex_none()
-                                            .flex()
-                                            .items_center()
-                                            .justify_center()
-                                            .rounded(px(4.))
-                                            .border_1()
-                                            .border_color(colors.border.opacity(0.5))
-                                            .bg(colors.background.opacity(0.35))
-                                            .text_size(px(11.))
-                                            .font_weight(FontWeight::MEDIUM)
-                                            .text_color(style::alpha(colors.muted_foreground, 0.7))
-                                            .child((option_index + 1).to_string()),
-                                    )
-                                } else {
-                                    this
-                                }
-                            })
-                    })),
+                                    } else {
+                                        this
+                                    }
+                                })
+                        }),
+                ),
             )
             .into_any_element()
     }

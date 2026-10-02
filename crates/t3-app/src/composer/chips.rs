@@ -6,10 +6,12 @@
 //! [`ChipKind::token_id`]). [`render_chip`] is the renderer the editor installs.
 
 use gpui_kit::{
-    AnyElement, App, FontWeight, InteractiveElement as _, IntoElement, ParentElement as _, Styled as _,
-    Window,
+    AnyElement, App, FontWeight, InteractiveElement as _, IntoElement, ParentElement as _,
+    Styled as _, Window,
     base::input::{InlineToken, InlineTokenContext},
-    div, prelude::FluentBuilder as _, px, svg,
+    div,
+    prelude::FluentBuilder as _,
+    px, svg,
 };
 use t3_ui::{ActiveColors as _, Icon, IconName, TooltipExt as _, file_icon};
 
@@ -18,10 +20,17 @@ use super::style::{alpha, palette};
 /// What a chip refers to, recovered from its token id.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ChipKind {
-    File { path: String },
-    Skill { name: String },
+    File {
+        path: String,
+    },
+    Skill {
+        name: String,
+    },
     /// `expired` when the context's text is gone (restored from disk).
-    Terminal { context_id: String, expired: bool },
+    Terminal {
+        context_id: String,
+        expired: bool,
+    },
 }
 
 impl ChipKind {

@@ -12,7 +12,9 @@ use gpui_kit::{
     FontWeight, InteractiveElement as _, IntoElement, KeyDownEvent, ParentElement as _, Render,
     SharedString, StatefulInteractiveElement as _, Styled as _, Subscription, Window,
     base::input::{Input, InputEvent, InputState},
-    deferred, div, prelude::FluentBuilder as _, px, svg,
+    deferred, div,
+    prelude::FluentBuilder as _,
+    px, svg,
 };
 use t3_logic::{
     composer::providers::{self, PickerModel, PickerRail, ProviderEntry},
@@ -90,7 +92,8 @@ impl ModelPicker {
     }
 
     pub fn focus(&self, window: &mut Window, cx: &mut Context<Self>) {
-        self.search.update(cx, |search, cx| search.focus(window, cx));
+        self.search
+            .update(cx, |search, cx| search.focus(window, cx));
     }
 
     fn query(&self, cx: &App) -> String {
@@ -206,8 +209,10 @@ impl Render for ModelPicker {
         let query = self.query(cx);
         let searching = !query.trim().is_empty();
         let entries = providers::provider_entries(&self.config.providers);
-        let rail_entries: Vec<ProviderEntry<'_>> =
-            entries.into_iter().filter(ProviderEntry::picker_visible).collect();
+        let rail_entries: Vec<ProviderEntry<'_>> = entries
+            .into_iter()
+            .filter(ProviderEntry::picker_visible)
+            .collect();
         let show_rail = !searching && !rail_entries.is_empty();
         let rows = self.rows(&query);
         let highlighted = self.highlighted_key(&rows);
@@ -248,8 +253,18 @@ impl Render for ModelPicker {
                         .pb(px(4.))
                         .pt(px(2.))
                         .child(
-                            div().mb(px(4.)).pb(px(4.)).border_b_1().border_color(colors.border).child(
-                                rail_button("favorites", *selected == PickerRail::Favorites, false, cx)
+                            div()
+                                .mb(px(4.))
+                                .pb(px(4.))
+                                .border_b_1()
+                                .border_color(colors.border)
+                                .child(
+                                    rail_button(
+                                        "favorites",
+                                        *selected == PickerRail::Favorites,
+                                        false,
+                                        cx,
+                                    )
                                     .child(
                                         svg()
                                             .path("icons/composer/star-filled.svg")
@@ -257,11 +272,13 @@ impl Render for ModelPicker {
                                             .text_color(colors.foreground),
                                     )
                                     .tooltip_text("Favorites")
-                                    .on_click(cx.listener(|this, _, _, cx| {
-                                        this.rail = PickerRail::Favorites;
-                                        cx.notify();
-                                    })),
-                            ),
+                                    .on_click(cx.listener(
+                                        |this, _, _, cx| {
+                                            this.rail = PickerRail::Favorites;
+                                            cx.notify();
+                                        },
+                                    )),
+                                ),
                         )
                         .children(rail_entries.iter().map(|entry| {
                             let id = entry.instance_id().clone();
@@ -278,7 +295,14 @@ impl Render for ModelPicker {
                                 disabled,
                                 cx,
                             )
-                            .child(div().size(px(24.)).flex().items_center().justify_center().child(provider_icon(entry, px(20.), cx)))
+                            .child(
+                                div()
+                                    .size(px(24.))
+                                    .flex()
+                                    .items_center()
+                                    .justify_center()
+                                    .child(provider_icon(entry, px(20.), cx)),
+                            )
                             .tooltip_text(tooltip)
                             .when(!disabled, |this| {
                                 this.on_click(cx.listener(move |this, _, _, cx| {
@@ -368,7 +392,11 @@ impl Render for ModelPicker {
                                             .child(providers::model_display_name(row.model, true)),
                                     )
                                     .when(selected, |this| {
-                                        this.child(Icon::new(IconName::Check).size(px(14.)).color(style::palette::BLUE_400))
+                                        this.child(
+                                            Icon::new(IconName::Check)
+                                                .size(px(14.))
+                                                .color(style::palette::BLUE_400),
+                                        )
                                     }),
                             )
                             .child(
@@ -429,9 +457,9 @@ impl Render for ModelPicker {
                                             )
                                         } else {
                                             this.opacity(0.64).child(
-                                                Icon::new(IconName::Star)
-                                                    .size(px(12.))
-                                                    .color(style::alpha(colors.muted_foreground, 0.7)),
+                                                Icon::new(IconName::Star).size(px(12.)).color(
+                                                    style::alpha(colors.muted_foreground, 0.7),
+                                                ),
                                             )
                                         }
                                     })
@@ -455,7 +483,9 @@ impl Render for ModelPicker {
             .min_w_0()
             .min_h_0()
             .bg(colors.muted.opacity(0.4))
-            .when(show_rail, |this| this.border_l_1().border_color(colors.border))
+            .when(show_rail, |this| {
+                this.border_l_1().border_color(colors.border)
+            })
             .child(
                 div().px(px(16.)).pt(px(10.)).child(
                     div()
@@ -554,7 +584,9 @@ impl Composer {
             return div().into_any_element();
         };
         let entries = providers::provider_entries(&config.providers);
-        let entry = resolved.provider_index.and_then(|index| entries.get(index).copied());
+        let entry = resolved
+            .provider_index
+            .and_then(|index| entries.get(index).copied());
         let model = entry.and_then(|entry| {
             entry
                 .models()
@@ -593,14 +625,8 @@ impl Composer {
             .child(trigger)
             .when_some(self.model_picker.clone(), |this, picker| {
                 this.child(
-                    deferred(
-                        div()
-                            .absolute()
-                            .bottom(px(28.))
-                            .left_0()
-                            .child(picker),
-                    )
-                    .with_priority(2),
+                    deferred(div().absolute().bottom(px(28.)).left_0().child(picker))
+                        .with_priority(2),
                 )
             })
             .into_any_element()

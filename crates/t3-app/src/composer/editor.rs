@@ -189,5 +189,8 @@ pub fn replace_text(
 /// `isCollapsedCursorAdjacentToInlineToken(.., "left")`).
 pub fn caret_after_chip(editor: &TextareaState) -> bool {
     let cursor = editor.cursor();
-    editor.tokens().iter().any(|span| span.range().end == cursor)
+    editor
+        .tokens()
+        .iter()
+        .any(|span| span.range().end == cursor)
 }

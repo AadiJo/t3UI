@@ -16,7 +16,11 @@ use t3_ui::{ActiveColors as _, Icon, IconName, file_icon, tokens::shadow};
 use super::{Composer, style};
 
 impl Composer {
-    pub(super) fn render_command_menu(&mut self, _: &mut Window, cx: &mut Context<Self>) -> AnyElement {
+    pub(super) fn render_command_menu(
+        &mut self,
+        _: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> AnyElement {
         let colors = cx.colors();
         let Some(trigger) = self.trigger.clone() else {
             return div().into_any_element();
@@ -24,21 +28,18 @@ impl Composer {
         let items = self.menu_items(cx);
         let active = self.active_menu_item(&items).map(|item| item.id);
         let groups = menu::group_items(&items, &trigger);
-        let loading =
-            trigger.kind == TriggerKind::Path && self.path_search.loading && !trigger.query.is_empty();
+        let loading = trigger.kind == TriggerKind::Path
+            && self.path_search.loading
+            && !trigger.query.is_empty();
         let muted = style::alpha(colors.muted_foreground, 0.7);
         let group_label = |text: &str| {
-            div()
-                .px(px(12.))
-                .pt(px(8.))
-                .pb(px(4.))
-                .child(
-                    style::tracked_text(&text.to_uppercase(), px(0.8))
-                        .text_size(px(10.))
-                        .line_height(px(13.33))
-                        .font_weight(FontWeight::SEMIBOLD)
-                        .text_color(style::alpha(colors.muted_foreground, 0.55)),
-                )
+            div().px(px(12.)).pt(px(8.)).pb(px(4.)).child(
+                style::tracked_text(&text.to_uppercase(), px(0.8))
+                    .text_size(px(10.))
+                    .line_height(px(13.33))
+                    .font_weight(FontWeight::SEMIBOLD)
+                    .text_color(style::alpha(colors.muted_foreground, 0.55)),
+            )
         };
 
         let body: AnyElement = if items.is_empty() {
@@ -117,7 +118,8 @@ impl Composer {
                                     this.bg(colors.accent).text_color(colors.accent_foreground)
                                 })
                                 .on_mouse_move(cx.listener(move |this, _, _, cx| {
-                                    let current = this.highlight.as_ref().map(|(id, _)| id.as_str());
+                                    let current =
+                                        this.highlight.as_ref().map(|(id, _)| id.as_str());
                                     if current != Some(id.as_str()) {
                                         this.set_highlight(Some(id.clone()), cx);
                                     }

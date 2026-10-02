@@ -13,7 +13,9 @@ use gpui_kit::{
     IntoElement, ParentElement as _, Render, SharedString, StatefulInteractiveElement as _,
     Styled as _, Subscription, Task, TaskExt as _, Window,
     base::input::{Input, InputEvent, InputState},
-    deferred, div, prelude::FluentBuilder as _, px,
+    deferred, div,
+    prelude::FluentBuilder as _,
+    px,
 };
 use t3_client::commands;
 use t3_logic::composer::draft::DraftEnvMode;
@@ -71,7 +73,11 @@ struct ToolbarInfo {
 }
 
 impl BranchToolbar {
-    pub fn new(environment: Entity<Environment>, target: ComposerTarget, cx: &mut Context<Self>) -> Self {
+    pub fn new(
+        environment: Entity<Environment>,
+        target: ComposerTarget,
+        cx: &mut Context<Self>,
+    ) -> Self {
         let mut subscriptions = vec![cx.observe(&environment, |this, _, cx| {
             this.sync_vcs_interest(cx);
             cx.notify();
@@ -123,7 +129,10 @@ impl BranchToolbar {
                 })
             }
             ComposerTarget::Draft(id) => {
-                let draft = DraftStore::global_ref(cx)?.read(cx).draft_thread(id)?.clone();
+                let draft = DraftStore::global_ref(cx)?
+                    .read(cx)
+                    .draft_thread(id)?
+                    .clone();
                 let project = environment.project(&draft.project_id)?;
                 Some(ToolbarInfo {
                     project_cwd: project.workspace_root.clone(),
@@ -197,12 +206,14 @@ impl BranchToolbar {
     fn open_branch_picker(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.open = Some(Popup::Branch);
         let search = cx.new(|cx| InputState::new(window, cx).placeholder("Search refs..."));
-        self._subscriptions.push(cx.subscribe(&search, |this, search, event: &InputEvent, cx| {
-            if matches!(event, InputEvent::Change) {
-                let query = search.read(cx).value().to_string();
-                this.load_refs(query, cx);
-            }
-        }));
+        self._subscriptions.push(
+            cx.subscribe(&search, |this, search, event: &InputEvent, cx| {
+                if matches!(event, InputEvent::Change) {
+                    let query = search.read(cx).value().to_string();
+                    this.load_refs(query, cx);
+                }
+            }),
+        );
         search.update(cx, |search, cx| search.focus(window, cx));
         self.branch_search = Some(search);
         self.load_refs(String::new(), cx);
@@ -217,7 +228,9 @@ impl BranchToolbar {
     }
 
     fn load_refs(&mut self, query: String, cx: &mut Context<Self>) {
-        let (Some(client), Some(info)) = (self.environment.read(cx).client().cloned(), self.info(cx)) else {
+        let (Some(client), Some(info)) =
+            (self.environment.read(cx).client().cloned(), self.info(cx))
+        else {
             return;
         };
         let cwd = info.worktree_path.unwrap_or(info.project_cwd);
@@ -280,7 +293,10 @@ impl BranchToolbar {
         let Some(client) = self.environment.read(cx).client().cloned() else {
             return;
         };
-        let cwd = info.worktree_path.clone().unwrap_or(info.project_cwd.clone());
+        let cwd = info
+            .worktree_path
+            .clone()
+            .unwrap_or(info.project_cwd.clone());
         self.pending_action = true;
         let worktree = info.worktree_path;
         cx.spawn(async move |this, cx| {
@@ -298,7 +314,10 @@ impl BranchToolbar {
                             .map(|_| ())
                     } else {
                         client
-                            .request::<VcsSwitchRef>(&VcsSwitchRefInput { cwd, ref_name: name })
+                            .request::<VcsSwitchRef>(&VcsSwitchRefInput {
+                                cwd,
+                                ref_name: name,
+                            })
                             .await
                             .map(|_| ())
                     }
@@ -326,7 +345,12 @@ impl BranchToolbar {
         .detach();
     }
 
-    fn record_branch(&mut self, branch: Option<String>, worktree_path: Option<String>, cx: &mut Context<Self>) {
+    fn record_branch(
+        &mut self,
+        branch: Option<String>,
+        worktree_path: Option<String>,
+        cx: &mut Context<Self>,
+    ) {
         match &self.target {
             ComposerTarget::Draft(id) => {
                 let id = id.clone();
@@ -408,7 +432,11 @@ impl BranchToolbar {
                     .px(px(7.))
                     .gap(px(4.))
                     .child(Icon::new(icon).size(px(12.)))
-                    .child(if worktree { "New worktree" } else { local_label })
+                    .child(if worktree {
+                        "New worktree"
+                    } else {
+                        local_label
+                    })
                     .child(Icon::new(IconName::ChevronDown).size(px(12.)).opacity(0.6))
                     .on_click(cx.listener(move |this, _, _, cx| {
                         this.open = if open { None } else { Some(Popup::Workspace) };
@@ -421,7 +449,9 @@ impl BranchToolbar {
                     .child(
                         MenuCheckboxItem::new("workspace-local", local_label)
                             .checked(!worktree)
-                            .on_change(cx.listener(|this, _, _, cx| this.set_env_mode(DraftEnvMode::Local, cx))),
+                            .on_change(cx.listener(|this, _, _, cx| {
+                                this.set_env_mode(DraftEnvMode::Local, cx)
+                            })),
                     )
                     .child(
                         MenuCheckboxItem::new("workspace-worktree", "New worktree")
@@ -671,8 +701,21 @@ impl Render for BranchToolbar {
             .px(px(12.))
             .pb(px(12.))
             .pt(px(4.))
-            .child(div().flex().flex_none().items_center().gap(px(4.)).child(self.render_workspace(&info, cx)))
-            .child(div().ml_auto().flex_none().min_w_0().child(self.render_branch(&info, cx)))
+            .child(
+                div()
+                    .flex()
+                    .flex_none()
+                    .items_center()
+                    .gap(px(4.))
+                    .child(self.render_workspace(&info, cx)),
+            )
+            .child(
+                div()
+                    .ml_auto()
+                    .flex_none()
+                    .min_w_0()
+                    .child(self.render_branch(&info, cx)),
+            )
             .into_any_element()
     }
 }
