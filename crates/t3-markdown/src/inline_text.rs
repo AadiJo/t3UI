@@ -99,6 +99,9 @@ pub(crate) struct TextContent {
     /// `text-align` within the wrap width (table cells honor GFM column alignment).
     pub align: TextAlign,
     pub decorations: Decorations,
+    /// Inline markup and block framing used to copy the selection as markdown.
+    pub markup: Vec<(Range<usize>, crate::copy::Markup)>,
+    pub copy: crate::copy::CopyFormat,
 }
 
 /// Invoked with a link's href when it is clicked.
@@ -1152,24 +1155,14 @@ fn document_order(origin: Point<Pixels>) -> u64 {
     y * 1_000_000 + x
 }
 
-/// The text copied for `range`: atoms copy their own text.
+/// The markdown copied for `range` (the fork's `markdown-clipboard.ts`).
 fn copy_text(content: &TextContent, range: Range<usize>) -> String {
-    let text = &content.text[range.clone()];
-    let mut out = String::with_capacity(text.len());
-    for (offset, ch) in text.char_indices() {
-        if ch == crate::document::ATOM_CHAR {
-            if let Some(atom) = content
-                .atoms
-                .iter()
-                .find(|atom| atom.offset == range.start + offset)
-            {
-                out.push_str(&atom.copy_text);
-            }
-        } else {
-            out.push(ch);
-        }
-    }
-    out
+    let atoms: Vec<(usize, &str)> = content
+        .atoms
+        .iter()
+        .map(|atom| (atom.offset, atom.copy_text.as_ref()))
+        .collect();
+    crate::copy::serialize(&content.text, range, &content.markup, &atoms, &content.copy)
 }
 
 fn layout_size(

@@ -6,6 +6,7 @@
 //! ([`Markdown`], feature `gpui`, on by default) turns parsed chunks into elements that match the
 //! fork's typography, code block and table chrome, and joins the window text selection.
 
+pub mod copy;
 pub mod document;
 pub mod links;
 pub mod parse;

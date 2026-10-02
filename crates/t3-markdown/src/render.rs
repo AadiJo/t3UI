@@ -16,6 +16,7 @@ use t3_highlight::{Highlighted, Theme};
 use t3_ui::{Icon, IconName};
 
 use crate::{
+    copy::{CopyFormat, Markup},
     document::{
         ATOM_CHAR, Align, Atom, AtomKind, Block, CodeBlock, Details, Footnote, Inline, InlineStyle,
         List, Span, Table,
@@ -110,6 +111,30 @@ struct Ctx {
     ol_depth: usize,
     suffixes: Rc<HashMap<String, String>>,
     theme: Theme,
+    /// Copy-as-markdown framing: prefix of the next block's first line (list marker), and of
+    /// every other line (quote `> `, list continuation indent).
+    copy_prefix: String,
+    copy_indent: String,
+}
+
+impl Ctx {
+    /// The copy framing for a block in this context.
+    fn copy_format(&self, gap: bool) -> CopyFormat {
+        CopyFormat {
+            first_prefix: self.copy_prefix.clone(),
+            line_prefix: self.copy_indent.clone(),
+            fence: None,
+            block_gap: gap,
+        }
+    }
+
+    /// The context for blocks after the first in a container: no marker any more.
+    fn continued(&self) -> Self {
+        Self {
+            copy_prefix: self.copy_indent.clone(),
+            ..self.clone()
+        }
+    }
 }
 
 /// Monotonic element ids within one render pass.
@@ -151,6 +176,8 @@ pub(crate) fn render_markdown(
         } else {
             Theme::Light
         },
+        copy_prefix: String::new(),
+        copy_indent: String::new(),
     };
     let mut ids = Ids(0);
     let chunks: Vec<_> = this.chunks().to_vec();
@@ -194,9 +221,14 @@ fn render_blocks(
     window: &mut Window,
     cx: &mut Context<Markdown>,
 ) -> Vec<Laid> {
+    let continued = ctx.continued();
     blocks
         .iter()
-        .map(|block| render_block(this, ctx, ids, block, window, cx))
+        .enumerate()
+        .map(|(index, block)| {
+            let ctx = if index == 0 { ctx } else { &continued };
+            render_block(this, ctx, ids, block, window, cx)
+        })
         .collect()
 }
 
@@ -212,7 +244,12 @@ fn render_block(
     match block {
         Block::Paragraph { content, tight } => {
             let own = if *tight { (0., 0.) } else { (margin, margin) };
-            Laid::new(paragraph(this, ctx, ids, content, window, cx), own)
+            let kind = if *tight {
+                TextKind::Tight
+            } else {
+                TextKind::Body
+            };
+            Laid::new(paragraph(this, ctx, ids, content, kind, window, cx), own)
         }
         Block::Heading { level, content } => {
             let size = match level {
@@ -223,6 +260,7 @@ fn render_block(
             };
             let colors = &ctx.style.colors;
             let heading = Ctx {
+                copy_prefix: format!("{}{} ", ctx.copy_prefix, "#".repeat(usize::from(*level))),
                 color: if *level == 6 {
                     colors.muted_foreground
                 } else {
@@ -241,6 +279,8 @@ fn render_block(
         Block::Quote(children) => {
             let quote = Ctx {
                 color: ctx.style.colors.muted_foreground,
+                copy_prefix: format!("{}> ", ctx.copy_prefix),
+                copy_indent: format!("{}> ", ctx.copy_indent),
                 ..ctx.clone()
             };
             let inner = render_blocks(this, &quote, ids, children, window, cx);
@@ -287,6 +327,7 @@ fn paragraph(
     ctx: &Ctx,
     ids: &mut Ids,
     content: &Inline,
+    kind: TextKind,
     window: &mut Window,
     cx: &mut Context<Markdown>,
 ) -> AnyElement {
@@ -296,14 +337,14 @@ fn paragraph(
         .filter(|atom| matches!(atom.kind, AtomKind::Image { .. }))
         .collect();
     if images.is_empty() {
-        return inline(this, ctx, ids, content, TextKind::Body, window, cx);
+        return inline(this, ctx, ids, content, kind, window, cx);
     }
     let mut parts = div().flex().flex_col().w_full();
     let mut start = 0;
     for image in images {
         let before = slice_inline(content, start..image.offset);
         if !before.text.trim().is_empty() {
-            parts = parts.child(inline(this, ctx, ids, &before, TextKind::Body, window, cx));
+            parts = parts.child(inline(this, ctx, ids, &before, kind, window, cx));
         }
         if let AtomKind::Image { url, .. } = &image.kind {
             parts = parts.child(img(SharedString::from(url.clone())).max_w_full());
@@ -312,7 +353,7 @@ fn paragraph(
     }
     let after = slice_inline(content, start..content.text.len());
     if !after.text.trim().is_empty() {
-        parts = parts.child(inline(this, ctx, ids, &after, TextKind::Body, window, cx));
+        parts = parts.child(inline(this, ctx, ids, &after, kind, window, cx));
     }
     parts.into_any_element()
 }
@@ -364,7 +405,10 @@ fn slice_inline(content: &Inline, range: std::ops::Range<usize>) -> Inline {
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum TextKind {
+    /// A paragraph with margins.
     Body,
+    /// The bare text of a tight list item.
+    Tight,
     Heading,
     /// A table cell; `header` cells are bold and never wrap.
     Cell {
@@ -513,6 +557,11 @@ fn aligned_inline(
         atoms.push(element);
     }
 
+    let copy = match kind {
+        TextKind::Body | TextKind::Heading => ctx.copy_format(true),
+        TextKind::Tight => ctx.copy_format(false),
+        TextKind::Cell { .. } | TextKind::Marker | TextKind::Summary => CopyFormat::default(),
+    };
     let text_content = TextContent {
         text: SharedString::from(content.text.clone()),
         runs,
@@ -536,6 +585,8 @@ fn aligned_inline(
             code_border: colors.border,
             selection: colors.selection,
         },
+        markup: inline_markup(content),
+        copy,
     };
     let entity = cx.entity().downgrade();
     let on_link: LinkHandler = Rc::new(move |href, _, cx| {
@@ -546,6 +597,47 @@ fn aligned_inline(
         .on_link(on_link)
         .selectable(kind != TextKind::Marker)
         .into_any_element()
+}
+
+/// The markup copy-as-markdown re-applies: style flags merged into ranges, plus links.
+fn inline_markup(content: &Inline) -> Vec<(std::ops::Range<usize>, Markup)> {
+    let mut out = Vec::new();
+    type Flag = fn(&InlineStyle) -> bool;
+    let flags: [(Flag, Markup); 4] = [
+        (|style| style.bold, Markup::Bold),
+        (|style| style.italic, Markup::Italic),
+        (|style| style.strike, Markup::Strike),
+        (|style| style.code, Markup::Code),
+    ];
+    for (flag, markup) in flags {
+        let mut open: Option<std::ops::Range<usize>> = None;
+        for span in &content.spans {
+            match (&mut open, flag(&span.style)) {
+                (Some(range), true) if range.end == span.range.start => range.end = span.range.end,
+                (_, true) => {
+                    if let Some(range) = open.take() {
+                        out.push((range, markup.clone()));
+                    }
+                    open = Some(span.range.clone());
+                }
+                (_, false) => {
+                    if let Some(range) = open.take() {
+                        out.push((range, markup.clone()));
+                    }
+                }
+            }
+        }
+        if let Some(range) = open {
+            out.push((range, markup.clone()));
+        }
+    }
+    out.extend(
+        content
+            .links
+            .iter()
+            .map(|link| (link.range.clone(), Markup::Link(link.href.clone()))),
+    );
+    out
 }
 
 /// Lays out one atom: its slot geometry and the element drawn there.
@@ -599,7 +691,7 @@ fn atom_element(
                 .into_any_element();
             (favicon, element)
         }
-        AtomKind::FileChip { link, .. } => {
+        AtomKind::FileChip { link, href } => {
             let mut label = link.basename.clone();
             if let Some(suffix) = ctx.suffixes.get(&link.file_path) {
                 label.push_str(" · ");
@@ -656,7 +748,9 @@ fn atom_element(
                 })
                 .into_any_element();
             let _ = this;
-            (slot(width, height, top, label), element)
+            // `data-markdown-copy`: `[basename](href)`.
+            let copy = SharedString::from(format!("[{}]({href})", link.basename));
+            (slot(width, height, top, copy), element)
         }
         AtomKind::FootnoteRef { number } | AtomKind::FootnoteBackref { number } => {
             // `<sup><a data-footnote-ref>`: inline-flex, min-width 1rem, centered, 11px semibold,
@@ -799,9 +893,24 @@ fn render_list(
                 );
             }
         }
-        for block in &item_blocks {
-            blocks.push(render_block(this, &nested, ids, block, window, cx));
-        }
+        let marker = if ordered {
+            format!("{}. ", list.start.unwrap_or(1) + index as u64)
+        } else {
+            "- ".to_string()
+        };
+        let item_ctx = Ctx {
+            copy_prefix: format!("{}{marker}", ctx.copy_indent),
+            copy_indent: format!("{}{}", ctx.copy_indent, " ".repeat(marker.len())),
+            ..nested.clone()
+        };
+        blocks.extend(render_blocks(
+            this,
+            &item_ctx,
+            ids,
+            &item_blocks,
+            window,
+            cx,
+        ));
         let mut li = div().relative().flex().flex_col().w_full();
         if item.task.is_none() {
             let marker = if ordered {
@@ -976,7 +1085,13 @@ fn code_block(
     let wraps = this.code_wraps(id);
     let copied = this.copied.contains(&id);
     let code_text = expand_tabs(&block.code);
-    let content = code_content(ctx, &code_text, &highlighted, wraps);
+    let mut content = code_content(ctx, &code_text, &highlighted, wraps);
+    // `resolveCodeBlockLanguage`: the fence language, omitted for `text`.
+    content.copy.fence = Some(if block.language == "text" {
+        String::new()
+    } else {
+        block.language.clone()
+    });
     let body = InlineText::new(("md-code", id as u64), Rc::new(content), Vec::new());
     let entity = cx.entity().downgrade();
     let wrap_entity = entity.clone();
@@ -1135,6 +1250,11 @@ fn code_content(ctx: &Ctx, code: &str, highlighted: &Highlighted, wraps: bool) -
             TextWrap::Pre
         },
         align: TextAlign::Left,
+        markup: Vec::new(),
+        copy: CopyFormat {
+            block_gap: true,
+            ..CopyFormat::default()
+        },
         decorations: Decorations {
             code_background: Hsla::transparent_black(),
             code_border: Hsla::transparent_black(),
