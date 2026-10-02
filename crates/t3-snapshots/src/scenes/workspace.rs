@@ -1,11 +1,19 @@
-//! The workspace shell: sidebar populated from a recorded shell fixture, collapsed, and empty.
+//! The workspace shell: sidebar populated from shell fixtures, collapsed, and empty.
+//!
+//! `reference.json` is a shell snapshot recorded from the e2e nightly server (`e2e/seed.mjs`),
+//! the same seed as `docs/reference/sidebar-*.png`, so `sidebar-reference-*` compares 1:1.
+//! `sidebar.json` is handcrafted to cover every status, grouping, badges, and overflow.
 
-use gpui_kit::{AnyView, App, AppContext as _, Window};
+use gpui_kit::{
+    AnyView, App, AppContext as _, Context, IntoElement, ParentElement as _, Render, Styled as _,
+    Window, div,
+};
 use t3_app::state::{AppState, Route, fixtures};
-use t3_ui::ThemeMode;
+use t3_ui::{ActiveColors as _, ThemeMode};
 
 use super::Scene;
 
+const REFERENCE: &str = include_str!("../../fixtures/reference.json");
 const SIDEBAR: &str = include_str!("../../fixtures/sidebar.json");
 const EMPTY: &str = include_str!("../../fixtures/empty.json");
 
@@ -18,11 +26,31 @@ fn workspace(
 ) -> AnyView {
     let state = fixtures::load(fixture, cx).expect("fixture should decode");
     state.update(cx, adjust);
-    cx.new(|cx| t3_app::Workspace::new(window, cx)).into()
+    let workspace = cx.new(|cx| t3_app::Workspace::new(window, cx)).into();
+    cx.new(|_| Backdrop(workspace)).into()
+}
+
+/// Headless captures have no native window material behind the translucent glass, so paint the
+/// opaque `background` the web reference renders on (`--app-chrome-background`).
+struct Backdrop(AnyView);
+
+impl Render for Backdrop {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        div()
+            .size_full()
+            .bg(cx.colors().background)
+            .child(self.0.clone())
+    }
 }
 
 pub fn scenes() -> Vec<Scene> {
     vec![
+        Scene::new("sidebar-reference-dark", ThemeMode::Dark, |window, cx| {
+            workspace(REFERENCE, window, cx, |_, _| {})
+        }),
+        Scene::new("sidebar-reference-light", ThemeMode::Light, |window, cx| {
+            workspace(REFERENCE, window, cx, |_, _| {})
+        }),
         Scene::new("workspace-sidebar-dark", ThemeMode::Dark, |window, cx| {
             workspace(SIDEBAR, window, cx, |_, _| {})
         }),
