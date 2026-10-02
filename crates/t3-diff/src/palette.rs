@@ -1,6 +1,13 @@
 //! Every color the diff view and changed-files tree paint, derived from the app tokens with the
 //! formulas of `@pierre/diffs`' stylesheet plus the T3 overrides in `DiffPanel.tsx`
 //! (`DIFF_PANEL_UNSAFE_CSS`) and `index.css`.
+//!
+//! Where a variable resolves matters. Pierre declares most `--diffs-*` variables on the shadow
+//! host, where only the Pierre theme is visible (background `#0a0a0a` / `#ffffff`); T3 declares
+//! its `--diffs-bg` and `*-override` variables on `[data-diff]` and friends, below the host.
+//! So host-level variables (separator, line-number color, buffer and deletion-bar colors, word
+//! emphasis) ignore T3's overrides, while rules evaluated on line elements (line and number
+//! backgrounds, hover) use them. Measured in Chromium: separator `#2b2b2b`, numbers `#9d9d9d`.
 
 use crate::color::Rgba;
 
@@ -85,6 +92,9 @@ pub struct DiffPalette {
     pub appearance: Appearance,
     /// `.diff-panel-viewport`: `mix(srgb, background 94%, card)`.
     pub viewport: Rgba,
+    /// File card fill (`.diff-render-surface > diffs-container`): `mix(srgb, card 92%,
+    /// background)`. Mostly covered by the header and code, but it sits under the border.
+    pub card: Rgba,
     /// File card border (`--border`, translucent).
     pub card_border: Rgba,
     /// `--diffs-bg`: `mix(srgb, card 90%, background)`. Code, gutter and separator wrapper fill.
@@ -103,15 +113,19 @@ pub struct DiffPalette {
     pub addition: Rgba,
     pub deletion: Rgba,
     pub modified: Rgba,
-    /// "N unmodified lines" pill: `mix(srgb, background 95%, foreground)`.
+    /// "N unmodified lines" pill (host `--diffs-bg-separator`).
     pub separator: Rgba,
     /// Separator label and context line numbers (`--diffs-fg-number`).
     pub separator_text: Rgba,
     pub context: LineColors,
     pub added: LineColors,
     pub deleted: LineColors,
-    /// Light half of the dashed deletion bar (`--diffs-bg-deletion`).
+    /// Light half of the dashed deletion bar (host `--diffs-bg-deletion`).
     pub deletion_bar_gap: Rgba,
+    /// Word emphasis behind changed words (host `--diffs-bg-{addition,deletion}-emphasis`),
+    /// translucent over the line background.
+    pub addition_emphasis: Rgba,
+    pub deletion_emphasis: Rgba,
     /// Diagonal stripes of an empty split side (`--diffs-bg-buffer`).
     pub buffer_stripe: Rgba,
     /// Gutter cell next to an empty split side (`--diffs-bg-context-gutter`).
@@ -136,8 +150,12 @@ impl DiffPalette {
         let deletion = pick(Rgba::rgb(0xd52c36), Rgba::rgb(0xff2e3f));
         let modified = Rgba::rgb(0x009fff);
 
+        // T3's `--diffs-bg`, redeclared on `[data-diff]`.
         let surface = tokens.card.mix_srgb(0.90, bg);
-        let number_text = text.mix_lab(0.65, surface);
+        // The shadow host's `--diffs-bg` (Pierre theme background) and `--diffs-mixer`.
+        let host_bg = pick(Rgba::rgb(0xffffff), Rgba::rgb(0x0a0a0a));
+        let mixer = pick(Rgba::rgb(0x000000), Rgba::rgb(0xffffff));
+        let number_text = text.mix_lab(0.65, host_bg);
 
         let hover_target = bg.mix_srgb(0.94, fg);
         let context_hover = surface.mix_lab(weight(0.97, 0.91), hover_target);
@@ -161,10 +179,11 @@ impl DiffPalette {
             }
         };
 
-        let context_bg = bg.mix_srgb(0.97, fg);
+        let host_context = host_bg.mix_lab(weight(0.985, 0.925), mixer);
         Self {
             appearance,
             viewport: bg.mix_srgb(0.94, tokens.card),
+            card: tokens.card.mix_srgb(0.92, bg),
             card_border: tokens.border,
             surface,
             header: tokens.card.mix_srgb(0.94, fg),
@@ -175,14 +194,16 @@ impl DiffPalette {
             addition,
             deletion,
             modified,
-            separator: bg.mix_srgb(0.95, fg),
+            separator: host_bg.mix_lab(weight(0.96, 0.85), mixer),
             separator_text: number_text,
             context,
             added: change_colors(tokens.success, addition, weight(0.80, 0.70)),
             deleted: change_colors(tokens.destructive, deletion, weight(0.80, 0.75)),
-            deletion_bar_gap: bg.mix_srgb(0.92, tokens.destructive),
-            buffer_stripe: bg.mix_srgb(0.90, fg),
-            buffer_gutter: context_bg.mix_lab(weight(0.90, 0.45), surface),
+            deletion_bar_gap: host_bg.mix_lab(weight(0.88, 0.80), deletion),
+            addition_emphasis: addition.alpha(weight(0.15, 0.20)),
+            deletion_emphasis: deletion.alpha(weight(0.15, 0.20)),
+            buffer_stripe: host_bg.mix_lab(0.92, mixer),
+            buffer_gutter: host_context.mix_lab(weight(0.90, 0.45), host_bg),
             raw_text: tokens.muted_foreground.alpha(0.90),
             raw_reason: tokens.muted_foreground.alpha(0.75),
             raw_fill: bg.alpha(0.70),
@@ -193,6 +214,15 @@ impl DiffPalette {
     /// Colors of the spec fallback tokens.
     pub fn from_spec(appearance: Appearance) -> Self {
         Self::new(&AppTokens::from_spec(appearance), appearance)
+    }
+
+    /// Colors of a line kind.
+    pub fn line(&self, kind: crate::rows::LineKind) -> LineColors {
+        match kind {
+            crate::rows::LineKind::Context => self.context,
+            crate::rows::LineKind::Addition => self.added,
+            crate::rows::LineKind::Deletion => self.deleted,
+        }
     }
 }
 
@@ -277,6 +307,10 @@ mod tests {
         assert_close(palette.header, 0x282828ff);
         assert_close(palette.card_border, 0xffffff0f);
         assert_close(palette.added.code, 0x191c1bff);
+        assert_close(palette.added.number, 0x191d1cff);
+        // Measured in Chromium (host-level variables).
+        assert_close(palette.separator, 0x2b2b2bff);
+        assert_close(palette.separator_text, 0x9d9d9dff);
     }
 
     #[test]
