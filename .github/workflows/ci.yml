@@ -36,7 +36,7 @@ jobs:
       - run: cargo test --workspace
 
   macos:
-    name: macOS build + DMG
+    name: macOS snapshots + smoke launch
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
@@ -44,43 +44,23 @@ jobs:
         with:
           toolchain: "1.99.0"
       - uses: Swatinem/rust-cache@v2
-      - name: Build release binary
-        run: cargo build --release -p t3-app
-      - name: Bundle app + DMG
-        run: |
-          T3UI_VERSION="0.1.0-${GITHUB_SHA::7}" script/bundle-macos.sh
-          ls -la dist
+      # One debug build for both binaries. Features unify, so the app binary also carries
+      # gpui's test-support; fine for a smoke launch, and it avoids compiling GPUI twice.
+      # Release DMGs come from release.yml on demand.
+      - name: Build
+        run: cargo build -p t3-app -p t3-snapshots
+      - name: Render headless scenes
+        run: target/debug/t3-snapshots snapshots
       - name: Launch smoke test
         run: |
           # The app must start and keep running with a real window for a few seconds.
-          dist/T3UI.app/Contents/MacOS/t3ui > smoke.log 2>&1 &
+          target/debug/t3ui > smoke.log 2>&1 &
           PID=$!
           sleep 8
           if ! kill -0 "$PID"; then echo "app exited early"; cat smoke.log; exit 1; fi
-          screencapture -x smoke.png || true
+          screencapture -x snapshots/smoke-launch.png || true
           kill "$PID" || true
           cat smoke.log
-      - uses: actions/upload-artifact@v4
-        with:
-          name: T3UI-macos-arm64
-          path: |
-            dist/*.dmg
-            smoke.png
-          if-no-files-found: error
-
-  snapshots:
-    name: macOS headless snapshots
-    runs-on: macos-15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: "1.99.0"
-      - uses: Swatinem/rust-cache@v2
-        with:
-          key: snapshots
-      - name: Render scenes
-        run: cargo run -p t3-snapshots -- snapshots
       - uses: actions/upload-artifact@v4
         with:
           name: snapshots

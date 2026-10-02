@@ -1,0 +1,55 @@
+name: Release
+
+# Builds the release app + DMG and publishes it as a GitHub Release.
+# Runs on a v* tag push, or manually: gh workflow run release.yml -f tag=v0.1.0-alpha.1
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to create or update (e.g. v0.1.0-alpha.1)
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  dmg:
+    name: macOS release DMG
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.99.0"
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release
+      - name: Build release binary
+        run: cargo build --release -p t3-app
+      - name: Bundle app + DMG
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: T3UI_VERSION="${TAG#v}" script/bundle-macos.sh
+      - name: Launch smoke test
+        run: |
+          dist/T3UI.app/Contents/MacOS/t3ui > smoke.log 2>&1 &
+          PID=$!
+          sleep 8
+          if ! kill -0 "$PID"; then echo "app exited early"; cat smoke.log; exit 1; fi
+          kill "$PID" || true
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/*.dmg --clobber
+          else
+            gh release create "$TAG" dist/*.dmg --prerelease --target "$GITHUB_SHA" \
+              --title "T3UI $TAG" --notes "macOS arm64 build of $GITHUB_SHA. Ad-hoc signed: after copying to Applications, run \`xattr -dr com.apple.quarantine /Applications/T3UI.app\` once."
+          fi

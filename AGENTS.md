@@ -47,5 +47,8 @@ cargo run                     # opens the app (Linux needs the GPUI system deps)
 script/check-macos.sh -p t3-app   # type-check for macOS from Linux (patched gpui-pre-apple, check only)
 ```
 
-CI (`.github/workflows/ci.yml`) builds and bundles the macOS app, runs a launch smoke test, and
-uploads the DMG + screenshots as artifacts.
+CI (`.github/workflows/ci.yml`, every push to main and on manual dispatch) runs Linux clippy +
+tests, and one macOS job that renders the headless snapshot scenes and smoke-launches the app; the
+PNGs are uploaded as the `snapshots` artifact. Release DMGs are built only by
+`.github/workflows/release.yml` (on a `v*` tag or `gh workflow run release.yml -f tag=...`) and
+published as a GitHub Release.
