@@ -51,6 +51,17 @@ pub struct ThreadState {
     pub history_epoch: u64,
     /// The latest subscription error, cleared once data arrives again.
     pub error: Option<String>,
+    /// An older page read ahead of the live state, waiting for live events up to its
+    /// `threadSequence` (see [`merge_older_page`](Self::merge_older_page)). Not persisted.
+    #[serde(skip)]
+    parked_page: Option<ParkedPage>,
+}
+
+/// An older page and the history epoch it was fetched under.
+#[derive(Debug, Clone, PartialEq)]
+struct ParkedPage {
+    epoch: u64,
+    snapshot: Box<OrchestrationThreadDetailSnapshot>,
 }
 
 /// What an event did to a thread.
@@ -72,6 +83,7 @@ impl ThreadState {
             page: None,
             history_epoch: 0,
             error: None,
+            parked_page: None,
         }
     }
 
@@ -96,6 +108,7 @@ impl ThreadState {
         self.deleted = false;
         self.error = None;
         self.history_epoch += 1;
+        self.parked_page = None;
         if self.status == SyncStatus::Empty {
             self.status = SyncStatus::Cached;
         }
@@ -149,7 +162,7 @@ impl ThreadState {
         let Some(thread) = &mut self.thread else {
             return false;
         };
-        match apply_thread_event(thread, event) {
+        let changed = match apply_thread_event(thread, event) {
             EventEffect::Updated => {
                 if reverted {
                     self.history_epoch += 1;
@@ -160,28 +173,79 @@ impl ThreadState {
                 self.thread = None;
                 self.deleted = true;
                 self.page = None;
+                self.parked_page = None;
                 true
             }
             EventEffect::Unchanged => false,
-        }
+        };
+        // The event may have brought the live state up to a parked page's watermark.
+        self.release_parked_page() || changed
     }
 
-    /// Prepends an older page fetched over HTTP. Returns `false` (and changes nothing) when
-    /// history was replaced since the fetch started (`epoch` differs) or the page is older than
-    /// the current state (upstream `threads.ts:589-716`).
+    /// Prepends an older page fetched over HTTP (upstream `threads.ts:589-716`). Dropped (with
+    /// `loading_older` cleared) when history was replaced since the fetch started (`epoch`
+    /// differs) or the page is older than the current state. A page read ahead of the live
+    /// state (`page.thread_sequence` > `last_sequence`) may already contain events the
+    /// subscription has not delivered; merging it now would apply those twice, so it is parked
+    /// (`loading_older` stays set) and merged once live events reach its watermark. Returns
+    /// whether the page merged now.
     pub fn merge_older_page(
         &mut self,
         epoch: u64,
         snapshot: OrchestrationThreadDetailSnapshot,
     ) -> bool {
-        if epoch != self.history_epoch || snapshot.snapshot_sequence < self.last_sequence {
-            if let Some(page) = &mut self.page {
-                page.loading_older = false;
-            }
+        if epoch != self.history_epoch
+            || snapshot.snapshot_sequence < self.last_sequence
+            || self.thread.is_none()
+        {
+            self.stop_loading_older();
             return false;
         }
-        let Some(thread) = &mut self.thread else {
+        let watermark = snapshot.page.as_ref().and_then(|p| p.thread_sequence);
+        if watermark.is_some_and(|watermark| watermark > self.last_sequence) {
+            self.parked_page = Some(ParkedPage {
+                epoch,
+                snapshot: Box::new(snapshot),
+            });
             return false;
+        }
+        self.prepend_page(snapshot);
+        true
+    }
+
+    /// Merges or discards a parked page once possible. Returns whether the state changed.
+    fn release_parked_page(&mut self) -> bool {
+        let Some(parked) = &self.parked_page else {
+            return false;
+        };
+        if parked.epoch != self.history_epoch || self.thread.is_none() {
+            self.parked_page = None;
+            self.stop_loading_older();
+            return true;
+        }
+        let watermark = parked
+            .snapshot
+            .page
+            .as_ref()
+            .and_then(|p| p.thread_sequence);
+        if watermark.is_some_and(|watermark| watermark > self.last_sequence) {
+            return false;
+        }
+        let parked = self.parked_page.take().expect("checked above");
+        self.prepend_page(*parked.snapshot);
+        true
+    }
+
+    fn stop_loading_older(&mut self) {
+        if let Some(page) = &mut self.page {
+            page.loading_older = false;
+        }
+    }
+
+    /// Prepends the page's rows (deduped by id; checkpoints by turn) and takes its cursor.
+    fn prepend_page(&mut self, snapshot: OrchestrationThreadDetailSnapshot) {
+        let Some(thread) = &mut self.thread else {
+            return;
         };
         let older = snapshot.thread;
         prepend_unique(&mut thread.messages, older.messages, |m| &m.id);
@@ -189,7 +253,6 @@ impl ThreadState {
         prepend_unique(&mut thread.proposed_plans, older.proposed_plans, |p| &p.id);
         prepend_unique(&mut thread.checkpoints, older.checkpoints, |c| &c.turn_id);
         self.page = snapshot.page.map(page_from_snapshot);
-        true
     }
 }
 

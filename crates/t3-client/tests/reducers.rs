@@ -15,7 +15,9 @@
 //! 6. Revert keeps rows of dropped turns or drops system messages.
 //! 7. `thread.deleted` leaves stale data visible.
 //! 8. An older page merged after history was replaced (epoch changed) corrupts the thread;
-//!    merged pages duplicate rows.
+//!    merged pages duplicate rows; a page read ahead of the live state (`page.threadSequence`
+//!    above `last_sequence`) merges before the live events it already contains arrive, so
+//!    those deltas apply twice.
 //! 9. Shell: an upsert appends a duplicate row, or replaces unchanged rows (breaking `Arc`
 //!    sharing that views rely on); removing an unknown id panics.
 //! 10. Streaming a delta clones every message instead of only the streaming one.
@@ -620,4 +622,113 @@ fn pending_requests_follow_upstream_rules() {
         json!({"requestId": "r3"}),
     ));
     assert!(t3_client::pending_requests(&answered).is_empty());
+}
+
+#[test]
+fn an_older_page_ahead_of_the_live_state_waits_for_the_live_events() {
+    // Live state at 100; the HTTP page was read at thread sequence 105 and already contains
+    // the delta from event 105 in the assistant message it introduces.
+    let mut state = ThreadState::new(ThreadId::from("t1"));
+    state.apply_snapshot(snapshot(100, json!([])));
+    // What the follower does before fetching (`ThreadHandle::load_older`).
+    state.page.as_mut().unwrap().loading_older = true;
+    let epoch = state.history_epoch;
+    let page: OrchestrationThreadDetailSnapshot = serde_json::from_value(json!({
+        "snapshotSequence": 105,
+        "thread": thread_json(json!([
+            {"id": "a0", "role": "assistant", "text": "Hello", "turnId": "turn-0",
+             "streaming": true, "createdAt": T, "updatedAt": T},
+        ])),
+        "page": {"beforeCursor": null, "hasMore": false, "snapshotSequence": 105, "threadSequence": 105},
+    }))
+    .unwrap();
+
+    state.merge_older_page(epoch, page);
+    let text = |s: &ThreadState| {
+        s.thread
+            .as_ref()
+            .unwrap()
+            .messages
+            .iter()
+            .find(|m| m.id.as_str() == "a0")
+            .map(|m| m.text.clone())
+    };
+    assert_eq!(
+        text(&state),
+        None,
+        "a page ahead of the live state merged early"
+    );
+    assert!(state.page.as_ref().unwrap().loading_older);
+
+    // Live events 101..=105 arrive; 105 carries the delta the page already has.
+    for sequence in 101..105 {
+        state.apply_event(event(
+            sequence,
+            "thread.activity-appended",
+            activity(
+                &format!("x{sequence}"),
+                "tool.completed",
+                "turn-1",
+                Some(sequence as i64),
+                json!({}),
+            ),
+        ));
+    }
+    assert_eq!(text(&state), None, "merged before reaching the watermark");
+    state.apply_event(event(
+        105,
+        "thread.message-sent",
+        message("a0", "assistant", "Hello", Some("turn-0"), true),
+    ));
+    assert_eq!(
+        text(&state).as_deref(),
+        Some("Hello"),
+        "delta applied twice or page lost"
+    );
+    assert!(!state.page.as_ref().unwrap().loading_older);
+    assert!(!state.page.as_ref().unwrap().has_more);
+
+    // A parked page is dropped if history is replaced while it waits.
+    let mut state = ThreadState::new(ThreadId::from("t1"));
+    state.apply_snapshot(snapshot(100, json!([])));
+    state.page.as_mut().unwrap().loading_older = true;
+    let page: OrchestrationThreadDetailSnapshot = serde_json::from_value(json!({
+        "snapshotSequence": 105,
+        "thread": thread_json(json!([
+            {"id": "old", "role": "user", "text": "x", "turnId": null, "streaming": false, "createdAt": T, "updatedAt": T},
+        ])),
+        "page": {"beforeCursor": null, "hasMore": false, "snapshotSequence": 105, "threadSequence": 105},
+    }))
+    .unwrap();
+    let epoch = state.history_epoch;
+    state.merge_older_page(epoch, page);
+    state.apply_event(event(
+        101,
+        "thread.reverted",
+        json!({"threadId": "t1", "turnCount": 0}),
+    ));
+    for sequence in 102..=106 {
+        state.apply_event(event(
+            sequence,
+            "thread.activity-appended",
+            activity(
+                &format!("y{sequence}"),
+                "tool.completed",
+                "turn-1",
+                Some(sequence as i64),
+                json!({}),
+            ),
+        ));
+    }
+    assert!(
+        state
+            .thread
+            .as_ref()
+            .unwrap()
+            .messages
+            .iter()
+            .all(|m| m.id.as_str() != "old"),
+        "a page parked before a revert merged after it"
+    );
+    assert!(!state.page.as_ref().unwrap().loading_older);
 }
