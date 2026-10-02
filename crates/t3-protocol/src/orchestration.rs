@@ -301,7 +301,7 @@ pub enum ProjectIconOverride {
     Unknown,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RepositoryIdentity {
     pub canonical_key: String,
@@ -314,7 +314,7 @@ pub struct RepositoryIdentity {
     pub name: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RepositoryIdentityLocator {
     pub source: String,
@@ -323,7 +323,7 @@ pub struct RepositoryIdentityLocator {
 }
 
 /// A project row in the shell (sidebar).
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrchestrationProjectShell {
     pub id: ProjectId,
@@ -354,7 +354,7 @@ pub struct ThreadLinkedPullRequest {
     pub url: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ThreadPullRequestLink {
     pub host: String,
@@ -380,7 +380,7 @@ impl ThreadPullRequestLink {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ThreadPullRequestSnapshot {
     pub state: PullRequestState,
@@ -402,7 +402,7 @@ pub struct ThreadPullRequestSnapshot {
     pub mergeability: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PullRequestActor {
     pub is_bot: Option<bool>,
@@ -411,7 +411,7 @@ pub struct PullRequestActor {
     pub avatar_url: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ThreadPullRequestStack {
     pub kind: String,
@@ -423,7 +423,7 @@ pub struct ThreadPullRequestStack {
     pub layers: Vec<ThreadPullRequestStackLayer>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ThreadPullRequestStackLayer {
     pub number: u64,
@@ -439,7 +439,7 @@ pub struct SourceProposedPlanReference {
 }
 
 /// The newest turn of a thread. `state` is authoritative on the shell row.
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrchestrationLatestTurn {
     pub turn_id: TurnId,
@@ -451,14 +451,14 @@ pub struct OrchestrationLatestTurn {
     pub source_proposed_plan: Option<SourceProposedPlanReference>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ThreadTitleRegeneration {
     pub request_id: CommandId,
     pub started_at: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ThreadTitleState {
     pub source: TitleSource,
@@ -467,7 +467,7 @@ pub struct ThreadTitleState {
 }
 
 /// The provider session attached to a thread.
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrchestrationSession {
     pub thread_id: ThreadId,
@@ -480,7 +480,7 @@ pub struct OrchestrationSession {
     pub updated_at: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PlanProgress {
     pub step: String,
@@ -489,7 +489,7 @@ pub struct PlanProgress {
 }
 
 /// A thread row in the shell: everything the sidebar and header need, no messages.
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrchestrationThreadShell {
     pub id: ThreadId,
@@ -570,7 +570,7 @@ pub struct ContextRecord {
     pub fields: serde_json::Map<String, Value>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrchestrationMessage {
     pub id: MessageId,
@@ -587,7 +587,7 @@ pub struct OrchestrationMessage {
 
 /// A work-log row. `kind` is open and `payload` is untyped by design; interpret per kind
 /// (protocol.md 5.5). `sequence` is the provider runtime's sequence, not the event sequence.
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrchestrationThreadActivity {
     pub id: ActivityId,
@@ -611,7 +611,7 @@ impl OrchestrationThreadActivity {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrchestrationCheckpointFile {
     pub path: String,
@@ -622,7 +622,7 @@ pub struct OrchestrationCheckpointFile {
     pub deletions: u64,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrchestrationCheckpointSummary {
     pub turn_id: TurnId,
@@ -635,7 +635,7 @@ pub struct OrchestrationCheckpointSummary {
     pub completed_at: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrchestrationProposedPlan {
     pub id: PlanId,
@@ -648,7 +648,7 @@ pub struct OrchestrationProposedPlan {
 }
 
 /// A thread with its detail: messages, activities, plans, checkpoints. The chat view's data.
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrchestrationThread {
     pub id: ThreadId,
@@ -695,7 +695,7 @@ pub struct OrchestrationThread {
 
 /// Every project plus every active thread (`GET /api/orchestration/shell` and the socket's
 /// shell snapshot item). `snapshot_sequence` is the resume cursor.
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrchestrationShellSnapshot {
     pub snapshot_sequence: u64,
@@ -707,7 +707,7 @@ pub struct OrchestrationShellSnapshot {
 }
 
 /// Paging cursor for older turns of a windowed thread snapshot.
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrchestrationThreadDetailPage {
     pub before_cursor: Option<String>,
@@ -718,7 +718,7 @@ pub struct OrchestrationThreadDetailPage {
 }
 
 /// One thread with detail (`GET /api/orchestration/threads/:id` and the thread snapshot item).
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrchestrationThreadDetailSnapshot {
     pub snapshot_sequence: u64,

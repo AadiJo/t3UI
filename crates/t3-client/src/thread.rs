@@ -8,6 +8,7 @@
 
 use std::{cmp::Ordering, sync::Arc};
 
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use t3_protocol::{
     MessageId, ThreadId, TurnId,
@@ -23,15 +24,18 @@ use t3_protocol::{
 pub use crate::shell::SyncStatus;
 
 /// Paging state for older turns of a windowed snapshot.
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ThreadPage {
     pub before_cursor: Option<String>,
     pub has_more: bool,
     pub loading_older: bool,
 }
 
-/// One open thread.
-#[derive(Debug, Clone, PartialEq)]
+/// One open thread. Serializable so snapshot scenes can load it from fixtures
+/// (`crates/t3-snapshots/fixtures/threads/*.json`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ThreadState {
     pub thread_id: ThreadId,
     /// `None` until the first snapshot, and after the thread was deleted.

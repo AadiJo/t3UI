@@ -32,7 +32,7 @@ open_enum! {
 }
 
 /// `GET /.well-known/t3/environment` (no auth), also `ServerConfig.environment`.
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExecutionEnvironmentDescriptor {
     pub environment_id: EnvironmentId,
@@ -51,7 +51,7 @@ impl ExecutionEnvironmentDescriptor {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExecutionEnvironmentPlatform {
     pub os: PlatformOs,
@@ -60,7 +60,7 @@ pub struct ExecutionEnvironmentPlatform {
 }
 
 /// Feature gates. Every flag defaults to "unsupported" when missing.
-#[derive(Debug, Clone, Default, PartialEq, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct ExecutionEnvironmentCapabilities {
     pub repository_identity: Option<bool>,
@@ -99,7 +99,7 @@ pub struct ExecutionEnvironmentCapabilities {
     pub desktop_app_update: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FileAttachmentLimits {
     pub max_upload_bytes: u64,
@@ -124,7 +124,7 @@ pub const STANDARD_CLIENT_SCOPES: &str =
     "orchestration:read orchestration:operate terminal:operate review:write relay:read";
 
 /// `ServerAuthDescriptor`, in `ServerConfig.auth` and the session check.
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ServerAuthDescriptor {
     pub policy: String,

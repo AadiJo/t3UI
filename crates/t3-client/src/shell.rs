@@ -4,6 +4,8 @@
 
 use std::sync::Arc;
 
+use serde::{Deserialize, Serialize};
+
 use t3_protocol::{
     ProjectId, ThreadId,
     orchestration::{
@@ -13,7 +15,8 @@ use t3_protocol::{
 };
 
 /// How fresh shell or thread data is.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum SyncStatus {
     /// No data yet.
     #[default]
@@ -27,8 +30,10 @@ pub enum SyncStatus {
 }
 
 /// Projects and active threads. Rows are `Arc`s shared with previous states, so a view can
-/// skip rows where `Arc::ptr_eq` holds.
-#[derive(Debug, Clone, PartialEq, Default)]
+/// skip rows where `Arc::ptr_eq` holds. Serializable so snapshot scenes can load it from
+/// fixtures (`crates/t3-snapshots/fixtures/shell.json`).
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ShellState {
     /// Resume cursor: the sequence of the newest applied snapshot or event.
     pub snapshot_sequence: u64,

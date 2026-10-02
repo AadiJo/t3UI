@@ -44,7 +44,7 @@ open_enum! {
 
 /// Everything the server tells a client about itself. Arrives as the first
 /// `subscribeServerConfig` item; later items replace one slice at a time.
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ServerConfig {
     pub environment: ExecutionEnvironmentDescriptor,
@@ -83,14 +83,14 @@ pub struct ServerConfig {
     pub usage_limit_sources: Option<Vec<Value>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RemoteOpenTarget {
     pub kind: String,
     pub host: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ServerObservability {
     pub logs_directory_path: String,
@@ -111,7 +111,7 @@ pub struct ServerObservability {
 
 /// A resolved keybinding. `command` is a fixed literal (`chat.new`, `thread.stop`, ...) or
 /// `script.<id>.run`.
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ResolvedKeybindingRule {
     pub command: String,
@@ -120,7 +120,7 @@ pub struct ResolvedKeybindingRule {
 }
 
 /// `mod_key` means Cmd on macOS and Ctrl elsewhere.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct KeybindingShortcut {
     pub key: String,
@@ -137,7 +137,7 @@ pub struct KeybindingShortcut {
 }
 
 /// A `when` clause.
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum KeybindingWhenNode {
     Identifier {
@@ -159,7 +159,7 @@ pub enum KeybindingWhenNode {
     Unknown,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct KeybindingsIssue {
     pub kind: String,
@@ -219,7 +219,7 @@ open_enum! {
 }
 
 /// One configured provider instance with its health and models (model picker data).
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ServerProvider {
     pub instance_id: ProviderInstanceId,
@@ -265,13 +265,13 @@ pub struct ServerProvider {
     pub update_state: Option<Value>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProviderContinuation {
     pub group_key: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProviderSetup {
     #[serde(default)]
@@ -280,7 +280,7 @@ pub struct ProviderSetup {
     pub can_install: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProviderAuth {
     pub status: ProviderAuthStatus,
@@ -290,7 +290,7 @@ pub struct ProviderAuth {
     pub email: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ServerProviderModel {
     /// Goes in `ModelSelection.model`.
@@ -311,7 +311,7 @@ pub struct ServerProviderModel {
     pub capabilities: Option<ModelCapabilities>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModelCapabilities {
     #[serde(default, deserialize_with = "forward_compatible")]
@@ -319,7 +319,7 @@ pub struct ModelCapabilities {
 }
 
 /// A model option ("trait") the picker offers. Picks become `ModelSelection.options`.
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum ProviderOptionDescriptor {
     #[serde(rename_all = "camelCase")]
@@ -344,7 +344,7 @@ pub enum ProviderOptionDescriptor {
     Unknown,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProviderOptionChoice {
     pub id: String,
@@ -354,7 +354,7 @@ pub struct ProviderOptionChoice {
     pub is_default: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProviderSlashCommand {
     pub name: String,
@@ -362,13 +362,13 @@ pub struct ProviderSlashCommand {
     pub input: Option<ProviderSlashCommandInput>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProviderSlashCommandInput {
     pub hint: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProviderSkill {
     pub name: String,
@@ -431,7 +431,7 @@ open_enum! {
 /// Server-side settings (`settings.ts:1109`), secrets redacted. The fields the UI reads are
 /// typed; the rest (provider configs, cleanup rules, overrides, ...) stay in `other` as raw
 /// JSON.
-#[derive(Debug, Clone, Default, PartialEq, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ServerSettings {
     pub response_streaming_mode: Option<ResponseStreamingMode>,
