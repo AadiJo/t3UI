@@ -13,5 +13,6 @@ pub mod terminal_layout;
 pub mod time;
 pub mod timeline;
 pub mod ui_state;
+pub mod usage;
 
 pub use refs::{ProjectRef, ThreadRef};
