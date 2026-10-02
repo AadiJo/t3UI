@@ -14,6 +14,10 @@ for crate in t3-protocol t3-client t3-highlight; do
 done
 cargo clippy "${GPUI_FREE[@]}" --all-targets -- -D warnings
 cargo test -q "${GPUI_FREE[@]}"
+# Crates whose pure-logic modules build without GPUI when default features are off.
+for crate in t3-terminal; do
+  [ -d "crates/$crate" ] && cargo test -q -p "$crate" --no-default-features
+done
 
 CARGO_SUBCOMMAND=clippy script/check-macos.sh --workspace --all-targets -- -D warnings
 echo "preland: ok"
