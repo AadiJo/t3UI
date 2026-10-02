@@ -221,6 +221,22 @@ impl AppState {
         cx.notify();
     }
 
+    /// Removes an environment (Disconnect, T3 Connect sign-out) and returns it so the caller
+    /// can close its connection. The primary moves to the next one.
+    pub fn remove_environment(
+        &mut self,
+        id: &EnvironmentId,
+        cx: &mut Context<Self>,
+    ) -> Option<Entity<Environment>> {
+        let index = self
+            .environments
+            .iter()
+            .position(|environment| environment.read(cx).id() == id)?;
+        let removed = self.environments.remove(index);
+        cx.notify();
+        Some(removed)
+    }
+
     /// The active keybinding rules.
     pub fn keybindings(&self, cx: &App) -> Keybindings {
         self.primary_environment()

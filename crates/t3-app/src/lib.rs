@@ -8,6 +8,7 @@
 //! - [`sidebar`], [`keybindings`], [`toast`], [`dialogs`]: shell pieces other views reuse.
 
 pub mod chrome;
+pub mod cloud_ui;
 pub mod dialogs;
 pub mod keybindings;
 pub mod notifications;
@@ -39,6 +40,7 @@ pub fn run() {
             gpui_kit::init(cx);
             let app_state = state::AppState::init(state::Store::user_data(), cx);
             state::boot::start_saved_environments(&app_state, cx);
+            cloud_ui::CloudAccount::init(&app_state, cx);
             let theme = theme_mode(app_state.read(cx).ui().theme);
             t3_ui::init(theme, cx);
             t3_ui::theme::enable_native_appearance(cx);

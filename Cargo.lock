@@ -7278,6 +7278,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "url",
 ]
 
 [[package]]
@@ -7355,7 +7356,9 @@ dependencies = [
  "image",
  "serde_json",
  "t3-app",
+ "t3-client",
  "t3-diff",
+ "t3-protocol",
  "t3-terminal",
  "t3-ui",
 ]

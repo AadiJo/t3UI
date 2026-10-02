@@ -5,6 +5,7 @@
 //! the module below and append it in [`all`]. Keep names unique and kebab-case, ending in
 //! `-dark` / `-light` when a scene exists in both appearances.
 
+mod cloud;
 mod diff;
 mod gallery;
 mod terminal;
@@ -52,5 +53,6 @@ pub fn all() -> Vec<Scene> {
     scenes.extend(gallery::scenes());
     scenes.extend(terminal::scenes());
     scenes.extend(diff::scenes());
+    scenes.extend(cloud::scenes());
     scenes
 }
