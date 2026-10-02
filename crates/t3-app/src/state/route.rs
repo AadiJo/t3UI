@@ -9,32 +9,67 @@ use t3_logic::ThreadRef;
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct DraftId(pub SharedString);
 
-/// A settings page (`/settings/<page>`).
+/// A settings page (`/settings/<page>`). Nav order, icons, and the view per page live in
+/// `settings::pages`.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub enum SettingsPage {
+    /// "Project" in the nav; shown only when a project is in scope.
+    Projects,
     #[default]
     General,
+    Appearance,
     Keybindings,
+    /// "SnapShots" in the nav (`/settings/snap-shot`).
+    SnapShot,
     Providers,
+    Integrations,
     SourceControl,
+    Storage,
     Connections,
     /// "Archive" in the nav (`/settings/archived`).
     Archived,
-    /// Reached from General > About; no nav item.
+    /// No nav item; reached from General.
     Diagnostics,
+    /// No nav item; reached from General (the nav highlights General).
+    OpenSourceLicenses,
 }
 
 impl SettingsPage {
-    /// Nav label.
+    /// Nav and breadcrumb label (`SETTINGS_SECTION_LABELS`, `SettingsBreadcrumb.tsx`).
     pub fn label(self) -> &'static str {
         match self {
+            Self::Projects => "Project",
             Self::General => "General",
+            Self::Appearance => "Appearance",
             Self::Keybindings => "Keybindings",
+            Self::SnapShot => "SnapShots",
             Self::Providers => "Providers",
+            Self::Integrations => "Integrations",
             Self::SourceControl => "Source Control",
+            Self::Storage => "Storage",
             Self::Connections => "Connections",
             Self::Archived => "Archive",
             Self::Diagnostics => "Diagnostics",
+            Self::OpenSourceLicenses => "Open source licenses",
+        }
+    }
+
+    /// The web path, e.g. `/settings/snap-shot`.
+    pub fn path(self) -> &'static str {
+        match self {
+            Self::Projects => "/settings/projects",
+            Self::General => "/settings/general",
+            Self::Appearance => "/settings/appearance",
+            Self::Keybindings => "/settings/keybindings",
+            Self::SnapShot => "/settings/snap-shot",
+            Self::Providers => "/settings/providers",
+            Self::Integrations => "/settings/integrations",
+            Self::SourceControl => "/settings/source-control",
+            Self::Storage => "/settings/storage",
+            Self::Connections => "/settings/connections",
+            Self::Archived => "/settings/archived",
+            Self::Diagnostics => "/settings/diagnostics",
+            Self::OpenSourceLicenses => "/settings/open-source-licenses",
         }
     }
 }

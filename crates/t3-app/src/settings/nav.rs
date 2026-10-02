@@ -13,16 +13,6 @@ use crate::{
     state::{AppState, Route, SettingsPage},
 };
 
-/// Nav items in order. Diagnostics has no item; General > About links to it.
-pub const NAV_ITEMS: [(SettingsPage, IconName); 6] = [
-    (SettingsPage::General, IconName::Settings2),
-    (SettingsPage::Keybindings, IconName::Keyboard),
-    (SettingsPage::Providers, IconName::Bot),
-    (SettingsPage::SourceControl, IconName::GitBranch),
-    (SettingsPage::Connections, IconName::Link2),
-    (SettingsPage::Archived, IconName::Archive),
-];
-
 /// Nav items (13px, no fill: the fork's `sidebar-*` colors render nothing) and the footer's
 /// "Back" button. Fills the sidebar below its header strip.
 #[derive(IntoElement)]
@@ -40,45 +30,49 @@ impl RenderOnce for SettingsNav {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let colors = cx.colors();
         let active = match self.app_state.read(cx).route() {
-            Route::Settings(page) => Some(*page),
+            Route::Settings(page) => Some(super::pages::nav_item_for(*page)),
             _ => None,
         };
-        let items = NAV_ITEMS.into_iter().map(|(page, icon)| {
-            let is_active = active == Some(page);
-            let app_state = self.app_state.clone();
-            let hover_fg = colors.foreground.opacity(0.8);
-            div()
-                .id(page.label())
-                .h_7()
-                .w_full()
-                .px(px(10.))
-                .gap(px(10.))
-                .flex()
-                .items_center()
-                .rounded(px(10.))
-                .cursor_pointer()
-                .type_scale(under_xs(13.))
-                .map(|this| {
-                    if is_active {
-                        this.text_color(colors.foreground)
-                            .font_weight(FontWeight::MEDIUM)
+        // "Project" needs a project scope, which this client does not have yet.
+        let items = super::pages::NAV
+            .into_iter()
+            .filter(|(page, _)| *page != SettingsPage::Projects)
+            .map(|(page, icon)| {
+                let is_active = active == Some(page);
+                let app_state = self.app_state.clone();
+                let hover_fg = colors.foreground.opacity(0.8);
+                div()
+                    .id(page.label())
+                    .h_7()
+                    .w_full()
+                    .px(px(10.))
+                    .gap(px(10.))
+                    .flex()
+                    .items_center()
+                    .rounded(px(10.))
+                    .cursor_pointer()
+                    .type_scale(under_xs(13.))
+                    .map(|this| {
+                        if is_active {
+                            this.text_color(colors.foreground)
+                                .font_weight(FontWeight::MEDIUM)
+                        } else {
+                            this.text_color(colors.muted_foreground_70)
+                                .hover(move |style| style.text_color(hover_fg))
+                        }
+                    })
+                    .on_click(move |_, _, cx| {
+                        app_state.update(cx, |state, cx| {
+                            state.replace_route(Route::Settings(page), cx)
+                        });
+                    })
+                    .child(Icon::new(icon).size(px(16.)).color(if is_active {
+                        colors.foreground
                     } else {
-                        this.text_color(colors.muted_foreground_70)
-                            .hover(move |style| style.text_color(hover_fg))
-                    }
-                })
-                .on_click(move |_, _, cx| {
-                    app_state.update(cx, |state, cx| {
-                        state.replace_route(Route::Settings(page), cx)
-                    });
-                })
-                .child(Icon::new(icon).size(px(16.)).color(if is_active {
-                    colors.foreground
-                } else {
-                    colors.muted_foreground_60
-                }))
-                .child(div().truncate().child(page.label()))
-        });
+                        colors.muted_foreground_60
+                    }))
+                    .child(div().truncate().child(page.label()))
+            });
         let app_state = self.app_state.clone();
         div()
             .flex_1()

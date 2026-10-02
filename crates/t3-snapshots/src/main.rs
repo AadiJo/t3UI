@@ -85,6 +85,16 @@ mod macos {
                 window.refresh();
                 window.render_frame(cx)
             })?;
+            // Enter animations run on wall-clock time from their first frame: let opted-in
+            // scenes finish them, then draw the settled frame.
+            if !scene.settle.is_zero() {
+                std::thread::sleep(scene.settle);
+                cx.run_until_parked();
+                cx.update_window(handle, |_, window, cx| {
+                    window.refresh();
+                    window.render_frame(cx)
+                })?;
+            }
             let image = cx.capture_screenshot(handle)?;
             let path = out_dir.join(format!("{}.png", scene.name));
             image.save(&path)?;

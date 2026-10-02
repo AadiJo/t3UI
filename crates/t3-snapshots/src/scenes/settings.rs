@@ -157,20 +157,23 @@ pub fn scenes() -> Vec<Scene> {
             )
         },
     ));
-    scenes.push(Scene::new(
-        "settings-add-environment-dark",
-        ThemeMode::Dark,
-        |window, cx| {
-            settings_scene(
-                SettingsPage::Connections,
-                ThemePreference::Dark,
-                window,
-                cx,
-                |view, window, cx| {
-                    view.update(cx, |view, cx| view.open_add_environment(window, cx))
-                },
-            )
-        },
-    ));
+    scenes.push(
+        Scene::new(
+            "settings-add-environment-dark",
+            ThemeMode::Dark,
+            |window, cx| {
+                settings_scene(
+                    SettingsPage::Connections,
+                    ThemePreference::Dark,
+                    window,
+                    cx,
+                    |view, window, cx| {
+                        view.update(cx, |view, cx| view.open_add_environment(window, cx))
+                    },
+                )
+            },
+        )
+        .settle(),
+    );
     scenes
 }

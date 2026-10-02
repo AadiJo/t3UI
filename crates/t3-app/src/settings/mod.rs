@@ -2,19 +2,19 @@
 //!
 //! [`SettingsView`] is the main-column view for every `Route::Settings(page)`: the 52px header
 //! strip ("Settings", plus "Restore defaults" on General) above the active page. Pages are
-//! separate entities, built the first time they show and kept while settings stays open, so
-//! switching pages keeps their local state (open provider cards, draft inputs). The sidebar
-//! swaps its content for [`SettingsNav`] on these routes.
+//! separate entities from the [`pages`] registry, built the first time they show and kept while
+//! settings stays open, so switching pages keeps their local state (open provider cards, draft
+//! inputs). The sidebar swaps its content for [`SettingsNav`] on these routes.
 //!
 //! Escape anywhere in settings goes back (`settings.tsx:50-63`).
 
 pub mod archived;
 mod connections;
-mod diagnostics;
 mod general;
 mod keybindings;
 pub mod layout;
 mod nav;
+pub mod pages;
 mod providers;
 pub mod server;
 mod source_control;
@@ -22,8 +22,8 @@ mod source_control;
 use std::collections::HashMap;
 
 use gpui_kit::{
-    AnyView, AppContext as _, Context, Entity, FocusHandle, FontWeight, InteractiveElement as _,
-    IntoElement, KeyDownEvent, ParentElement as _, Render, Styled as _, Subscription, Window, div,
+    AnyView, Context, Entity, FocusHandle, FontWeight, InteractiveElement as _, IntoElement,
+    KeyDownEvent, ParentElement as _, Render, Styled as _, Subscription, Window, div,
     prelude::FluentBuilder as _,
 };
 use t3_ui::{
@@ -75,29 +75,7 @@ impl SettingsView {
         let app_state = self.app_state.clone();
         self.pages
             .entry(page)
-            .or_insert_with(|| match page {
-                SettingsPage::General => cx
-                    .new(|cx| general::GeneralPage::new(app_state, window, cx))
-                    .into(),
-                SettingsPage::Keybindings => cx
-                    .new(|cx| keybindings::KeybindingsPage::new(app_state, cx))
-                    .into(),
-                SettingsPage::Providers => cx
-                    .new(|cx| providers::ProvidersPage::new(app_state, cx))
-                    .into(),
-                SettingsPage::SourceControl => cx
-                    .new(|cx| source_control::SourceControlPage::new(app_state, cx))
-                    .into(),
-                SettingsPage::Connections => cx
-                    .new(|cx| connections::ConnectionsPage::new(app_state, window, cx))
-                    .into(),
-                SettingsPage::Archived => cx
-                    .new(|cx| archived::ArchivedPage::new(app_state, cx))
-                    .into(),
-                SettingsPage::Diagnostics => cx
-                    .new(|cx| diagnostics::DiagnosticsPage::new(app_state, cx))
-                    .into(),
-            })
+            .or_insert_with(|| pages::build(page, app_state, window, cx))
             .clone()
     }
 
