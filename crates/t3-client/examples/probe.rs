@@ -33,7 +33,7 @@ use anyhow::{Context as _, Result, bail};
 use t3_client::{
     ClientInfo, Environment, EnvironmentOptions, SyncStatus, commands,
     pairing::parse_pairing_text,
-    store::{CatalogStore, FileSecretStore, SecretStore as _, data_dir},
+    store::{CatalogStore, SecretBackend, data_dir, open_secret_store},
 };
 use t3_protocol::{
     ProjectId, ProviderInstanceId, ThreadId,
@@ -133,7 +133,9 @@ async fn run(args: &Args) -> Result<String> {
     let mut catalog = store.load()?;
     catalog.upsert(paired.saved());
     store.save(&catalog)?;
-    FileSecretStore::new().set(&paired.secret_key(), &paired.bearer_token)?;
+    // File store by default; T3UI_SECRET_STORE=keychain uses the macOS Keychain.
+    let secrets = open_secret_store(SecretBackend::from_env());
+    secrets.set(&paired.secret_key(), &paired.bearer_token)?;
     println!("saved to {}", data_dir().display());
 
     // 2. Connect the way the app does at startup: catalog entry + token from the secret store.
@@ -142,7 +144,7 @@ async fn run(args: &Args) -> Result<String> {
         .get(&descriptor.environment_id)
         .cloned()
         .context("paired environment missing from the catalog")?;
-    let endpoint = t3_client::saved_bearer_endpoint(&saved, &FileSecretStore::new())?
+    let endpoint = t3_client::saved_bearer_endpoint(&saved, secrets.as_ref())?
         .context("no bearer token in the secret store")?;
     let mut options = EnvironmentOptions::from_saved(&saved, endpoint);
     options.client = client;

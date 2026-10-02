@@ -7119,6 +7119,7 @@ dependencies = [
  "futures",
  "parking_lot",
  "reqwest",
+ "security-framework",
  "serde",
  "serde_json",
  "t3-protocol",

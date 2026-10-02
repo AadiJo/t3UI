@@ -7,7 +7,7 @@
 //!   receivers; [`Environment::open_thread`] for thread detail; [`Environment::dispatch`] and
 //!   [`Environment::request`] for RPCs. Reconnects on its own.
 //! - [`pairing`] + [`auth::pair`]: turn a pasted pairing link into a saved environment.
-//! - [`store`]: `environments.json` and the secret store.
+//! - [`store`]: `environments.json` and the secret store (file by default, Keychain opt-in).
 //! - [`ShellState`] / [`ThreadState`]: pure reducers over protocol stream items.
 //! - [`commands`]: builders for `orchestration.dispatchCommand`.
 //! - [`pending`]: open approvals and questions derived from a thread's activities.

@@ -956,10 +956,10 @@ Access data comes from WS `subscribeAuthAccess` (snapshot + upsert/remove events
 
 ### 7.1 Files
 
-Data dir: `directories::ProjectDirs::from("dev", "t3ui", "T3UI").data_dir()` ->
-`~/Library/Application Support/dev.t3ui.T3UI/` (placeholder; must match the bundle id once chosen).
+Data dir: `~/Library/Application Support/T3UI/` (`directories::ProjectDirs::from("", "", "T3UI")`,
+overridable with `T3UI_DATA_DIR`; `t3_client::store::data_dir`).
 
-`connections.json` (non-secret, atomic write: temp file in the same dir + `rename`, like
+`environments.json` (non-secret, atomic write: temp file in the same dir + `rename`, like
 `U:apps/desktop/src/app/DesktopConnectionCatalogStore.ts:220-282`):
 
 ```json
@@ -994,19 +994,20 @@ Data dir: `directories::ProjectDirs::from("dev", "t3ui", "T3UI").data_dir()` ->
 
 ### 7.2 Secrets (macOS Keychain)
 
-Use `security-framework` generic passwords (`kSecClassGenericPassword`), accessibility
-`kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`. To avoid repeated Keychain prompts on unsigned
-dev builds, keep all secrets in **one** item and rewrite it on change:
+`t3_client::store::SecretStore` holds flat keys: `bearer:<environmentId>` today, later
+`dpop-key` and `clerk` for T3 Connect. Two implementations, picked with `SecretBackend`
+(`T3UI_SECRET_STORE=keychain` opts in):
 
-- service `dev.t3ui.T3UI`, account `secrets-v1`, data = JSON:
+- `FileSecretStore` (default): `<data dir>/secrets.json`, mode 0600, atomic write. Ad-hoc-signed
+  dev builds would get a Keychain prompt after every rebuild, so this stays the default until
+  builds are signed with a stable identity.
+- `KeychainSecretStore` (macOS): `security-framework` generic password, service `com.aadijo.t3ui`
+  (the bundle id), account `secrets-v1`, data = one JSON object with all keys, read once per launch
+  and cached. One item means at most one access prompt per launch. It uses the login keychain with
+  default accessibility; the data-protection keychain (`kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`)
+  needs a keychain-access-groups entitlement, so it waits for real signing.
 
-```json
-{
-  "bearer": { "bearer:env-1": "<30-day environment bearer token>" },
-  "dpopKey": "<base64url 32-byte P-256 secret scalar>",
-  "clerk": { "clientJwt": "<Clerk client JWT>", "sessionId": "sess_..." }
-}
-```
+Switching backends does not migrate secrets; environments must pair again.
 
 Memory only (cheap to re-mint): Clerk `t3-relay` JWT, relay DPoP access token (30 min), environment
 DPoP access tokens (1 h), WS tickets (5 min). Persisting the env DPoP token (as upstream does) only

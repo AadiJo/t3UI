@@ -32,6 +32,8 @@ pub fn data_dir() -> PathBuf {
 
 #[derive(Debug, thiserror::Error)]
 pub enum StoreError {
+    #[error("keychain: {0}")]
+    Keychain(String),
     #[error("{path}: {source}")]
     Io {
         path: PathBuf,
@@ -280,6 +282,163 @@ impl SecretStore for FileSecretStore {
             self.write(&secrets)?;
         }
         Ok(())
+    }
+}
+
+/// Which [`SecretStore`] to use.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum SecretBackend {
+    /// `<data_dir>/secrets.json`, mode 0600.
+    #[default]
+    File,
+    /// The macOS login Keychain. Falls back to the file elsewhere.
+    Keychain,
+}
+
+impl SecretBackend {
+    /// `T3UI_SECRET_STORE=keychain` opts into the Keychain; anything else is the file store.
+    pub fn from_env() -> Self {
+        match std::env::var("T3UI_SECRET_STORE").as_deref() {
+            Ok("keychain") => SecretBackend::Keychain,
+            _ => SecretBackend::File,
+        }
+    }
+}
+
+/// Opens the secret store for `backend`. Switching backends does not move existing secrets:
+/// environments paired under the other backend have to pair again.
+pub fn open_secret_store(backend: SecretBackend) -> std::sync::Arc<dyn SecretStore> {
+    match backend {
+        #[cfg(target_os = "macos")]
+        SecretBackend::Keychain => std::sync::Arc::new(KeychainSecretStore::new()),
+        #[cfg(not(target_os = "macos"))]
+        SecretBackend::Keychain => {
+            tracing::warn!("the keychain secret store is macOS-only; using the file store");
+            std::sync::Arc::new(FileSecretStore::new())
+        }
+        SecretBackend::File => std::sync::Arc::new(FileSecretStore::new()),
+    }
+}
+
+#[cfg(target_os = "macos")]
+pub use keychain::KeychainSecretStore;
+
+#[cfg(target_os = "macos")]
+mod keychain {
+    use std::collections::BTreeMap;
+
+    use parking_lot::Mutex;
+    use security_framework::passwords::{
+        PasswordOptions, delete_generic_password_options, generic_password,
+        set_generic_password_options,
+    };
+
+    use super::{SecretStore, StoreError};
+
+    /// The app's bundle id (`script/bundle-macos.sh`).
+    const SERVICE: &str = "com.aadijo.t3ui";
+    const ACCOUNT: &str = "secrets-v1";
+    const ERR_SEC_ITEM_NOT_FOUND: i32 = -25300;
+
+    /// Every secret in one generic-password item holding a JSON object (connections.md 7.2),
+    /// read once and cached. One item means at most one access prompt per launch, instead of
+    /// one per environment.
+    pub struct KeychainSecretStore {
+        service: String,
+        account: String,
+        cache: Mutex<Option<BTreeMap<String, String>>>,
+    }
+
+    impl KeychainSecretStore {
+        pub fn new() -> Self {
+            Self::with_item(SERVICE, ACCOUNT)
+        }
+
+        /// A store backed by a specific item (tests, side-by-side builds).
+        pub fn with_item(service: &str, account: &str) -> Self {
+            KeychainSecretStore {
+                service: service.to_owned(),
+                account: account.to_owned(),
+                cache: Mutex::new(None),
+            }
+        }
+
+        fn lookup(&self) -> PasswordOptions {
+            PasswordOptions::new_generic_password(&self.service, &self.account)
+        }
+
+        fn read(&self) -> Result<BTreeMap<String, String>, StoreError> {
+            match generic_password(self.lookup()) {
+                Ok(bytes) => serde_json::from_slice(&bytes)
+                    .map_err(|e| StoreError::Keychain(format!("corrupt secrets item: {e}"))),
+                Err(error) if error.code() == ERR_SEC_ITEM_NOT_FOUND => Ok(BTreeMap::new()),
+                Err(error) => Err(StoreError::Keychain(error.to_string())),
+            }
+        }
+
+        fn write(&self, secrets: &BTreeMap<String, String>) -> Result<(), StoreError> {
+            if secrets.is_empty() {
+                return match delete_generic_password_options(self.lookup()) {
+                    Ok(()) => Ok(()),
+                    Err(error) if error.code() == ERR_SEC_ITEM_NOT_FOUND => Ok(()),
+                    Err(error) => Err(StoreError::Keychain(error.to_string())),
+                };
+            }
+            let json =
+                serde_json::to_vec(secrets).map_err(|e| StoreError::Keychain(e.to_string()))?;
+            let mut options = self.lookup();
+            options.set_label("T3UI");
+            options.set_description("T3UI environment credentials");
+            set_generic_password_options(&json, options)
+                .map_err(|error| StoreError::Keychain(error.to_string()))
+        }
+
+        /// Runs `f` on the cached secrets, loading them from the Keychain on first use.
+        fn with_cache<T>(
+            &self,
+            f: impl FnOnce(&mut BTreeMap<String, String>) -> Result<T, StoreError>,
+        ) -> Result<T, StoreError> {
+            let mut cache = self.cache.lock();
+            if cache.is_none() {
+                *cache = Some(self.read()?);
+            }
+            f(cache.as_mut().expect("loaded above"))
+        }
+    }
+
+    impl Default for KeychainSecretStore {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
+    impl SecretStore for KeychainSecretStore {
+        fn get(&self, key: &str) -> Result<Option<String>, StoreError> {
+            self.with_cache(|secrets| Ok(secrets.get(key).cloned()))
+        }
+
+        fn set(&self, key: &str, value: &str) -> Result<(), StoreError> {
+            self.with_cache(|secrets| {
+                let mut next = secrets.clone();
+                next.insert(key.to_owned(), value.to_owned());
+                self.write(&next)?;
+                *secrets = next;
+                Ok(())
+            })
+        }
+
+        fn delete(&self, key: &str) -> Result<(), StoreError> {
+            self.with_cache(|secrets| {
+                if !secrets.contains_key(key) {
+                    return Ok(());
+                }
+                let mut next = secrets.clone();
+                next.remove(key);
+                self.write(&next)?;
+                *secrets = next;
+                Ok(())
+            })
+        }
     }
 }
 
