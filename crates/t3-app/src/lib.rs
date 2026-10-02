@@ -1,38 +1,31 @@
 //! The T3 Code desktop app: window shell and views. `main.rs` only boots it, so the
 //! snapshot renderer can mount the same views headlessly.
+//!
+//! - [`state`]: the global [`state::AppState`] (route, environments, settings, persisted UI
+//!   state). Every view reads it; see its module docs for the read/navigate/subscribe API.
+//! - [`workspace`]: the root view. The main column mounts views per route through
+//!   [`workspace::build_main_view`].
+//! - [`sidebar`], [`keybindings`], [`toast`], [`dialogs`]: shell pieces other views reuse.
 
-use gpui_kit::{
-    AppContext as _, Context, IntoElement, ParentElement as _, Render, Styled as _, Window, div,
-    rgb,
-};
+pub mod chrome;
+pub mod dialogs;
+pub mod keybindings;
+pub mod sidebar;
+pub mod state;
+pub mod toast;
+pub mod workspace;
 
-/// Root view of the main window.
-pub struct Workspace;
+use gpui_kit::AppContext as _;
+use t3_logic::ui_state::ThemePreference;
 
-impl Workspace {
-    pub fn new(_window: &mut Window, _cx: &mut Context<Self>) -> Self {
-        Self
-    }
-}
+pub use workspace::Workspace;
 
-impl Render for Workspace {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        div()
-            .size_full()
-            .flex()
-            .flex_row()
-            .bg(rgb(0x0a0a0a))
-            .text_color(rgb(0xfafafa))
-            .child(div().w_64().h_full().bg(rgb(0x171717)))
-            .child(
-                div()
-                    .flex_1()
-                    .h_full()
-                    .flex()
-                    .items_center()
-                    .justify_center()
-                    .child("T3 Code"),
-            )
+/// The persisted theme preference in t3-ui's terms.
+pub fn theme_mode(preference: ThemePreference) -> t3_ui::ThemeMode {
+    match preference {
+        ThemePreference::System => t3_ui::ThemeMode::System,
+        ThemePreference::Light => t3_ui::ThemeMode::Light,
+        ThemePreference::Dark => t3_ui::ThemeMode::Dark,
     }
 }
 
@@ -43,9 +36,11 @@ pub fn run() {
         .with_assets(t3_ui::Assets)
         .run(|cx| {
             gpui_kit::init(cx);
-            // TODO(settings): load the persisted theme preference instead of `System`.
-            t3_ui::init(t3_ui::ThemeMode::System, cx);
+            let app_state = state::AppState::init(state::Store::user_data(), cx);
+            let theme = theme_mode(app_state.read(cx).ui().theme);
+            t3_ui::init(theme, cx);
             t3_ui::theme::enable_native_appearance(cx);
+            keybindings::menu::install(cx);
             let options = t3_ui::window::main_window_options(cx);
             gpui_kit::open_window(options, cx, |window, cx| {
                 t3_ui::window::install_glass(window);

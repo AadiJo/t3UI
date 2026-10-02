@@ -7028,10 +7028,15 @@ name = "t3-app"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "directories",
  "gpui-kit",
+ "serde",
+ "serde_json",
  "t3-client",
+ "t3-logic",
  "t3-protocol",
  "t3-ui",
+ "tokio",
  "tracing",
  "tracing-subscriber",
 ]
@@ -7065,6 +7070,16 @@ dependencies = [
  "serde_json",
  "syntect",
  "two-face",
+]
+
+[[package]]
+name = "t3-logic"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
+ "t3-protocol",
 ]
 
 [[package]]
