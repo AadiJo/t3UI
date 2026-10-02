@@ -872,7 +872,7 @@ linked to its worktree (and the project is not the scratch project and the serve
 the session if not stopped; close terminals with history deletion; dispatch delete; clear composer
 draft, project draft mapping and terminal UI state; if it was the route, navigate (replace) to the
 newest remaining thread of the same project (`getFallbackThreadIdAfterDelete`, by
-`sidebarThreadSortOrder`) or `/`. Then remove the worktree (`git.removeWorktree {cwd, path,
+`sidebarThreadSortOrder`) or `/`. Then remove the worktree (`vcs.removeWorktree {cwd, path,
 force:true}`) and refresh VCS status; failures toast "Failed to delete worktree" (`Could not
 remove <path>. <msg>`) or "Worktree deleted, but Git status refresh failed". Navigation failure
 toasts "Thread deleted, but navigation failed".
