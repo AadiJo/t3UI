@@ -56,8 +56,14 @@ impl ShortcutScope {
 
     /// The context `when` clauses evaluate against right now.
     pub fn context(window: &Window, cx: &App) -> ShortcutContext {
+        // `usagePageOpen`: the Usage page's single-letter shortcuts only apply there.
+        let usage_page_open = AppState::try_global(cx)
+            .is_some_and(|state| *state.read(cx).route() == crate::state::Route::Usage);
         let Some(scope) = cx.try_global::<Self>() else {
-            return ShortcutContext::default();
+            return ShortcutContext {
+                usage_page_open,
+                ..ShortcutContext::default()
+            };
         };
         let focused_in = |handles: &[FocusHandle]| {
             handles
@@ -71,7 +77,7 @@ impl ShortcutScope {
             preview_open: scope.preview_open,
             model_picker_open: scope.model_picker_open,
             editable_focus: false,
-            usage_page_open: false,
+            usage_page_open,
         }
     }
 

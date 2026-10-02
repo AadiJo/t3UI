@@ -151,6 +151,12 @@ impl AppState {
         cx.global::<GlobalAppState>().0.clone()
     }
 
+    /// The global entity, or `None` before [`AppState::init`].
+    pub fn try_global(cx: &App) -> Option<Entity<Self>> {
+        cx.try_global::<GlobalAppState>()
+            .map(|global| global.0.clone())
+    }
+
     // ---------------------------------------------------------------------------------------
     // Route
 

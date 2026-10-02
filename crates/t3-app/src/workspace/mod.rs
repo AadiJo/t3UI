@@ -167,6 +167,24 @@ impl Workspace {
         collapse.from + (self.open_progress - collapse.from) * eased
     }
 
+    /// Page-level Escape (`useEscapeToGoBack`): Usage and Pull Requests go back in history,
+    /// settings return to the main app. Controls that consume Escape (inputs, menus) run first.
+    fn escape_page(&mut self, cx: &mut Context<Self>) -> bool {
+        let route = self.app_state.read(cx).route().clone();
+        match route {
+            crate::state::Route::Usage | crate::state::Route::PullRequests => {
+                self.app_state.update(cx, |state, cx| state.go_back(cx));
+                true
+            }
+            crate::state::Route::Settings(_) => {
+                self.app_state
+                    .update(cx, |state, cx| state.navigate_to_main_app(cx));
+                true
+            }
+            _ => false,
+        }
+    }
+
     /// The sidebar view.
     pub fn sidebar(&self) -> &Entity<Sidebar> {
         &self.sidebar
@@ -186,9 +204,10 @@ impl Workspace {
     fn on_key_down(&mut self, event: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         let Some(shortcut) = resolve_key_down(event, window, cx) else {
             if event.keystroke.key == "escape"
-                && self
+                && (self
                     .sidebar
                     .update(cx, |sidebar, cx| sidebar.clear_selection(cx))
+                    || (!event.is_held && self.escape_page(cx)))
             {
                 cx.stop_propagation();
             }
@@ -228,6 +247,18 @@ impl Workspace {
             Command::NavigationForward => {
                 self.app_state.update(cx, |state, cx| state.go_forward(cx));
                 true
+            }
+            // Page commands (`usage.*`) only resolve while their page shows (`when` clauses);
+            // the page view handles them.
+            Command::Other(ref name) if name.starts_with("usage.") => {
+                if shortcut.repeat {
+                    false
+                } else {
+                    let command = shortcut.command.clone();
+                    self.app_state
+                        .update(cx, |state, cx| state.dispatch_command(command, cx));
+                    true
+                }
             }
             Command::Other(_) => false,
             command => {

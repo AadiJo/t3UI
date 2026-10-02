@@ -87,9 +87,8 @@ pub fn build_main_view(
         Route::PullRequests => cx
             .new(|cx| Placeholder::new("Pull Requests", app_state.clone(), cx))
             .into(),
-        // usage/: UsageView::new(app_state, window, cx).
         Route::Usage => cx
-            .new(|cx| Placeholder::new("Usage", app_state.clone(), cx))
+            .new(|cx| crate::pages::usage::UsageView::new(app_state.clone(), window, cx))
             .into(),
         // pages: the welcome wizard over the no-projects hero.
         Route::Welcome => cx
