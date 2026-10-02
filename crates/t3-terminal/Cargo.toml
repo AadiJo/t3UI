@@ -1,0 +1,22 @@
+[package]
+name = "t3-terminal"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Terminal emulator view: alacritty_terminal state rendered by a custom GPUI element."
+
+[features]
+default = ["gpui"]
+# The GPUI view and element. Without it only the pure modules build (input encoding, links,
+# session), so their tests run on hosts without GPUI's system libraries:
+# `cargo test -p t3-terminal --no-default-features`.
+gpui = ["dep:gpui-kit"]
+
+[dependencies]
+alacritty_terminal = { version = "0.26", default-features = false }
+gpui-kit = { workspace = true, optional = true }
+regex = "1"
+
+[lints]
+workspace = true
