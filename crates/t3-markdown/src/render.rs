@@ -30,10 +30,15 @@ use crate::{
 
 /// A rendered block with its CSS margins. `own` are the block's own margins; `inner` the
 /// margins of its first/last children that collapse through it (no padding or border).
+///
+/// `excess` is how many device pixels taller than the CSS box GPUI will make it: GPUI snaps
+/// authored lengths and measured sizes to device pixels before layout, while Chromium keeps
+/// fractional positions, so known rounding is carried into the following gaps instead.
 struct Laid {
     element: AnyElement,
     own: (f32, f32),
     inner: (f32, f32),
+    excess: f32,
 }
 
 impl Laid {
@@ -42,7 +47,13 @@ impl Laid {
             element: element.into_any_element(),
             own,
             inner: (0., 0.),
+            excess: 0.,
         }
+    }
+
+    fn with_excess(mut self, excess: f32) -> Self {
+        self.excess = excess;
+        self
     }
 
     fn top(&self) -> f32 {
@@ -54,47 +65,82 @@ impl Laid {
     }
 }
 
-/// Stacks blocks vertically with collapsed margins between them. Returns the children (with
-/// spacers) plus the leading and trailing margins left for the container to collapse or apply.
-fn stack(blocks: Vec<Laid>) -> (Vec<AnyElement>, f32, f32) {
+/// How much GPUI's pre-layout rounding of an authored length grows it, in device pixels.
+fn rounding_excess(length: f32, scale: f32) -> f32 {
+    let device = length * scale;
+    (device.abs() - 0.5).ceil().copysign(device) - device
+}
+
+/// The result of stacking blocks: children with spacers, the margins left at both ends for the
+/// container, and the accumulated rounding excess in device pixels.
+struct Stacked {
+    children: Vec<AnyElement>,
+    leading: f32,
+    trailing: f32,
+    excess: f32,
+}
+
+/// Stacks blocks vertically with collapsed margins between them. Spacer heights are chosen in
+/// whole device pixels so that each block lands within half a device pixel of where Chromium's
+/// fractional layout puts it, absorbing the rounding of the blocks before it.
+fn stack(blocks: Vec<Laid>, scale: f32) -> Stacked {
     let leading = blocks.first().map_or(0., Laid::top);
     let trailing = blocks.last().map_or(0., Laid::bottom);
     let mut children = Vec::with_capacity(blocks.len() * 2);
     let mut previous_bottom: Option<f32> = None;
+    // Device pixels the next block would sit below its exact position.
+    let mut residual = 0f32;
     for block in blocks {
         if let Some(bottom) = previous_bottom {
-            let gap = bottom.max(block.top());
-            if gap > 0. {
-                children.push(div().flex_none().h(px(gap)).into_any_element());
+            let gap = bottom.max(block.top()) * scale;
+            let emitted = (gap - residual).round().max(0.);
+            residual += emitted - gap;
+            if emitted > 0. {
+                children.push(div().flex_none().h(px(emitted / scale)).into_any_element());
             }
         }
+        residual += block.excess;
         previous_bottom = Some(block.bottom());
         children.push(block.element);
     }
-    (children, leading, trailing)
-}
-
-/// A container whose children's outer margins collapse through it (no vertical padding/border).
-fn collapsing(container: Div, blocks: Vec<Laid>, own: (f32, f32)) -> Laid {
-    let (children, leading, trailing) = stack(blocks);
-    Laid {
-        element: container.children(children).into_any_element(),
-        own,
-        inner: (leading, trailing),
+    Stacked {
+        children,
+        leading,
+        trailing,
+        excess: residual,
     }
 }
 
-/// A container with vertical padding or border: child margins stay inside as spacing.
-fn enclosing(container: Div, blocks: Vec<Laid>) -> Div {
-    let (children, leading, trailing) = stack(blocks);
-    container
+/// A container whose children's outer margins collapse through it (no vertical padding/border).
+fn collapsing(ctx: &Ctx, container: Div, blocks: Vec<Laid>, own: (f32, f32)) -> Laid {
+    let stacked = stack(blocks, ctx.scale);
+    Laid {
+        element: container.children(stacked.children).into_any_element(),
+        own,
+        inner: (stacked.leading, stacked.trailing),
+        excess: stacked.excess,
+    }
+}
+
+/// A container with vertical padding or border: child margins stay inside as spacing. Returns
+/// the container and its rounding excess.
+fn enclosing(ctx: &Ctx, container: Div, blocks: Vec<Laid>) -> (Div, f32) {
+    let stacked = stack(blocks, ctx.scale);
+    let leading = (stacked.leading * ctx.scale).round();
+    let trailing = (stacked.trailing * ctx.scale - stacked.excess)
+        .round()
+        .max(0.);
+    let excess = leading - stacked.leading * ctx.scale + stacked.excess + trailing
+        - stacked.trailing * ctx.scale;
+    let element = container
         .when(leading > 0., |this| {
-            this.child(div().flex_none().h(px(leading)))
+            this.child(div().flex_none().h(px(leading / ctx.scale)))
         })
-        .children(children)
+        .children(stacked.children)
         .when(trailing > 0., |this| {
-            this.child(div().flex_none().h(px(trailing)))
-        })
+            this.child(div().flex_none().h(px(trailing / ctx.scale)))
+        });
+    (element, excess)
 }
 
 /// Inherited text properties while rendering.
@@ -115,6 +161,8 @@ struct Ctx {
     /// every other line (quote `> `, list continuation indent).
     copy_prefix: String,
     copy_indent: String,
+    /// Window scale factor, for device-pixel rounding.
+    scale: f32,
 }
 
 impl Ctx {
@@ -137,10 +185,18 @@ impl Ctx {
     }
 }
 
-/// Monotonic element ids within one render pass.
-struct Ids(usize);
+/// Monotonic element ids within one render pass, plus a count of text blocks used to alternate
+/// how half-device-pixel heights round.
+struct Ids(usize, usize);
 
 impl Ids {
+    /// Alternates for consecutive text blocks, so a run of equal blocks whose height ends in half
+    /// a device pixel rounds down, up, down... and stays where Chromium's layout puts them.
+    fn next_round_up(&mut self) -> bool {
+        self.1 += 1;
+        self.1.is_multiple_of(2)
+    }
+
     fn next(&mut self, name: &'static str) -> gpui_kit::ElementId {
         self.0 += 1;
         gpui_kit::ElementId::NamedInteger(name.into(), self.0 as u64)
@@ -178,8 +234,9 @@ pub(crate) fn render_markdown(
         },
         copy_prefix: String::new(),
         copy_indent: String::new(),
+        scale: window.scale_factor(),
     };
-    let mut ids = Ids(0);
+    let mut ids = Ids(0, 0);
     let chunks: Vec<_> = this.chunks().to_vec();
     let last = chunks.len().saturating_sub(1);
     let mut blocks = Vec::new();
@@ -197,7 +254,12 @@ pub(crate) fn render_markdown(
     if let Some(last) = blocks.last_mut() {
         last.own.1 = 0.;
     }
-    let (children, leading, trailing) = stack(blocks);
+    let Stacked {
+        children,
+        leading,
+        trailing,
+        ..
+    } = stack(blocks, ctx.scale);
     div()
         .w_full()
         .min_w_0()
@@ -285,6 +347,7 @@ fn render_block(
             };
             let inner = render_blocks(this, &quote, ids, children, window, cx);
             collapsing(
+                ctx,
                 div()
                     .flex()
                     .flex_col()
@@ -296,11 +359,19 @@ fn render_block(
                 (margin, margin),
             )
         }
-        Block::List(list) => render_list(this, ctx, ids, list, window, cx),
-        Block::Code(code) => Laid::new(code_block(this, ctx, code, window, cx), (margin, margin)),
+        Block::List(list) => render_list(this, ctx, ids, list, metrics::LIST_ITEM_GAP, window, cx),
+        // GPUI rounds the 12.8px `pre` padding to device pixels...
+        Block::Code(code) => Laid::new(code_block(this, ctx, code, window, cx), (margin, margin))
+            .with_excess(2. * rounding_excess(metrics::CODE_PADDING_Y, ctx.scale)),
+        // ...and the 8.8px header and 7.2px body cell paddings.
         Block::Table(table) => Laid::new(
             render_table(this, ctx, ids, table, window, cx),
             (margin, margin),
+        )
+        .with_excess(
+            2. * rounding_excess(metrics::HEAD_PADDING_Y, ctx.scale)
+                + 2. * table.rows.len() as f32
+                    * rounding_excess(metrics::CELL_PADDING_Y, ctx.scale),
         ),
         Block::Rule => Laid::new(
             div()
@@ -587,6 +658,7 @@ fn aligned_inline(
         },
         markup: inline_markup(content),
         copy,
+        round_up: kind != TextKind::Marker && ids.next_round_up(),
     };
     let entity = cx.entity().downgrade();
     let on_link: LinkHandler = Rc::new(move |href, _, cx| {
@@ -861,11 +933,13 @@ fn text_width(text: &str, run_font: &gpui_kit::Font, size: Pixels, window: &mut 
         .width
 }
 
+/// A list; `item_gap` is the `li + li` margin (0.25rem, 0.35rem in footnotes).
 fn render_list(
     this: &mut Markdown,
     ctx: &Ctx,
     ids: &mut Ids,
     list: &List,
+    item_gap: f32,
     window: &mut Window,
     cx: &mut Context<Markdown>,
 ) -> Laid {
@@ -921,13 +995,14 @@ fn render_list(
             };
             li = li.child(marker);
         }
-        let mut laid = collapsing(li, blocks, (0., 0.));
+        let mut laid = collapsing(ctx, li, blocks, (0., 0.));
         if index > 0 {
-            laid.own.0 = metrics::LIST_ITEM_GAP;
+            laid.own.0 = item_gap;
         }
         items.push(laid);
     }
     collapsing(
+        ctx,
         div().flex().flex_col().pl(px(metrics::LIST_INDENT)),
         items,
         (metrics::BLOCK_MARGIN, metrics::BLOCK_MARGIN),
@@ -1255,6 +1330,7 @@ fn code_content(ctx: &Ctx, code: &str, highlighted: &Highlighted, wraps: bool) -
             block_gap: true,
             ..CopyFormat::default()
         },
+        round_up: false,
         decorations: Decorations {
             code_background: Hsla::transparent_black(),
             code_border: Hsla::transparent_black(),
@@ -1640,15 +1716,19 @@ fn render_details(
             ..ctx.clone()
         };
         let blocks = render_blocks(this, &panel_ctx, ids, &details.blocks, window, cx);
-        container = container.child(enclosing(
-            div()
-                .flex()
-                .flex_col()
-                .pb(px(12.))
-                .pl(px(24.))
-                .text_color(panel_ctx.color),
-            blocks,
-        ));
+        container = container.child(
+            enclosing(
+                ctx,
+                div()
+                    .flex()
+                    .flex_col()
+                    .pb(px(12.))
+                    .pl(px(24.))
+                    .text_color(panel_ctx.color),
+                blocks,
+            )
+            .0,
+        );
     }
     container.into_any_element()
 }
@@ -1698,10 +1778,11 @@ fn render_footnotes(
             })
             .collect(),
     };
-    let mut laid = render_list(this, &note_ctx, ids, &list, window, cx);
+    let mut laid = render_list(this, &note_ctx, ids, &list, 5.6, window, cx);
     // `section[data-footnotes] ol { margin: 0 }`, `li + li { margin-top: 0.35rem }`.
     laid.own = (0., 0.);
     enclosing(
+        ctx,
         div()
             .flex()
             .flex_col()
@@ -1714,6 +1795,7 @@ fn render_footnotes(
             .text_color(colors.muted_foreground),
         vec![laid],
     )
+    .0
     .into_any_element()
 }
 

@@ -102,6 +102,8 @@ pub(crate) struct TextContent {
     /// Inline markup and block framing used to copy the selection as markdown.
     pub markup: Vec<(Range<usize>, crate::copy::Markup)>,
     pub copy: crate::copy::CopyFormat,
+    /// How a height ending in exactly half a device pixel snaps (see [`snap_height`]).
+    pub round_up: bool,
 }
 
 /// Invoked with a link's href when it is clicked.
@@ -792,13 +794,14 @@ impl Element for InlineText {
                     AvailableSpace::Definite(width) => Some(width),
                     _ => None,
                 });
+                let scale = window.scale_factor();
                 if let Some((_, layout)) = measured.borrow().as_ref()
                     && layout.wrap_width == wrap_width
                 {
-                    return layout_size(&content, layout, known);
+                    return layout_size(&content, layout, known, scale);
                 }
                 let layout = Rc::new(TextLayout::compute(&content, wrap_width, window, cx));
-                let size = layout_size(&content, &layout, known);
+                let size = layout_size(&content, &layout, known, scale);
                 *measured.borrow_mut() = Some((content.clone(), layout));
                 size
             });
@@ -1169,12 +1172,35 @@ fn layout_size(
     content: &TextContent,
     layout: &TextLayout,
     known: Size<Option<Pixels>>,
+    scale: f32,
 ) -> Size<Pixels> {
     let width = match content.wrap {
         TextWrap::Pre => layout.size.width,
         _ => known.width.unwrap_or(layout.size.width),
     };
-    size(width, known.height.unwrap_or(layout.size.height))
+    let height = known
+        .height
+        .unwrap_or_else(|| snap_height(layout.size.height, scale, content.round_up));
+    size(width, height)
+}
+
+/// GPUI ceils measured sizes to whole device pixels, so every text block would grow up to a
+/// device pixel and the blocks below would drift away from Chromium's fractional layout. Rounding
+/// to the nearest device pixel instead (ties alternating between blocks) keeps them in place.
+fn snap_height(height: Pixels, scale: f32, round_up: bool) -> Pixels {
+    let device = f32::from(height) * scale;
+    let fraction = device - device.floor();
+    let target = if (fraction - 0.5).abs() < 0.01 {
+        if round_up {
+            device.ceil()
+        } else {
+            device.floor()
+        }
+    } else {
+        device.round()
+    };
+    // Just under the target, so GPUI's ceil lands on it.
+    px((target - 0.01).max(0.) / scale)
 }
 
 fn paint_code_boxes(
