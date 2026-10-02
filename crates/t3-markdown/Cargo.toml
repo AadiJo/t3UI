@@ -1,0 +1,21 @@
+[package]
+name = "t3-markdown"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Chat markdown: parsing, streaming chunks and the GPUI renderer matching the fork's ChatMarkdown."
+
+[features]
+default = ["gpui"]
+# The GPUI renderer. Off, the crate is the parser/chunker only (testable without GPUI system libs).
+gpui = ["dep:gpui-kit", "dep:t3-highlight"]
+
+[dependencies]
+t3-highlight = { workspace = true, optional = true }
+gpui-kit = { workspace = true, optional = true }
+pulldown-cmark.workspace = true
+unicode-segmentation.workspace = true
+
+[lints]
+workspace = true

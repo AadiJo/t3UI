@@ -19,6 +19,7 @@ t3-terminal = { path = "crates/t3-terminal" }
 t3-highlight = { path = "crates/t3-highlight" }
 t3-logic = { path = "crates/t3-logic" }
 t3-diff = { path = "crates/t3-diff", default-features = false }
+t3-markdown = { path = "crates/t3-markdown" }
 
 # UI. gpui-kit re-exports GPUI (gpui-pre), gpui-base and gpui-component, pinned together.
 gpui-kit = { version = "=0.7.0" }
@@ -54,6 +55,8 @@ raw-window-handle = "0.6"
 # Markdown + syntax highlighting. Pure-Rust regex (fancy) so macOS cross-checks need no C toolchain.
 syntect = { version = "5.3", default-features = false, features = ["parsing", "regex-fancy", "plist-load", "yaml-load"] }
 two-face = { version = "0.5.2", default-features = false, features = ["syntect-fancy"] }
+pulldown-cmark = { version = "0.13", default-features = false }
+unicode-segmentation = "1.12"
 
 [workspace.lints.rust]
 unsafe_op_in_unsafe_fn = "deny"
