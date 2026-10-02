@@ -1,5 +1,5 @@
 //! Git actions in the chat header (web `GitActionsControl.logic.ts`, the disabled-reason and
-//! progress helpers in `GitActionsControl.tsx`, `shared/sourceControl.ts`) and the pull
+//! progress helpers in `GitActionsControl.tsx`, `shared/sourceControl.ts`; fork fe7d3092c) and the pull
 //! request reference parser of the PR checkout dialog (`pullRequestReference.ts`).
 //!
 //! Everything reads a [`GitStatus`]: the merged `subscribeVcsStatus` halves, where a missing
@@ -384,7 +384,7 @@ fn disabled_reason(id: MenuItemId, status: GitStatus<'_>, busy: bool) -> String 
     let reason = match id {
         MenuItemId::Commit if !has_changes => "Worktree is clean. Make changes before committing.",
         MenuItemId::Commit => "Commit is currently unavailable.",
-        MenuItemId::Push if !has_branch => "Detached HEAD: checkout a refName before pushing.",
+        MenuItemId::Push if !has_branch => "Detached HEAD: check out a branch before pushing.",
         MenuItemId::Push if has_changes => "Commit or stash local changes before pushing.",
         MenuItemId::Push if is_behind => "Branch is behind upstream. Pull/rebase before pushing.",
         MenuItemId::Push if no_remote => "Add an \"origin\" remote before pushing.",
@@ -394,7 +394,7 @@ fn disabled_reason(id: MenuItemId, status: GitStatus<'_>, busy: bool) -> String 
             return if status.open_pr().is_some() {
                 format!("View {singular} is currently unavailable.")
             } else if !has_branch {
-                format!("Detached HEAD: checkout a refName before creating a {singular}.")
+                format!("Detached HEAD: check out a branch before creating a {singular}.")
             } else if has_changes {
                 format!("Commit local changes before creating a {singular}.")
             } else if no_remote {
@@ -419,7 +419,7 @@ pub fn menu_warnings(status: Option<GitStatus<'_>>) -> Vec<&'static str> {
     let mut warnings = Vec::new();
     if status.ref_name().is_none() {
         warnings.push(
-            "Detached HEAD: create and checkout a refName to enable push and pull request actions.",
+            "Detached HEAD: create and check out a branch to enable push and pull request actions.",
         );
     } else if !status.has_changes() && status.behind() > 0 && status.ahead() == 0 {
         warnings.push("Behind upstream. Pull/rebase first.");
@@ -565,15 +565,20 @@ static AZURE_URL: LazyLock<Regex> = LazyLock::new(|| {
         r"(?i)^https://(?:dev\.azure\.com/[^/\s]+/[^/\s]+|[^/\s]+\.visualstudio\.com/[^/\s]+)/_git/[^/\s]+/pullrequest/(\d+)(?:[/?#].*)?$",
     )
 });
+static FORGEJO_URL: LazyLock<Regex> = LazyLock::new(|| {
+    pattern(r"(?i)^https?://[^/\s]+/(?:[^/\s]+/)+[^/\s]+/pulls/(\d+)(?:[/?#].*)?$")
+});
 static NUMBER: LazyLock<Regex> = LazyLock::new(|| pattern(r"^#?(\d+)$"));
 static GH_CHECKOUT: LazyLock<Regex> = LazyLock::new(|| pattern(r"(?i)^gh\s+pr\s+checkout\s+(.+)$"));
 static GLAB_CHECKOUT: LazyLock<Regex> =
     LazyLock::new(|| pattern(r"(?i)^glab\s+mr\s+checkout\s+(.+)$"));
 static AZ_CHECKOUT: LazyLock<Regex> =
     LazyLock::new(|| pattern(r"(?i)^az\s+repos\s+pr\s+checkout\s+(.+)$"));
+static TEA_CHECKOUT: LazyLock<Regex> =
+    LazyLock::new(|| pattern(r"(?i)^tea\s+(?:pr|pulls)\s+checkout\s+(.+)$"));
 
 /// `parsePullRequestReference`: what to send as `reference` to `git.resolvePullRequest`, from
-/// a PR/MR URL, a `gh`/`glab`/`az` checkout command, `42` or `#42`. URLs pass through whole;
+/// a PR/MR URL, a `gh`/`glab`/`tea`/`az` checkout command, `42` or `#42`. URLs pass through whole;
 /// numbers lose the `#`. `None` when the input is none of those.
 pub fn parse_pull_request_reference(input: &str) -> Option<String> {
     let trimmed = input.trim();
@@ -588,12 +593,13 @@ pub fn parse_pull_request_reference(input: &str) -> Option<String> {
     };
     let normalized = capture(&GH_CHECKOUT)
         .or_else(|| capture(&GLAB_CHECKOUT))
+        .or_else(|| capture(&TEA_CHECKOUT))
         .or_else(|| capture(&AZ_CHECKOUT).and_then(|args| azure_checkout_reference(&args)))
         .unwrap_or_else(|| trimmed.to_owned());
     if normalized.is_empty() {
         return None;
     }
-    if [&*GITHUB_URL, &*GITLAB_URL, &*AZURE_URL]
+    if [&*GITHUB_URL, &*GITLAB_URL, &*FORGEJO_URL, &*AZURE_URL]
         .iter()
         .any(|regex| regex.is_match(&normalized))
     {
@@ -899,6 +905,11 @@ mod tests {
         assert_eq!(parse("az repos pr checkout --id 17").as_deref(), Some("17"));
         assert_eq!(parse("az repos pr checkout --id=18").as_deref(), Some("18"));
         assert_eq!(parse("glab mr checkout #5").as_deref(), Some("5"));
+        assert_eq!(parse("tea pr checkout 12").as_deref(), Some("12"));
+        assert_eq!(
+            parse("https://codeberg.org/owner/repo/pulls/42").as_deref(),
+            Some("https://codeberg.org/owner/repo/pulls/42")
+        );
         assert_eq!(parse("feature-branch"), None);
         assert_eq!(parse("https://github.com/o/r/issues/4"), None);
         assert_eq!(parse("   "), None);
