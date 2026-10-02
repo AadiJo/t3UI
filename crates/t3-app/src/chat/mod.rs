@@ -9,10 +9,16 @@
 //!
 //! Slots: other modules provide the composer, the branch toolbar under it, and the header
 //! actions (scripts / Open in / Git) by registering builders once at startup with
-//! [`register_slot`]. Until a slot is registered the view draws a static placeholder of the
-//! right size. Builders get a [`SlotContext`] with the target and a weak handle to the view,
-//! whose public methods report local sends ([`ChatView::begin_local_dispatch`]) and expose the
-//! thread ([`ChatView::thread`]).
+//! [`register_slot`]; each chat view builds its slot views once, in [`ChatView::new`]. Until a
+//! slot is registered the view draws a static stand-in of the right size. Builders get a
+//! [`SlotContext`] with the target and a weak handle to the view. Through it a slot reads the
+//! thread ([`ChatView::thread`], re-read on `cx.observe(&chat, ..)`) and reports local sends
+//! ([`ChatView::begin_local_dispatch`] / [`ChatView::end_local_dispatch`]), which drive the
+//! optimistic user message, the "Working" row, and the error banner.
+//!
+//! The composer slot is laid out in a 768px column with the 20px side inset already applied;
+//! its measured height sets the timeline's bottom insets (the list scrolls under the top 75%
+//! of it, `composerTimelineGeometry.ts`), so it should be just the card (banners included).
 
 mod banners;
 mod body;
