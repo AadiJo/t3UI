@@ -8,9 +8,13 @@ const MAX_WHEN_DEPTH: usize = 64;
 /// The server keeps at most this many rules (`MAX_KEYBINDINGS_COUNT`).
 const MAX_KEYBINDINGS: usize = 256;
 
-/// The fork's default rules (`DEFAULT_KEYBINDINGS`), as `(key, command, when)`.
+/// The fork's default rules (`shared/keybindings.ts` `DEFAULT_KEYBINDINGS`), as
+/// `(key, command, when)`, in source order (later rules shadow earlier ones).
+/// `thread.jump.N` / `modelPicker.jump.N` and the usage page rules are appended by [`default_keybindings`] in the same positions.
 const DEFAULT_RULES: &[(&str, &str, Option<&str>)] = &[
     ("mod+b", "sidebar.toggle", None),
+    ("mod+[", "navigation.back", Some("!terminalFocus")),
+    ("mod+]", "navigation.forward", Some("!terminalFocus")),
     ("mod+j", "terminal.toggle", None),
     ("mod+alt+b", "rightPanel.toggle", None),
     ("mod+d", "terminal.split", Some("terminalFocus")),
@@ -21,6 +25,7 @@ const DEFAULT_RULES: &[(&str, &str, Option<&str>)] = &[
     ),
     ("mod+n", "terminal.new", Some("terminalFocus")),
     ("mod+w", "terminal.close", Some("terminalFocus")),
+    ("mod+w", "rightPanel.close", Some("!terminalFocus")),
     ("mod+d", "diff.toggle", Some("!terminalFocus")),
     ("mod+shift+j", "preview.toggle", None),
     ("mod+r", "preview.refresh", Some("previewFocus")),
@@ -30,34 +35,139 @@ const DEFAULT_RULES: &[(&str, &str, Option<&str>)] = &[
     ("mod+-", "preview.zoomOut", Some("previewFocus")),
     ("mod+0", "preview.resetZoom", Some("previewFocus")),
     ("mod+k", "commandPalette.toggle", Some("!terminalFocus")),
+    ("mod+p", "filePicker.toggle", Some("!terminalFocus")),
+    (
+        "mod+shift+f",
+        "projectSearch.toggle",
+        Some("!terminalFocus"),
+    ),
+    ("mod+u", "usage.open", Some("!terminalFocus")),
+    ("mod+alt+a", "theme.select", Some("!terminalFocus")),
+    (
+        "mod+alt+shift+a",
+        "appearance.cycle",
+        Some("!terminalFocus"),
+    ),
+    ("mod+alt+shift+t", "themeEditor.toggle", None),
+    ("mod+s", "composer.stash", Some("!terminalFocus")),
+    (
+        "mod+shift+enter",
+        "thread.steerQueuedMessage",
+        Some("!terminalFocus"),
+    ),
     ("mod+n", "chat.new", Some("!terminalFocus")),
     ("mod+shift+o", "chat.new", Some("!terminalFocus")),
     ("mod+shift+n", "chat.newLocal", Some("!terminalFocus")),
+    (
+        "mod+alt+n",
+        "chat.newWithoutProject",
+        Some("!terminalFocus"),
+    ),
     ("mod+shift+m", "modelPicker.toggle", Some("!terminalFocus")),
+    ("mod+shift+h", "composer.host", Some("!terminalFocus")),
+    ("mod+shift+e", "composer.effort", Some("!terminalFocus")),
+    ("mod+shift+a", "composer.mode", Some("!terminalFocus")),
+    ("mod+shift+x", "composer.workspace", Some("!terminalFocus")),
+    ("mod+shift+g", "composer.branch", Some("!terminalFocus")),
+    (
+        "mod+shift+l",
+        "composer.previousWorktree",
+        Some("!terminalFocus"),
+    ),
+    (
+        "mod+shift+k",
+        "pullRequest.copyNumber",
+        Some("!terminalFocus"),
+    ),
+    (
+        "mod+shift+arrowup",
+        "modelPicker.previousProvider",
+        Some("modelPickerOpen"),
+    ),
+    (
+        "mod+shift+arrowdown",
+        "modelPicker.nextProvider",
+        Some("modelPickerOpen"),
+    ),
     ("mod+o", "editor.openFavorite", None),
     ("mod+shift+[", "thread.previous", None),
     ("mod+shift+]", "thread.next", None),
+    (
+        "mod+shift+c",
+        "thread.copyReference",
+        Some("!terminalFocus"),
+    ),
+    ("mod+shift+s", "thread.settle", Some("!terminalFocus")),
+    ("mod+shift+p", "thread.pin", Some("!terminalFocus")),
+    (
+        "mod+z",
+        "thread.undo",
+        Some("!terminalFocus && !editableFocus"),
+    ),
 ];
 
-/// The bindings used until the server's config arrives (web `DEFAULT_RESOLVED_KEYBINDINGS`).
+/// The usage page's rules, after the jump rules (`DEFAULT_KEYBINDINGS` tail).
+const USAGE_RULES: &[(&str, &str, Option<&str>)] = &[
+    ("c", "usage.cost", Some("usagePageOpen")),
+    ("t", "usage.tokens", Some("usagePageOpen")),
+    ("l", "usage.limits", Some("usagePageOpen")),
+    ("mod+shift+1", "usage.period.day", Some("usagePageOpen")),
+    ("mod+shift+2", "usage.period.week", Some("usagePageOpen")),
+    ("mod+shift+3", "usage.period.month", Some("usagePageOpen")),
+    ("mod+shift+4", "usage.period.quarter", Some("usagePageOpen")),
+];
+
+/// The built-in bindings (web `DEFAULT_RESOLVED_KEYBINDINGS`). The client always merges the
+/// server's list over these with [`merge_with_default_keybindings`].
 pub fn default_keybindings() -> Vec<ResolvedKeybindingRule> {
-    let jumps = (1..=9).map(|index| (format!("mod+{index}"), format!("thread.jump.{index}"), None));
+    let owned = |rules: &'static [(&str, &str, Option<&str>)]| {
+        rules
+            .iter()
+            .map(|&(key, command, when)| (key.to_owned(), command.to_owned(), when))
+    };
+    let jumps = (1..=9).map(|index| {
+        (
+            format!("mod+{index}"),
+            format!("thread.jump.{index}"),
+            Some("isDesktop"),
+        )
+    });
     let picker_jumps = (1..=9).map(|index| {
         (
             format!("mod+{index}"),
             format!("modelPicker.jump.{index}"),
-            Some("modelPickerOpen"),
+            Some("modelPickerOpen && isDesktop"),
         )
     });
-    let rules: Vec<_> = DEFAULT_RULES
-        .iter()
-        .map(|&(key, command, when)| (key.to_owned(), command.to_owned(), when))
+    let rules: Vec<_> = owned(DEFAULT_RULES)
         .chain(jumps)
         .chain(picker_jumps)
+        .chain(owned(USAGE_RULES))
         .filter_map(|(key, command, when)| compile_rule(&key, command, when))
         .collect();
     let skip = rules.len().saturating_sub(MAX_KEYBINDINGS);
     rules.into_iter().skip(skip).collect()
+}
+
+/// `mergeWithDefaultKeybindings`: the server's rules win per command. An empty server list
+/// means the defaults; otherwise the defaults for commands the server did not mention come
+/// first, then the server's rules, keeping the last 256.
+pub fn merge_with_default_keybindings(
+    server: &[ResolvedKeybindingRule],
+) -> Vec<ResolvedKeybindingRule> {
+    let defaults = default_keybindings();
+    if server.is_empty() {
+        return defaults;
+    }
+    let overridden: std::collections::HashSet<&str> =
+        server.iter().map(|rule| rule.command.as_str()).collect();
+    let merged: Vec<_> = defaults
+        .into_iter()
+        .filter(|rule| !overridden.contains(rule.command.as_str()))
+        .chain(server.iter().cloned())
+        .collect();
+    let skip = merged.len().saturating_sub(MAX_KEYBINDINGS);
+    merged.into_iter().skip(skip).collect()
 }
 
 fn compile_rule(key: &str, command: String, when: Option<&str>) -> Option<ResolvedKeybindingRule> {

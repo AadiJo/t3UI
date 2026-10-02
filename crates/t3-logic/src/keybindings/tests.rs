@@ -15,7 +15,10 @@
 //! 8. Parser: `mod++` is the plus key, two keys or empty tokens are rejected, `space`/`esc` are
 //!    normalized; `when` rejects unbalanced parens, trailing tokens, and runaway depth.
 //! 9. Jump hints show only when the held modifiers exactly equal a jump shortcut's modifiers.
-//! 10. Command parsing: `thread.jump.N` only for 1-9, `script.<id>.run`, unknown strings kept.
+//! 10. Command parsing: `thread.jump.N` only for 1-9, `script.<id>.run`, unknown strings kept;
+//!     every fork command has a typed variant that round-trips.
+//! 11. Merge: an empty server list means the defaults; a server rule replaces every default for
+//!     its command (not just the same chord) and lands after the retained defaults.
 
 use super::*;
 
@@ -115,8 +118,11 @@ fn shifted_symbols_recover_the_physical_key() {
         resolve(&press("}", cmd_shift()), context),
         Some(Command::ThreadNext)
     );
-    // Plain Cmd+[ is not thread.previous.
-    assert_eq!(resolve(&press("[", cmd()), context), None);
+    // Plain Cmd+[ is navigation.back, not thread.previous.
+    assert_eq!(
+        resolve(&press("[", cmd()), context),
+        Some(Command::NavigationBack)
+    );
 
     let rules = vec![ResolvedKeybindingRule {
         command: "usage.period.day".into(),
@@ -125,7 +131,7 @@ fn shifted_symbols_recover_the_physical_key() {
     }];
     assert_eq!(
         resolve_command(&press("!", cmd_shift()), &rules, &context, MAC),
-        Some(Command::Other("usage.period.day".into()))
+        Some(Command::UsagePeriodDay)
     );
 }
 
@@ -148,7 +154,7 @@ fn gpui_key_names_map_to_dom_names() {
             &ShortcutContext::default(),
             MAC
         ),
-        Some(Command::Other("modelPicker.previousProvider".into()))
+        Some(Command::ModelPickerPreviousProvider)
     );
 }
 
@@ -319,6 +325,60 @@ fn commands_round_trip() {
 
 #[test]
 fn defaults_compile_completely() {
-    // 23 fixed rules + 9 thread jumps + 9 model picker jumps; none may fail to parse.
-    assert_eq!(default_keybindings().len(), 41);
+    // 48 fixed rules + 9 thread jumps + 9 model picker jumps + 7 usage rules; none may fail
+    // to parse.
+    assert_eq!(default_keybindings().len(), 73);
+}
+
+#[test]
+fn server_rules_merge_over_defaults_per_command() {
+    let defaults = default_keybindings();
+    assert_eq!(merge_with_default_keybindings(&[]), defaults);
+    let custom = ResolvedKeybindingRule {
+        command: "sidebar.toggle".into(),
+        shortcut: parse_shortcut("mod+shift+b").unwrap(),
+        when_ast: None,
+    };
+    let merged = merge_with_default_keybindings(std::slice::from_ref(&custom));
+    // The server's rule replaces every default for its command and comes last.
+    assert_eq!(merged.last(), Some(&custom));
+    assert_eq!(
+        merged
+            .iter()
+            .filter(|rule| rule.command == "sidebar.toggle")
+            .count(),
+        1
+    );
+    // Commands the server did not mention keep their defaults.
+    assert_eq!(merged.len(), defaults.len());
+    assert_eq!(
+        resolve(&press("b", cmd()), ShortcutContext::default()),
+        Some(Command::SidebarToggle)
+    );
+    assert_eq!(
+        resolve_command(
+            &press("b", cmd()),
+            &merged,
+            &ShortcutContext::default(),
+            MAC
+        ),
+        None
+    );
+}
+
+#[test]
+fn every_fixed_command_round_trips() {
+    for wire in [
+        "filePicker.toggle",
+        "composer.previousWorktree",
+        "modelPicker.previousProvider",
+        "thread.steerQueuedMessage",
+        "thread.undo",
+        "usage.period.quarter",
+        "chat.newWithoutProject",
+    ] {
+        let command = Command::parse(wire);
+        assert!(!matches!(command, Command::Other(_)), "{wire}");
+        assert_eq!(command.as_str(), wire);
+    }
 }

@@ -13,6 +13,7 @@ mod project_dialogs;
 mod pulse;
 mod render;
 mod sort_menu;
+mod stage;
 
 use std::{collections::HashSet, time::Duration};
 
@@ -27,6 +28,7 @@ use t3_logic::{
 use t3_protocol::orchestration::ThreadEnvMode;
 
 pub use pulse::{PulseClock, pulse_opacity};
+pub use stage::{StageBackdrop, StageBackdropArt, stage_backdrop};
 
 use crate::state::{
     AppState, Environment, EnvironmentKind, NewThreadRequest, Route,

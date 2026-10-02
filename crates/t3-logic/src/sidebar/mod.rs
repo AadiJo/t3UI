@@ -12,6 +12,7 @@
 //! sorting or status work.
 
 mod inbox;
+mod list;
 mod order;
 mod pull_request;
 mod selection;
@@ -31,6 +32,12 @@ use t3_protocol::{
 
 pub use inbox::{
     InboxEnvironment, InboxInputs, InboxModel, InboxReturns, InboxThread, build_inbox,
+};
+pub use list::{
+    OrderAssignment, SETTLED_INITIAL_COUNT, SETTLED_PAGE_COUNT, ShelfState, SidebarDropInputs,
+    SidebarDropPlan, SidebarDropTarget, SidebarDropVerb, SidebarList, SidebarListInputs,
+    SidebarListItem, SidebarMarker, SidebarSection, build_sidebar_list, plan_forward_navigation,
+    plan_sidebar_thread_drop, resolve_sidebar_drop_target, resolve_sidebar_drop_verb,
 };
 pub use order::{
     MoveDirection, ThreadRow, generate_spread_pin_order_keys, pin_order_key_between,
@@ -612,5 +619,7 @@ pub fn build_sidebar(inputs: &SidebarInputs<'_>) -> SidebarModel {
 
 #[cfg(test)]
 mod inbox_tests;
+#[cfg(test)]
+mod list_tests;
 #[cfg(test)]
 mod tests;

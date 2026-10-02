@@ -103,11 +103,17 @@ pub fn build_main_view(
 }
 
 /// Left padding for a main-column header while the sidebar is collapsed, so the title clears the
-/// traffic lights and the sidebar toggle (`--workspace-titlebar-content-left`, 130px on macOS).
-/// `None` while the sidebar is open: keep the header's normal 20px padding.
+/// traffic lights and the sidebar toggle (`--workspace-titlebar-content-left`: controls-left 82,
+/// plus the 28px toggle and a 12px gap, so 122px on macOS and 52 elsewhere). `None` while the
+/// sidebar is open: keep the header's normal 20px padding.
 pub fn collapsed_titlebar_inset(cx: &App) -> Option<Pixels> {
     let open = AppState::global(cx).read(cx).sidebar_open();
-    (!open).then(|| layout::CONTROLS_LEFT + layout::TITLEBAR_CONTROL + px(12.))
+    let controls_left = if cfg!(target_os = "macos") {
+        px(82.)
+    } else {
+        px(12.)
+    };
+    (!open).then(|| controls_left + layout::TITLEBAR_CONTROL + px(12.))
 }
 
 /// Stand-in for views other modules own. Shows the route's header strip only.

@@ -56,8 +56,14 @@ impl ShortcutScope {
 
     /// The context `when` clauses evaluate against right now.
     pub fn context(window: &Window, cx: &App) -> ShortcutContext {
+        // `usagePageOpen` follows the route; the other flags come from the views that own them.
+        let usage_page_open = AppState::try_global(cx)
+            .is_some_and(|state| *state.read(cx).route() == crate::state::Route::Usage);
         let Some(scope) = cx.try_global::<Self>() else {
-            return ShortcutContext::default();
+            return ShortcutContext {
+                usage_page_open,
+                ..ShortcutContext::default()
+            };
         };
         let focused_in = |handles: &[FocusHandle]| {
             handles
@@ -71,7 +77,7 @@ impl ShortcutScope {
             preview_open: scope.preview_open,
             model_picker_open: scope.model_picker_open,
             editable_focus: false,
-            usage_page_open: false,
+            usage_page_open,
         }
     }
 
@@ -120,7 +126,17 @@ pub fn resolve_key_down(
     let command = resolve_command(&shortcut, &rules, &context, Platform::current())?;
     match command {
         Command::RightPanelClose if !ShortcutScope::right_panel_open(cx) => return None,
-        Command::ChatNew | Command::ChatNewLocal if ShortcutScope::command_palette_open(cx) => {
+        // The palette owns the keyboard while open: the sidebar list shortcuts and the chat
+        // route shortcuts stand down (`ChatRouteGlobalShortcuts`, `Sidebar.tsx:4498`).
+        Command::ChatNew
+        | Command::ChatNewLocal
+        | Command::ChatNewWithoutProject
+        | Command::ThreadPrevious
+        | Command::ThreadNext
+        | Command::ThreadJump(_)
+        | Command::ThreadUndo
+            if ShortcutScope::command_palette_open(cx) =>
+        {
             return None;
         }
         _ => {}

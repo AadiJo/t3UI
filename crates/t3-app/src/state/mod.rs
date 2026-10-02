@@ -27,7 +27,9 @@ use std::{collections::HashSet, ops::Deref, sync::Arc, time::Duration};
 use gpui_kit::{App, AppContext as _, Context, Entity, EventEmitter, Global, SharedString, Task};
 use t3_logic::{
     ProjectRef, ThreadRef,
-    keybindings::{Command, ResolvedKeybindingRule, default_keybindings},
+    keybindings::{
+        Command, ResolvedKeybindingRule, default_keybindings, merge_with_default_keybindings,
+    },
     settings::ClientSettings,
     ui_state::{ThemePreference, UiState},
 };
@@ -65,23 +67,25 @@ pub struct NewThreadRequest {
     pub start_from_origin: Option<bool>,
 }
 
-/// The active keybinding rules: the primary environment's, or the defaults before its config
-/// arrives. Derefs to the rule slice.
+/// The active keybinding rules: the primary environment's merged over the built-in defaults
+/// (`mergeWithDefaultKeybindings`), or the defaults before its config arrives. Derefs to the
+/// rule slice; cheap to clone.
 #[derive(Clone)]
-pub enum Keybindings {
-    Server(Arc<ServerConfig>),
-    Default(Arc<[ResolvedKeybindingRule]>),
-}
+pub struct Keybindings(Arc<[ResolvedKeybindingRule]>);
 
 impl Deref for Keybindings {
     type Target = [ResolvedKeybindingRule];
 
     fn deref(&self) -> &Self::Target {
-        match self {
-            Self::Server(config) => &config.keybindings,
-            Self::Default(rules) => rules,
-        }
+        &self.0
     }
+}
+
+/// The merged rules for one primary server config; a new config (keybindings reload)
+/// recomputes them.
+struct MergedKeybindings {
+    config: Option<Arc<ServerConfig>>,
+    rules: Arc<[ResolvedKeybindingRule]>,
 }
 
 /// Global app state. See the module docs for how views use it.
@@ -99,7 +103,7 @@ pub struct AppState {
     ui: UiState,
     sidebar_open: bool,
     optimistic_work: HashSet<ThreadRef>,
-    default_keybindings: Arc<[ResolvedKeybindingRule]>,
+    keybindings: std::cell::RefCell<MergedKeybindings>,
     fixed_now: Option<i64>,
     pending_ui_write: Option<Task<()>>,
     _quit: gpui_kit::Subscription,
@@ -134,7 +138,10 @@ impl AppState {
             ui,
             sidebar_open: true,
             optimistic_work: HashSet::new(),
-            default_keybindings: default_keybindings().into(),
+            keybindings: std::cell::RefCell::new(MergedKeybindings {
+                config: None,
+                rules: default_keybindings().into(),
+            }),
             fixed_now: None,
             pending_ui_write: None,
             _quit: cx.on_app_quit(|this: &mut Self, _| {
@@ -149,6 +156,12 @@ impl AppState {
     /// The global entity. Panics before [`AppState::init`].
     pub fn global(cx: &App) -> Entity<Self> {
         cx.global::<GlobalAppState>().0.clone()
+    }
+
+    /// The global entity, if [`AppState::init`] ran (component previews run without it).
+    pub fn try_global(cx: &App) -> Option<Entity<Self>> {
+        cx.try_global::<GlobalAppState>()
+            .map(|state| state.0.clone())
     }
 
     // ---------------------------------------------------------------------------------------
@@ -293,12 +306,23 @@ impl AppState {
 
     /// The active keybinding rules.
     pub fn keybindings(&self, cx: &App) -> Keybindings {
-        self.primary_environment()
-            .and_then(|environment| environment.read(cx).config().cloned())
-            .map_or_else(
-                || Keybindings::Default(self.default_keybindings.clone()),
-                Keybindings::Server,
-            )
+        let config = self
+            .primary_environment()
+            .and_then(|environment| environment.read(cx).config().cloned());
+        let mut cache = self.keybindings.borrow_mut();
+        let same = match (&cache.config, &config) {
+            (Some(cached), Some(config)) => Arc::ptr_eq(cached, config),
+            (None, None) => true,
+            _ => false,
+        };
+        if !same {
+            cache.rules = match &config {
+                Some(config) => merge_with_default_keybindings(&config.keybindings).into(),
+                None => default_keybindings().into(),
+            };
+            cache.config = config;
+        }
+        Keybindings(cache.rules.clone())
     }
 
     /// Routes a keyboard or menu command to the view that owns it.

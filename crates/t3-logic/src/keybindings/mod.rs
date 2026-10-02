@@ -1,8 +1,8 @@
 //! Keyboard shortcuts: a direct port of the web client's matcher (`apps/web/src/keybindings.ts`)
 //! and default bindings (`packages/shared/src/keybindings.ts`).
 //!
-//! The server owns the binding list (`ServerConfig.keybindings`); until it arrives the client uses
-//! [`default_keybindings`]. Matching walks the rules from last to first and returns the first rule
+//! The server sends the user's binding list (`ServerConfig.keybindings`); the client always
+//! merges it over [`default_keybindings`] with [`merge_with_default_keybindings`]. Matching walks the rules from last to first and returns the first rule
 //! whose `when` clause holds and whose shortcut matches, so later rules shadow earlier ones.
 //! The app runs one resolver at the window root instead of translating rules into GPUI's keymap,
 //! which keeps labels, conflicts, and the settings editor identical to the web client.
@@ -11,7 +11,7 @@ mod command;
 mod parse;
 
 pub use command::Command;
-pub use parse::{default_keybindings, parse_shortcut, parse_when};
+pub use parse::{default_keybindings, merge_with_default_keybindings, parse_shortcut, parse_when};
 pub use t3_protocol::server::{KeybindingShortcut, KeybindingWhenNode, ResolvedKeybindingRule};
 
 /// Which platform conventions apply: `mod` means Cmd on macOS and Ctrl elsewhere, and labels use
