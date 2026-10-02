@@ -1,13 +1,14 @@
 //! Terminal view scenes: recorded ANSI output fed into the real `TerminalView`, inside the
-//! drawer's `p-4` viewport wrapper. Some scenes then drive real input through the window
-//! (pointer hover on a link, a drag selection, a wheel scroll) after the first frame.
+//! drawer's `p-4` viewport wrapper. After the first frame, scenes can drive real input through
+//! the window (pointer hover, drag selection, wheel scroll, key presses). A local echo stands in
+//! for the PTY, so typed keys show up as output exactly as the view encoded them.
 
 use gpui_kit::{
     AnyView, App, AppContext as _, Context, Entity, Focusable as _, IntoElement, Modifiers,
-    MouseMoveEvent, ParentElement as _, PlatformInput, Render, ScrollDelta, ScrollWheelEvent,
-    Styled as _, TouchPhase, Window, div, point, px, test::TestWindowExt as _,
+    MouseMoveEvent, ParentElement as _, Pixels, PlatformInput, Point, Render, ScrollDelta,
+    ScrollWheelEvent, Styled as _, TouchPhase, Window, div, point, px, test::TestWindowExt as _,
 };
-use t3_terminal::TerminalView;
+use t3_terminal::{TerminalEvent, TerminalView};
 use t3_ui::{ActiveColors as _, ThemeMode};
 
 use super::Scene;
@@ -17,8 +18,50 @@ struct Fixture {
     output: fn() -> String,
     /// Focus the terminal in an active window (block cursor instead of the outline).
     focus: bool,
-    /// Runs once the first frame is laid out, so cells have window positions.
-    interact: Option<fn(&Entity<TerminalView>, &mut Window, &mut App)>,
+    /// Input run after the first frame, each step in its own update so echoes interleave.
+    steps: fn() -> Vec<Step>,
+    echo: Echo,
+}
+
+const BASE: Fixture = Fixture {
+    output: String::new,
+    focus: false,
+    steps: Vec::new,
+    echo: Echo::None,
+};
+
+/// How the scene answers `TerminalEvent::Input`, standing in for the PTY.
+#[derive(Clone, Copy)]
+enum Echo {
+    None,
+    /// Feed input back as output, like a shell's line editor echoing keys.
+    Raw,
+    /// Print the bytes in caret notation (`^[[D`).
+    Caret,
+}
+
+/// One interaction, in viewport cells where a position is needed.
+enum Step {
+    Hover {
+        col: usize,
+        row: usize,
+    },
+    Drag {
+        from: (usize, usize),
+        to: (usize, usize),
+    },
+    /// Wheel toward older output by `lines` rows, with the pointer over `(col, row)`.
+    ScrollUp {
+        col: usize,
+        row: usize,
+        lines: f32,
+    },
+    /// A GPUI keystroke such as `"left"` or `"cmd-k"`.
+    Press(&'static str),
+    /// Text typed through the platform text input path.
+    Type(&'static str),
+    /// Output written directly, e.g. a label.
+    Feed(String),
 }
 
 const SIZE: (f32, f32) = (960., 420.);
@@ -47,6 +90,7 @@ pub fn scenes() -> Vec<Scene> {
         scene!("terminal-selection-light", Light, SELECTION).size(w, h),
         scene!("terminal-scrollback-dark", Dark, SCROLLBACK).size(w, h),
         scene!("terminal-scrollback-light", Light, SCROLLBACK).size(w, h),
+        scene!("terminal-keys-dark", Dark, KEYS).size(w, 560.),
         scene!("terminal-cursor-block-dark", Dark, CURSOR_BLOCK).size(cw, ch),
         scene!("terminal-cursor-block-light", Light, CURSOR_BLOCK).size(cw, ch),
         scene!("terminal-cursor-bar-dark", Dark, CURSOR_BAR).size(cw, ch),
@@ -74,32 +118,87 @@ impl Render for TerminalScene {
 }
 
 fn build(fixture: &'static Fixture, window: &mut Window, cx: &mut App) -> AnyView {
+    t3_terminal::init(cx);
     let terminal = cx.new(|cx| TerminalView::new(window, cx));
     terminal.update(cx, |terminal, cx| {
         terminal.feed_output(&(fixture.output)(), cx)
     });
+    let echo = fixture.echo;
+    if !matches!(echo, Echo::None) {
+        cx.subscribe(&terminal, move |terminal, event: &TerminalEvent, cx| {
+            if let TerminalEvent::Input(data) = event {
+                let output = match echo {
+                    Echo::Caret => caret_notation(data),
+                    _ => data.clone(),
+                };
+                terminal.update(cx, |terminal, cx| terminal.feed_output(&output, cx));
+            }
+        })
+        .detach();
+    }
     if fixture.focus {
         window.activate_window();
         terminal.focus_handle(cx).focus(window, cx);
     }
-    if let Some(interact) = fixture.interact {
+    let steps = (fixture.steps)();
+    if !steps.is_empty() {
         let terminal = terminal.clone();
         window
             .spawn(cx, async move |cx| {
-                cx.update(|window, cx| interact(&terminal, window, cx)).ok();
+                for step in steps {
+                    cx.update(|window, cx| run_step(&step, &terminal, window, cx))
+                        .ok();
+                }
             })
             .detach();
     }
     cx.new(|_| TerminalScene { terminal }).into()
 }
 
+fn run_step(step: &Step, terminal: &Entity<TerminalView>, window: &mut Window, cx: &mut App) {
+    match step {
+        Step::Hover { col, row } => {
+            window.render_frame(cx);
+            move_pointer(cell_center(terminal, *col, *row, cx), window, cx);
+        }
+        Step::Drag { from, to } => {
+            let from = cell_center(terminal, from.0, from.1, cx);
+            let to = cell_center(terminal, to.0, to.1, cx);
+            window.drag(from, to, cx);
+        }
+        Step::ScrollUp { col, row, lines } => {
+            window.render_frame(cx);
+            let position = cell_center(terminal, *col, *row, cx);
+            move_pointer(position, window, cx);
+            window.dispatch_event(
+                PlatformInput::ScrollWheel(ScrollWheelEvent {
+                    position,
+                    delta: ScrollDelta::Lines(point(0., *lines)),
+                    modifiers: Modifiers::default(),
+                    touch_phase: TouchPhase::Moved,
+                }),
+                cx,
+            );
+        }
+        Step::Press(key) => window.press(key, cx),
+        Step::Type(text) => window.input(text, cx),
+        Step::Feed(text) => terminal.update(cx, |terminal, cx| terminal.feed_output(text, cx)),
+    }
+}
+
+/// `cat -v` style: ESC as `^[`, other C0 bytes as `^X`, DEL as `^?`.
+fn caret_notation(data: &str) -> String {
+    data.chars()
+        .map(|c| match c {
+            '\x7f' => "^?".to_owned(),
+            c if (c as u32) < 0x20 => format!("^{}", char::from(c as u8 + 0x40)),
+            c => c.to_string(),
+        })
+        .collect()
+}
+
 /// Window position of the middle of viewport cell `(col, row)`.
-fn cell_center(
-    terminal: &Entity<TerminalView>,
-    col: usize,
-    row: usize,
-    cx: &App,
-) -> gpui_kit::Point<gpui_kit::Pixels> {
+fn cell_center(terminal: &Entity<TerminalView>, col: usize, row: usize, cx: &App) -> Point<Pixels> {
     let origin = terminal
         .read(cx)
         .cell_origin(col, row)
@@ -107,7 +206,7 @@ fn cell_center(
     point(origin.x + px(3.), origin.y + px(8.))
 }
 
-fn move_pointer(position: gpui_kit::Point<gpui_kit::Pixels>, window: &mut Window, cx: &mut App) {
+fn move_pointer(position: Point<Pixels>, window: &mut Window, cx: &mut App) {
     window.dispatch_event(
         PlatformInput::MouseMove(MouseMoveEvent {
             position,
@@ -183,11 +282,8 @@ const SHELL: Fixture = Fixture {
     },
     focus: true,
     // Hover the URL on the echo output row: it underlines with a pointing-hand cursor.
-    interact: Some(|terminal, window, cx| {
-        let position = cell_center(terminal, 14, 18, cx);
-        window.render_frame(cx);
-        move_pointer(position, window, cx);
-    }),
+    steps: || vec![Step::Hover { col: 14, row: 18 }],
+    ..BASE
 };
 
 const TESTS: Fixture = Fixture {
@@ -214,8 +310,7 @@ const TESTS: Fixture = Fixture {
         out += &prompt("web", "terminal");
         out
     },
-    focus: false,
-    interact: None,
+    ..BASE
 };
 
 const COLORS: Fixture = Fixture {
@@ -270,8 +365,7 @@ const COLORS: Fixture = Fixture {
         out += "\x1b[0m\r\n\r\nattributes  \x1b[1mbold\x1b[22m  \x1b[2mdim\x1b[22m  \x1b[3mitalic\x1b[23m  \x1b[1;3mbold italic\x1b[0m  \x1b[4munderline\x1b[24m  \x1b[4:3mcurly\x1b[4:0m  \x1b[9mstrikethrough\x1b[29m  \x1b[7minverse\x1b[27m  [\x1b[8mhidden\x1b[28m]  \x1b[2;31mdim red\x1b[0m  \x1b[7;32m inverse green \x1b[0m\r\n";
         out
     },
-    focus: false,
-    interact: None,
+    ..BASE
 };
 
 /// A fully saturated color at `degrees` on the hue wheel.
@@ -310,7 +404,7 @@ const UNICODE: Fixture = Fixture {
         out
     },
     focus: true,
-    interact: None,
+    ..BASE
 };
 
 const SELECTION: Fixture = Fixture {
@@ -338,11 +432,13 @@ const SELECTION: Fixture = Fixture {
     },
     focus: true,
     // Drag from "mod element" to the middle of the `pub use links` line.
-    interact: Some(|terminal, window, cx| {
-        let from = cell_center(terminal, 4, 3, cx);
-        let to = cell_center(terminal, 33, 8, cx);
-        window.drag(from, to, cx);
-    }),
+    steps: || {
+        vec![Step::Drag {
+            from: (4, 3),
+            to: (33, 8),
+        }]
+    },
+    ..BASE
 };
 
 const SCROLLBACK: Fixture = Fixture {
@@ -369,46 +465,92 @@ const SCROLLBACK: Fixture = Fixture {
         out += &prompt("t3UI", "main");
         out
     },
-    focus: false,
     // Hover, then wheel up 60 lines: the viewport moves into scrollback and the slider shows.
-    interact: Some(|terminal, window, cx| {
-        let position = cell_center(terminal, 40, 10, cx);
-        window.render_frame(cx);
-        move_pointer(position, window, cx);
-        window.dispatch_event(
-            PlatformInput::ScrollWheel(ScrollWheelEvent {
-                position,
-                delta: ScrollDelta::Pixels(point(px(0.), px(16. * 60.))),
-                modifiers: Modifiers::default(),
-                touch_phase: TouchPhase::Moved,
-            }),
-            cx,
-        );
-    }),
+    steps: || {
+        vec![Step::ScrollUp {
+            col: 40,
+            row: 10,
+            lines: 60.,
+        }]
+    },
+    ..BASE
 };
 
-/// A prompt with the cursor moved back onto the `s` of `status`.
-fn cursor_output(decscusr: &str) -> String {
-    format!("{decscusr}$ git status\x1b[6D")
+/// Types `git status` through the keyboard path, then presses Left six times so the cursor
+/// sits on the `s` of `status`. The local echo applies the bytes the view sent.
+fn typed_status() -> Vec<Step> {
+    let mut steps = vec![
+        Step::Type("git"),
+        Step::Press("space"),
+        Step::Type("status"),
+    ];
+    steps.extend(std::iter::repeat_with(|| Step::Press("left")).take(6));
+    steps
 }
 
 const CURSOR_BLOCK: Fixture = Fixture {
-    output: || cursor_output(""),
+    output: || "$ ".into(),
     focus: true,
-    interact: None,
+    steps: typed_status,
+    echo: Echo::Raw,
 };
 const CURSOR_BAR: Fixture = Fixture {
-    output: || cursor_output("\x1b[6 q"),
-    focus: true,
-    interact: None,
+    output: || "\x1b[6 q$ ".into(),
+    ..CURSOR_BLOCK
 };
 const CURSOR_UNDERLINE: Fixture = Fixture {
-    output: || cursor_output("\x1b[4 q"),
-    focus: true,
-    interact: None,
+    output: || "\x1b[4 q$ ".into(),
+    ..CURSOR_BLOCK
 };
 const CURSOR_UNFOCUSED: Fixture = Fixture {
-    output: || cursor_output(""),
-    focus: false,
-    interact: None,
+    output: || "$ git status\x1b[6D".into(),
+    ..BASE
+};
+
+/// Keys and the label printed before each; the echo prints what the view sent.
+const KEY_ROWS: &[(&str, &str)] = &[
+    ("enter", "enter"),
+    ("shift-enter", "shift-enter"),
+    ("tab", "tab"),
+    ("shift-tab", "shift-tab"),
+    ("backspace", "backspace"),
+    ("ctrl-backspace", "ctrl-backspace"),
+    ("alt-backspace", "alt-backspace"),
+    ("cmd-backspace", "cmd-backspace (fork)"),
+    ("escape", "escape"),
+    ("up", "up"),
+    ("shift-up", "shift-up"),
+    ("ctrl-down", "ctrl-down"),
+    ("alt-left", "alt-left (fork)"),
+    ("alt-right", "alt-right (fork)"),
+    ("cmd-left", "cmd-left (fork)"),
+    ("cmd-right", "cmd-right (fork)"),
+    ("home", "home"),
+    ("end", "end"),
+    ("pageup", "pageup"),
+    ("delete", "delete"),
+    ("f1", "f1"),
+    ("f5", "f5"),
+    ("shift-f12", "shift-f12"),
+    ("ctrl-c", "ctrl-c"),
+    ("ctrl-l", "ctrl-l"),
+    ("cmd-k", "cmd-k (fork)"),
+    ("ctrl-[", "ctrl-["),
+    ("ctrl-space", "ctrl-space"),
+    ("ctrl-@", "ctrl-@"),
+];
+
+const KEYS: Fixture = Fixture {
+    output: || "\x1b[1mkey                   bytes sent\x1b[0m".into(),
+    focus: true,
+    steps: || {
+        let mut steps: Vec<Step> = KEY_ROWS
+            .iter()
+            .flat_map(|(key, label)| [Step::Feed(format!("\r\n{label:<22}")), Step::Press(key)])
+            .collect();
+        steps.push(Step::Feed(format!("\r\n{:<22}", "typed \"héllo\"")));
+        steps.push(Step::Type("héllo"));
+        steps
+    },
+    echo: Echo::Caret,
 };
