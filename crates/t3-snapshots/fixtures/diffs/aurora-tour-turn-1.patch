@@ -1,0 +1,39 @@
+diff --git a/src/format.ts b/src/format.ts
+index 8aa2238..632789c 100644
+--- a/src/format.ts
++++ b/src/format.ts
+@@ -1,4 +1,15 @@
++const UNITS = ["B", "KB", "MB", "GB", "TB"] as const;
++
++/** Format a byte count with 1024-based steps, e.g. 1536 -> "1.5 KB". */
+ export function formatBytes(bytes: number): string {
+-  if (bytes < 1024) return `${bytes} B`;
+-  return `${(bytes / 1024).toFixed(1)} KB`;
++  if (!Number.isFinite(bytes) || bytes < 0) {
++    throw new RangeError(`formatBytes expects a non-negative number, got ${bytes}`);
++  }
++  let value = bytes;
++  let unit = 0;
++  while (value >= 1024 && unit < UNITS.length - 1) {
++    value /= 1024;
++    unit += 1;
++  }
++  return unit === 0 ? `${value} B` : `${value.toFixed(1)} ${UNITS[unit]}`;
+ }
+diff --git a/test/format.test.ts b/test/format.test.ts
+index f5acdef..9ce63a8 100644
+--- a/test/format.test.ts
++++ b/test/format.test.ts
+@@ -5,3 +5,12 @@ import { formatBytes } from "../src/format";
+ test("formats kilobytes", () => {
+   assert.equal(formatBytes(1536), "1.5 KB");
+ });
++
++test("formats megabytes and gigabytes", () => {
++  assert.equal(formatBytes(5 * 1024 ** 2), "5.0 MB");
++  assert.equal(formatBytes(3 * 1024 ** 3), "3.0 GB");
++});
++
++test("rejects negative input", () => {
++  assert.throws(() => formatBytes(-1), RangeError);
++});

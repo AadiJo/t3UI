@@ -7112,6 +7112,8 @@ dependencies = [
  "serde",
  "serde_json",
  "t3-client",
+ "t3-diff",
+ "t3-highlight",
  "t3-logic",
  "t3-protocol",
  "t3-ui",

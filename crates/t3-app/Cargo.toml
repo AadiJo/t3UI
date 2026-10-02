@@ -13,7 +13,9 @@ path = "src/main.rs"
 t3-protocol.workspace = true
 t3-client.workspace = true
 t3-ui.workspace = true
+t3-diff = { workspace = true, features = ["gpui"] }
 t3-logic.workspace = true
+t3-highlight.workspace = true
 gpui-kit.workspace = true
 anyhow.workspace = true
 serde.workspace = true
