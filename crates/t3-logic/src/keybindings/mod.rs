@@ -8,6 +8,7 @@
 //! which keeps labels, conflicts, and the settings editor identical to the web client.
 
 mod command;
+pub mod editor;
 mod parse;
 
 pub use command::Command;
