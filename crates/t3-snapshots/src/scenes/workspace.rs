@@ -1,7 +1,8 @@
 //! The workspace shell: sidebar populated from shell fixtures, collapsed, and empty.
 //!
-//! `reference.json` is a shell snapshot recorded from the e2e nightly server (`e2e/seed.mjs`),
-//! the same seed as `docs/reference/sidebar-*.png`, so `sidebar-reference-*` compares 1:1.
+//! `sidebar-reference-*` load the shell and server config recorded from the e2e nightly server
+//! (`fixtures/shell.json`, `server-config.json`; the seed behind `docs/reference/sidebar-*.png`)
+//! with the clock at seed time + 2 minutes, like the reference capture, so they compare 1:1.
 //! `sidebar.json` is handcrafted to cover every status, grouping, badges, and overflow.
 
 use gpui_kit::{
@@ -13,7 +14,33 @@ use t3_ui::{ActiveColors as _, ThemeMode};
 
 use super::Scene;
 
-const REFERENCE: &str = include_str!("../../fixtures/reference.json");
+const RECORDED_SHELL: &str = include_str!("../../fixtures/shell.json");
+const RECORDED_CONFIG: &str = include_str!("../../fixtures/server-config.json");
+const RECORDED_MANIFEST: &str = include_str!("../../fixtures/manifest.json");
+
+/// The recorded e2e environment as a workspace fixture.
+fn recorded_fixture() -> String {
+    let parse = |json: &str| -> serde_json::Value {
+        serde_json::from_str(json).expect("recorded fixture is JSON")
+    };
+    let manifest = parse(RECORDED_MANIFEST);
+    let seeded_at = manifest["seededAt"]
+        .as_str()
+        .expect("manifest has seededAt");
+    let now = chrono::DateTime::parse_from_rfc3339(seeded_at).expect("seededAt is RFC 3339")
+        + chrono::Duration::minutes(2);
+    serde_json::json!({
+        "now": now.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+        "environments": [{
+            "id": manifest["environmentId"],
+            "label": "fixture-host",
+            "kind": "local",
+            "shell": parse(RECORDED_SHELL),
+            "serverConfig": parse(RECORDED_CONFIG),
+        }],
+    })
+    .to_string()
+}
 const SIDEBAR: &str = include_str!("../../fixtures/sidebar.json");
 const EMPTY: &str = include_str!("../../fixtures/empty.json");
 
@@ -46,10 +73,10 @@ impl Render for Backdrop {
 pub fn scenes() -> Vec<Scene> {
     vec![
         Scene::new("sidebar-reference-dark", ThemeMode::Dark, |window, cx| {
-            workspace(REFERENCE, window, cx, |_, _| {})
+            workspace(&recorded_fixture(), window, cx, |_, _| {})
         }),
         Scene::new("sidebar-reference-light", ThemeMode::Light, |window, cx| {
-            workspace(REFERENCE, window, cx, |_, _| {})
+            workspace(&recorded_fixture(), window, cx, |_, _| {})
         }),
         Scene::new("workspace-sidebar-dark", ThemeMode::Dark, |window, cx| {
             workspace(SIDEBAR, window, cx, |_, _| {})

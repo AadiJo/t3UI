@@ -6,7 +6,8 @@
 //! {
 //!   "now": "2026-10-01T12:00:00.000Z",
 //!   "environments": [
-//!     {"id": "env-local", "label": "HOME-PC", "kind": "local", "shell": { ...OrchestrationShellSnapshot }}
+//!     {"id": "env-local", "label": "HOME-PC", "kind": "local",
+//!      "shell": { ...ShellState or OrchestrationShellSnapshot }, "serverConfig": { ...ServerConfig }}
 //!   ],
 //!   "route": {"thread": {"environmentId": "env-local", "threadId": "t1"}},
 //!   "settings": { ...ClientSettings },
@@ -14,9 +15,9 @@
 //! }
 //! ```
 //!
-//! `shell` is exactly what the server sends (`GET /api/orchestration/shell` or the socket's
-//! snapshot item), so a capture from a real server drops in unchanged. `now` pins the clock that
-//! relative times are computed against.
+//! `shell` is a recorded client `ShellState` (`t3-snapshots/fixtures/shell.json`) or exactly what
+//! the server sends (`GET /api/orchestration/shell`), so captures from a real server drop in
+//! unchanged. `now` pins the clock that relative times are computed against.
 
 use gpui_kit::{App, AppContext as _, Entity};
 use serde::Deserialize;
@@ -25,6 +26,7 @@ use t3_logic::{ThreadRef, settings::ClientSettings, time::parse_timestamp, ui_st
 use t3_protocol::{
     EnvironmentId,
     orchestration::OrchestrationShellSnapshot,
+    server::ServerConfig,
     vcs::{VcsStatusLocal, VcsStatusRemote},
 };
 
@@ -66,7 +68,16 @@ struct FixtureEnvironment {
     label: String,
     #[serde(default)]
     kind: FixtureKind,
-    shell: Option<OrchestrationShellSnapshot>,
+    shell: Option<FixtureShell>,
+    server_config: Option<ServerConfig>,
+}
+
+/// A recorded `t3_client::ShellState` (`fixtures/shell.json`), or a raw server snapshot.
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum FixtureShell {
+    State(ShellState),
+    Snapshot(OrchestrationShellSnapshot),
 }
 
 #[derive(Default, Deserialize)]
@@ -107,11 +118,18 @@ pub fn load(json: &str, cx: &mut App) -> anyhow::Result<Entity<AppState>> {
             cx.new(|cx| {
                 let mut entity = Environment::new(environment.id, environment.label, kind);
                 entity.set_status(ConnectionStatus::Connected { generation: 1 }, cx);
-                if let Some(snapshot) = environment.shell {
-                    let mut shell = ShellState::default();
-                    shell.apply_snapshot(snapshot);
-                    shell.end_sync();
-                    entity.set_shell(shell, cx);
+                match environment.shell {
+                    Some(FixtureShell::State(shell)) => entity.set_shell(shell, cx),
+                    Some(FixtureShell::Snapshot(snapshot)) => {
+                        let mut shell = ShellState::default();
+                        shell.apply_snapshot(snapshot);
+                        shell.end_sync();
+                        entity.set_shell(shell, cx);
+                    }
+                    None => {}
+                }
+                if let Some(config) = environment.server_config {
+                    entity.set_config(std::sync::Arc::new(config), cx);
                 }
                 entity
             })

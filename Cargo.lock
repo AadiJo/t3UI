@@ -7173,8 +7173,10 @@ name = "t3-snapshots"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "chrono",
  "gpui-kit",
  "image",
+ "serde_json",
  "t3-app",
  "t3-diff",
  "t3-terminal",
