@@ -12,8 +12,10 @@ use t3_client::{ConnectionStatus, ShellState, ThreadHandle};
 use t3_protocol::{
     EnvironmentId, ProjectId, ThreadId,
     commands::ClientCommand,
+    method::Unary,
     orchestration::{OrchestrationProjectShell, OrchestrationThreadShell},
     server::ServerConfig,
+    usage::UsageSummary,
 };
 use tokio::sync::watch;
 
@@ -37,6 +39,8 @@ pub struct Environment {
     status: ConnectionStatus,
     config: Option<Arc<ServerConfig>>,
     shell: Arc<ShellState>,
+    /// What a detached (fixture) environment answers to `server.getUsageSummary`.
+    usage_fixture: Option<Arc<UsageSummary>>,
     _watchers: Vec<Task<()>>,
 }
 
@@ -51,6 +55,7 @@ impl Environment {
             status: ConnectionStatus::Available,
             config: None,
             shell: Arc::new(ShellState::default()),
+            usage_fixture: None,
             _watchers: Vec::new(),
         }
     }
@@ -74,6 +79,7 @@ impl Environment {
             config: client.config().borrow().clone(),
             shell: client.shell().borrow().clone(),
             client: Some(client),
+            usage_fixture: None,
             _watchers: watchers,
         }
     }
@@ -152,6 +158,34 @@ impl Environment {
         self.client
             .as_ref()
             .map(|client| client.open_thread(thread_id))
+    }
+
+    /// Sends a unary RPC (a `t3_protocol::methods` type) off the main thread. Fails with the
+    /// server's error message, or when the environment is detached or disconnected.
+    pub fn request<M>(&self, payload: M::Payload, cx: &App) -> Task<anyhow::Result<M::Success>>
+    where
+        M: Unary + 'static,
+        M::Payload: Send + Sync + 'static,
+        M::Error: std::fmt::Display,
+    {
+        let Some(client) = self.client.clone() else {
+            return Task::ready(Err(anyhow::anyhow!("{} is not connected.", self.label)));
+        };
+        cx.background_spawn(async move {
+            client
+                .request::<M>(&payload)
+                .await
+                .map_err(|error| anyhow::anyhow!("{error}"))
+        })
+    }
+
+    /// The recorded usage summary a detached environment reports (snapshot fixtures).
+    pub fn usage_fixture(&self) -> Option<&Arc<UsageSummary>> {
+        self.usage_fixture.as_ref()
+    }
+
+    pub fn set_usage_fixture(&mut self, summary: UsageSummary) {
+        self.usage_fixture = Some(Arc::new(summary));
     }
 
     /// Sends an orchestration command (`orchestration.dispatchCommand`; build it with

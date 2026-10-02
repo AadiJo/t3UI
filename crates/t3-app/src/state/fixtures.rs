@@ -7,7 +7,8 @@
 //!   "now": "2026-10-01T12:00:00.000Z",
 //!   "environments": [
 //!     {"id": "env-local", "label": "HOME-PC", "kind": "local",
-//!      "shell": { ...ShellState or OrchestrationShellSnapshot }, "serverConfig": { ...ServerConfig }}
+//!      "shell": { ...ShellState or OrchestrationShellSnapshot }, "serverConfig": { ...ServerConfig },
+//!      "usageSummary": { ...UsageSummary }}
 //!   ],
 //!   "route": {"thread": {"environmentId": "env-local", "threadId": "t1"}},
 //!   "settings": { ...ClientSettings },
@@ -27,6 +28,7 @@ use t3_protocol::{
     EnvironmentId,
     orchestration::OrchestrationShellSnapshot,
     server::ServerConfig,
+    usage::UsageSummary,
     vcs::{VcsStatusLocal, VcsStatusRemote},
 };
 
@@ -70,6 +72,8 @@ struct FixtureEnvironment {
     kind: FixtureKind,
     shell: Option<FixtureShell>,
     server_config: Option<ServerConfig>,
+    /// The `server.getUsageSummary` answer the Usage page shows for this environment.
+    usage_summary: Option<UsageSummary>,
 }
 
 /// A recorded `t3_client::ShellState` (`fixtures/shell.json`), or a raw server snapshot.
@@ -130,6 +134,9 @@ pub fn load(json: &str, cx: &mut App) -> anyhow::Result<Entity<AppState>> {
                 }
                 if let Some(config) = environment.server_config {
                     entity.set_config(std::sync::Arc::new(config), cx);
+                }
+                if let Some(summary) = environment.usage_summary {
+                    entity.set_usage_fixture(summary);
                 }
                 entity
             })
