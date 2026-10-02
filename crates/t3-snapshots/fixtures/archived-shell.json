@@ -1,0 +1,81 @@
+{
+  "projects": [
+    {
+      "autoPull": false,
+      "createdAt": "2026-10-02T04:30:08.841Z",
+      "defaultModelSelection": null,
+      "defaultThreadEnvMode": null,
+      "faviconPath": null,
+      "id": "project-cirrus",
+      "projectIcon": null,
+      "repositoryIdentity": null,
+      "scripts": [],
+      "title": "cirrus-docs",
+      "updatedAt": "2026-10-02T04:30:08.841Z",
+      "workspaceRoot": "/tmp/t3ui-e2e/run-nightly/repos/cirrus-docs"
+    }
+  ],
+  "snapshotSequence": 178,
+  "threads": [
+    {
+      "activeOrderKey": null,
+      "archivedAt": "2026-10-02T04:30:09.953Z",
+      "autoSettleDisabledAt": null,
+      "backgroundLiveness": null,
+      "branch": "main",
+      "branchPullRequest": null,
+      "createdAt": "2026-10-02T04:30:09.001Z",
+      "hasActionableProposedPlan": false,
+      "hasPendingApprovals": false,
+      "hasPendingUserInput": false,
+      "id": "thread-cirrus-summary",
+      "interactionMode": "default",
+      "latestTurn": {
+        "assistantMessageId": "assistant:msg_81b00ca0_1",
+        "completedAt": "2026-10-02T04:30:09.779Z",
+        "requestedAt": "2026-10-02T04:30:09.001Z",
+        "sourceProposedPlan": null,
+        "startedAt": "2026-10-02T04:30:09.001Z",
+        "state": "completed",
+        "turnId": "81b00ca0-c491-4366-abfa-14599f8104c9"
+      },
+      "latestUserMessageAt": "2026-10-02T04:30:09.001Z",
+      "linkedPullRequest": null,
+      "modelSelection": {
+        "instanceId": "codex",
+        "model": "gpt-5.4"
+      },
+      "pinOrderKey": null,
+      "pinnedAt": null,
+      "planProgress": null,
+      "projectId": "project-cirrus",
+      "pullRequests": [],
+      "runtimeMode": "full-access",
+      "session": {
+        "activeTurnId": null,
+        "lastError": null,
+        "providerInstanceId": "codex",
+        "providerName": "codex",
+        "runtimeMode": "full-access",
+        "status": "ready",
+        "threadId": "thread-cirrus-summary",
+        "updatedAt": "2026-10-02T04:30:09.779Z"
+      },
+      "settledAt": null,
+      "settledOverride": null,
+      "snoozedAt": null,
+      "snoozedUntil": null,
+      "title": "Summarize the README",
+      "titleRegeneration": null,
+      "titleState": {
+        "needsRefinement": false,
+        "source": "generated",
+        "version": "server:thread-title-rename:08a293bd-d09b-477e-90cf-8d44ec1b9d48"
+      },
+      "unsettledAt": null,
+      "updatedAt": "2026-10-02T04:30:09.953Z",
+      "worktreePath": null
+    }
+  ],
+  "updatedAt": "2026-10-02T04:30:19.392Z"
+}

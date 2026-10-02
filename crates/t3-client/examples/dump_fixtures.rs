@@ -1,0 +1,201 @@
+//! Writes the seeded e2e environment's published client state as JSON fixtures, so GPUI
+//! snapshot scenes can render real data without a network.
+//!
+//! ```sh
+//! e2e/run-local.sh up --server nightly --detach
+//! cargo run -p t3-client --example dump_fixtures -- \
+//!     [--state /tmp/t3ui-e2e/run-nightly/state.json] [--out crates/t3-snapshots/fixtures]
+//! ```
+//!
+//! Output (all redacted: host label, home, checkout, and run dir paths):
+//! - `manifest.json`: server version, `seededAt` (pin scene clocks to it), and one entry per
+//!   seeded thread (id, scenario, expected state, title, project, fixture file).
+//! - `server-config.json`: `t3_protocol::server::ServerConfig`.
+//! - `shell.json`: `t3_client::ShellState` (projects + active threads, sidebar data).
+//! - `archived-shell.json`: `OrchestrationShellSnapshot` from `getArchivedShellSnapshot`.
+//! - `threads/<name>.json`: `t3_client::ThreadState` per active seeded thread, where `<name>`
+//!   is the thread id without its `thread-` prefix (e.g. `aurora-tour`).
+//!
+//! Load with `serde_json::from_str::<ShellState>(..)` etc.
+
+mod common;
+
+use std::{path::PathBuf, time::Duration};
+
+use anyhow::{Context as _, Result, bail};
+use serde::Serialize;
+use t3_client::{SyncStatus, ThreadState};
+use t3_protocol::methods::{Empty, GetArchivedShellSnapshot};
+
+fn main() -> Result<()> {
+    common::init_tracing("warn");
+    let mut state_path = PathBuf::from("/tmp/t3ui-e2e/run-nightly/state.json");
+    let mut out = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../t3-snapshots/fixtures");
+    let mut args = std::env::args().skip(1);
+    while let Some(arg) = args.next() {
+        match arg.as_str() {
+            "--state" => state_path = args.next().context("--state needs a path")?.into(),
+            "--out" => out = args.next().context("--out needs a path")?.into(),
+            other => bail!("unexpected argument {other}"),
+        }
+    }
+    t3_client::runtime::runtime().block_on(run(&state_path, &out))
+}
+
+async fn run(state_path: &std::path::Path, out: &std::path::Path) -> Result<()> {
+    let harness = common::HarnessState::load(state_path)?;
+    let env = harness.connect()?;
+    env.wait_connected().await?;
+    let config = env
+        .config()
+        .borrow()
+        .clone()
+        .context("connected without a server config")?;
+    let redactor = harness.redactor(&config.environment.label);
+    let write = |name: &str, value: &dyn erased::Json| -> Result<()> {
+        let path = out.join(name);
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        let redacted = redactor.redact(&value.to_json()?);
+        let pretty =
+            serde_json::to_string_pretty(&serde_json::from_str::<serde_json::Value>(&redacted)?)?;
+        std::fs::write(&path, pretty + "\n")?;
+        println!("wrote {}", path.display());
+        Ok(())
+    };
+
+    write("server-config.json", &*config)?;
+
+    let mut shell = env.shell();
+    let shell_state = common::wait_for(&mut shell, Duration::from_secs(20), |s| {
+        s.status == SyncStatus::Live
+    })
+    .await
+    .context("shell never became live")?;
+    write("shell.json", &*shell_state)?;
+
+    let archived = env
+        .request::<GetArchivedShellSnapshot>(&Empty {})
+        .await
+        .map_err(|e| anyhow::anyhow!("getArchivedShellSnapshot: {e}"))?;
+    write("archived-shell.json", &archived)?;
+
+    let mut entries = Vec::new();
+    for thread in &harness.threads {
+        let name = thread
+            .id
+            .as_str()
+            .strip_prefix("thread-")
+            .unwrap_or(thread.id.as_str())
+            .to_owned();
+        // Archived threads have no detail on this server version (snapshot reports not found).
+        let file = if thread.archived {
+            None
+        } else {
+            let handle = env.open_thread(thread.id.clone());
+            let mut rx = handle.state();
+            let state: std::sync::Arc<ThreadState> =
+                common::wait_for(&mut rx, Duration::from_secs(20), |s| {
+                    s.status == SyncStatus::Live && s.thread.is_some()
+                })
+                .await
+                .with_context(|| format!("{} never became live", thread.id))?;
+            let file = format!("threads/{name}.json");
+            write(&file, &*state)?;
+            Some(file)
+        };
+        entries.push(ManifestThread {
+            id: thread.id.to_string(),
+            name,
+            project_id: thread.project_id.to_string(),
+            scenario: thread.scenario.clone(),
+            expect: thread.expect.clone(),
+            title: thread.title.clone(),
+            archived: thread.archived,
+            runtime_mode: thread.runtime_mode.clone(),
+            interaction_mode: thread.interaction_mode.clone(),
+            file,
+        });
+    }
+
+    write(
+        "manifest.json",
+        &Manifest {
+            note: "Generated by `cargo run -p t3-client --example dump_fixtures` from the e2e harness (e2e/run-local.sh). Do not edit by hand.",
+            server_version: harness.server_version.clone(),
+            seeded_at: harness.seeded_at.clone(),
+            environment_id: harness.environment_id.to_string(),
+            server_config: "server-config.json",
+            shell: "shell.json",
+            archived_shell: "archived-shell.json",
+            projects: harness
+                .projects
+                .iter()
+                .map(|p| ManifestProject {
+                    key: p.key.clone(),
+                    id: p.id.to_string(),
+                    title: p.title.clone(),
+                    workspace_root: p.workspace_root.clone(),
+                })
+                .collect(),
+            threads: entries,
+        },
+    )?;
+    Ok(())
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct Manifest {
+    note: &'static str,
+    server_version: String,
+    seeded_at: String,
+    environment_id: String,
+    server_config: &'static str,
+    shell: &'static str,
+    archived_shell: &'static str,
+    projects: Vec<ManifestProject>,
+    threads: Vec<ManifestThread>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ManifestProject {
+    key: String,
+    id: String,
+    title: String,
+    workspace_root: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ManifestThread {
+    id: String,
+    /// File stem under `threads/`.
+    name: String,
+    project_id: String,
+    scenario: String,
+    /// Seeded end state: completed, completedWithDiff, failed, awaitingInput, proposedPlan,
+    /// awaitingApproval, running.
+    expect: String,
+    title: String,
+    archived: bool,
+    runtime_mode: String,
+    interaction_mode: String,
+    /// `threads/<name>.json`, or `None` for archived threads (no detail available).
+    file: Option<String>,
+}
+
+/// Object-safe "serialize to JSON" so one closure can write different types.
+mod erased {
+    pub trait Json {
+        fn to_json(&self) -> serde_json::Result<String>;
+    }
+
+    impl<T: serde::Serialize> Json for T {
+        fn to_json(&self) -> serde_json::Result<String> {
+            serde_json::to_string(self)
+        }
+    }
+}

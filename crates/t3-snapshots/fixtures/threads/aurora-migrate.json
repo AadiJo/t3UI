@@ -1,0 +1,174 @@
+{
+  "deleted": false,
+  "error": null,
+  "historyEpoch": 1,
+  "lastSequence": 178,
+  "page": {
+    "beforeCursor": null,
+    "hasMore": false,
+    "loadingOlder": false
+  },
+  "status": "live",
+  "thread": {
+    "activeOrderKey": null,
+    "activities": [
+      {
+        "createdAt": "2026-10-02T04:30:16.449Z",
+        "id": "ef5d68bf-656b-4f05-a023-aed7efc99a5b",
+        "kind": "tool.started",
+        "payload": {
+          "data": {
+            "item": {
+              "command": "/bin/bash -lc 'ls migrations'"
+            }
+          },
+          "detail": "/bin/bash -lc 'ls migrations'",
+          "itemType": "command_execution",
+          "status": "inProgress",
+          "title": "Ran command",
+          "toolCallId": "call_05f8d2fb_2"
+        },
+        "sequence": null,
+        "summary": "Ran command started",
+        "tone": "tool",
+        "turnId": "05f8d2fb-7a71-48fb-ad80-d046bd02bb92"
+      },
+      {
+        "createdAt": "2026-10-02T04:30:16.505Z",
+        "id": "e2557947-25dc-4f81-ae6e-98c70cbdede7",
+        "kind": "tool.completed",
+        "payload": {
+          "data": {
+            "item": {
+              "aggregatedOutput": "0001_init.sql",
+              "command": "/bin/bash -lc 'ls migrations'"
+            }
+          },
+          "detail": "/bin/bash -lc 'ls migrations'",
+          "itemType": "command_execution",
+          "status": "completed",
+          "title": "Ran command",
+          "toolCallId": "call_05f8d2fb_2"
+        },
+        "sequence": null,
+        "summary": "Ran command",
+        "tone": "tool",
+        "turnId": "05f8d2fb-7a71-48fb-ad80-d046bd02bb92"
+      },
+      {
+        "createdAt": "2026-10-02T04:30:16.535Z",
+        "id": "2a39dbed-b5fd-4864-9dc7-bb1e09a77eec",
+        "kind": "tool.started",
+        "payload": {
+          "data": {
+            "item": {
+              "command": "/bin/bash -lc 'pnpm db:migrate'"
+            }
+          },
+          "detail": "/bin/bash -lc 'pnpm db:migrate'",
+          "itemType": "command_execution",
+          "status": "inProgress",
+          "title": "Ran command",
+          "toolCallId": "call_05f8d2fb_3"
+        },
+        "sequence": null,
+        "summary": "Ran command started",
+        "tone": "tool",
+        "turnId": "05f8d2fb-7a71-48fb-ad80-d046bd02bb92"
+      },
+      {
+        "createdAt": "2026-10-02T04:30:16.536Z",
+        "id": "d9c672c5-78ad-416a-9c54-e301b0cf37bc",
+        "kind": "approval.requested",
+        "payload": {
+          "detail": "/bin/bash -lc 'pnpm db:migrate'",
+          "requestId": "32606716-d823-4ca6-ab71-db0b22158571",
+          "requestKind": "command",
+          "requestType": "command_execution_approval"
+        },
+        "sequence": null,
+        "summary": "Command approval requested",
+        "tone": "approval",
+        "turnId": "05f8d2fb-7a71-48fb-ad80-d046bd02bb92"
+      }
+    ],
+    "archivedAt": null,
+    "autoSettleDisabledAt": null,
+    "branch": "main",
+    "branchPullRequest": null,
+    "checkpoints": [],
+    "createdAt": "2026-10-02T04:30:15.701Z",
+    "deletedAt": null,
+    "id": "thread-aurora-migrate",
+    "interactionMode": "default",
+    "latestTurn": {
+      "assistantMessageId": "assistant:msg_05f8d2fb_1",
+      "completedAt": null,
+      "requestedAt": "2026-10-02T04:30:15.701Z",
+      "sourceProposedPlan": null,
+      "startedAt": "2026-10-02T04:30:15.701Z",
+      "state": "running",
+      "turnId": "05f8d2fb-7a71-48fb-ad80-d046bd02bb92"
+    },
+    "linkedPullRequest": null,
+    "messages": [
+      {
+        "attachments": [],
+        "context": null,
+        "createdAt": "2026-10-02T04:30:15.701Z",
+        "id": "thread-aurora-migrate-msg-1",
+        "role": "user",
+        "streaming": false,
+        "text": "Run the database migration against the local dev database.",
+        "turnId": null,
+        "updatedAt": "2026-10-02T04:30:15.701Z"
+      },
+      {
+        "attachments": null,
+        "context": null,
+        "createdAt": "2026-10-02T04:30:16.418Z",
+        "id": "assistant:msg_05f8d2fb_1",
+        "role": "assistant",
+        "streaming": false,
+        "text": "I'll check which migrations are pending, then apply them.",
+        "turnId": "05f8d2fb-7a71-48fb-ad80-d046bd02bb92",
+        "updatedAt": "2026-10-02T04:30:16.418Z"
+      }
+    ],
+    "modelSelection": {
+      "instanceId": "codex",
+      "model": "gpt-5.4"
+    },
+    "pinOrderKey": null,
+    "pinnedAt": null,
+    "projectId": "project-aurora",
+    "proposedPlans": [],
+    "pullRequests": [],
+    "runtimeMode": "approval-required",
+    "session": {
+      "activeTurnId": "05f8d2fb-7a71-48fb-ad80-d046bd02bb92",
+      "lastError": null,
+      "providerInstanceId": "codex",
+      "providerName": "codex",
+      "runtimeMode": "approval-required",
+      "status": "running",
+      "threadId": "thread-aurora-migrate",
+      "updatedAt": "2026-10-02T04:30:15.819Z"
+    },
+    "settledAt": null,
+    "settledOverride": null,
+    "snoozedAt": null,
+    "snoozedUntil": null,
+    "title": "Run local database migration",
+    "titleRegeneration": null,
+    "titleState": {
+      "needsRefinement": false,
+      "source": "generated",
+      "version": "server:thread-title-rename:f9f2b593-8641-4bc0-900e-d0d9fa647e61"
+    },
+    "unsettledAt": null,
+    "updatedAt": "2026-10-02T04:30:16.536Z",
+    "worktreePath": null
+  },
+  "threadId": "thread-aurora-migrate"
+}

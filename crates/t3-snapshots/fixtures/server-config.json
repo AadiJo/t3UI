@@ -1,0 +1,3086 @@
+{
+  "auth": {
+    "bootstrapMethods": [
+      "one-time-token"
+    ],
+    "policy": "loopback-browser",
+    "sessionCookieName": "t3_session_4811_9ea22f4521b0",
+    "sessionMethods": [
+      "browser-session-cookie",
+      "bearer-access-token",
+      "dpop-access-token"
+    ]
+  },
+  "availableEditors": [
+    "cursor"
+  ],
+  "cwd": "/tmp/t3ui-e2e/run-nightly/cwd",
+  "environment": {
+    "capabilities": {
+      "agentActivityPublishing": false,
+      "attachmentUploads": true,
+      "connectionProbe": true,
+      "desktopAppUpdate": false,
+      "environmentIcon": true,
+      "environmentThemes": true,
+      "fileAttachments": {
+        "maxUploadBytes": 52428800
+      },
+      "inlineMessageContext": true,
+      "projectCloneTracking": true,
+      "projectSettingsOverrides": true,
+      "projectWorktreeCleanup": true,
+      "pullRequestStackActions": true,
+      "pullRequests": true,
+      "questionAttachments": true,
+      "repositoryIdentity": true,
+      "requiredWorktreeBootstrap": true,
+      "serverSelfUpdate": null,
+      "serverSelfUpdateProgress": false,
+      "serverUpdateThreadContinuation": false,
+      "storageCleanup": true,
+      "threadActiveReorder": true,
+      "threadAutoSettleOptOut": true,
+      "threadAutoSettlement": true,
+      "threadPinReorder": true,
+      "threadPinning": true,
+      "threadPullRequestLinking": true,
+      "threadPullRequests": true,
+      "threadRestartContinuation": true,
+      "threadSettlement": true,
+      "threadSnooze": true,
+      "threadTitleRegeneration": true,
+      "usageLimitSources": true,
+      "usagePriceOverrides": true
+    },
+    "environmentId": "a3668c50-2032-465e-a44d-8386511b4650",
+    "label": "fixture-host",
+    "orchestrationProtocolVersion": 1,
+    "platform": {
+      "arch": "x64",
+      "machine": "linux",
+      "os": "linux"
+    },
+    "serverVersion": "0.0.45-nightly.20261002.2561"
+  },
+  "environmentThemes": null,
+  "issues": [],
+  "keybindings": [
+    {
+      "command": "sidebar.toggle",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "b",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": null
+    },
+    {
+      "command": "navigation.back",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "[",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "node": {
+          "name": "terminalFocus",
+          "type": "identifier"
+        },
+        "type": "not"
+      }
+    },
+    {
+      "command": "navigation.forward",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "]",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "node": {
+          "name": "terminalFocus",
+          "type": "identifier"
+        },
+        "type": "not"
+      }
+    },
+    {
+      "command": "terminal.toggle",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "j",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": null
+    },
+    {
+      "command": "rightPanel.toggle",
+      "shortcut": {
+        "altKey": true,
+        "ctrlKey": false,
+        "key": "b",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": null
+    },
+    {
+      "command": "terminal.split",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "d",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "name": "terminalFocus",
+        "type": "identifier"
+      }
+    },
+    {
+      "command": "terminal.splitVertical",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "d",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": true
+      },
+      "whenAst": {
+        "name": "terminalFocus",
+        "type": "identifier"
+      }
+    },
+    {
+      "command": "terminal.new",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "n",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "name": "terminalFocus",
+        "type": "identifier"
+      }
+    },
+    {
+      "command": "terminal.close",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "w",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "name": "terminalFocus",
+        "type": "identifier"
+      }
+    },
+    {
+      "command": "rightPanel.close",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "w",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "node": {
+          "name": "terminalFocus",
+          "type": "identifier"
+        },
+        "type": "not"
+      }
+    },
+    {
+      "command": "diff.toggle",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "d",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "node": {
+          "name": "terminalFocus",
+          "type": "identifier"
+        },
+        "type": "not"
+      }
+    },
+    {
+      "command": "preview.toggle",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "j",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": true
+      },
+      "whenAst": null
+    },
+    {
+      "command": "preview.refresh",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "r",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "name": "previewFocus",
+        "type": "identifier"
+      }
+    },
+    {
+      "command": "preview.focusUrl",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "l",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "name": "previewFocus",
+        "type": "identifier"
+      }
+    },
+    {
+      "command": "preview.zoomIn",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "=",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "name": "previewFocus",
+        "type": "identifier"
+      }
+    },
+    {
+      "command": "preview.zoomIn",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "+",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "name": "previewFocus",
+        "type": "identifier"
+      }
+    },
+    {
+      "command": "preview.zoomOut",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "-",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "name": "previewFocus",
+        "type": "identifier"
+      }
+    },
+    {
+      "command": "preview.resetZoom",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "0",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "name": "previewFocus",
+        "type": "identifier"
+      }
+    },
+    {
+      "command": "commandPalette.toggle",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "k",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "node": {
+          "name": "terminalFocus",
+          "type": "identifier"
+        },
+        "type": "not"
+      }
+    },
+    {
+      "command": "filePicker.toggle",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "p",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "node": {
+          "name": "terminalFocus",
+          "type": "identifier"
+        },
+        "type": "not"
+      }
+    },
+    {
+      "command": "projectSearch.toggle",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "f",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": true
+      },
+      "whenAst": {
+        "node": {
+          "name": "terminalFocus",
+          "type": "identifier"
+        },
+        "type": "not"
+      }
+    },
+    {
+      "command": "usage.open",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "u",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "node": {
+          "name": "terminalFocus",
+          "type": "identifier"
+        },
+        "type": "not"
+      }
+    },
+    {
+      "command": "theme.select",
+      "shortcut": {
+        "altKey": true,
+        "ctrlKey": false,
+        "key": "a",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "node": {
+          "name": "terminalFocus",
+          "type": "identifier"
+        },
+        "type": "not"
+      }
+    },
+    {
+      "command": "appearance.cycle",
+      "shortcut": {
+        "altKey": true,
+        "ctrlKey": false,
+        "key": "a",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": true
+      },
+      "whenAst": {
+        "node": {
+          "name": "terminalFocus",
+          "type": "identifier"
+        },
+        "type": "not"
+      }
+    },
+    {
+      "command": "themeEditor.toggle",
+      "shortcut": {
+        "altKey": true,
+        "ctrlKey": false,
+        "key": "t",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": true
+      },
+      "whenAst": null
+    },
+    {
+      "command": "composer.stash",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "s",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "node": {
+          "name": "terminalFocus",
+          "type": "identifier"
+        },
+        "type": "not"
+      }
+    },
+    {
+      "command": "thread.steerQueuedMessage",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "enter",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": true
+      },
+      "whenAst": {
+        "node": {
+          "name": "terminalFocus",
+          "type": "identifier"
+        },
+        "type": "not"
+      }
+    },
+    {
+      "command": "chat.new",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "n",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "node": {
+          "name": "terminalFocus",
+          "type": "identifier"
+        },
+        "type": "not"
+      }
+    },
+    {
+      "command": "chat.new",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "o",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": true
+      },
+      "whenAst": {
+        "node": {
+          "name": "terminalFocus",
+          "type": "identifier"
+        },
+        "type": "not"
+      }
+    },
+    {
+      "command": "chat.newLocal",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "n",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": true
+      },
+      "whenAst": {
+        "node": {
+          "name": "terminalFocus",
+          "type": "identifier"
+        },
+        "type": "not"
+      }
+    },
+    {
+      "command": "chat.newWithoutProject",
+      "shortcut": {
+        "altKey": true,
+        "ctrlKey": false,
+        "key": "n",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "node": {
+          "name": "terminalFocus",
+          "type": "identifier"
+        },
+        "type": "not"
+      }
+    },
+    {
+      "command": "modelPicker.toggle",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "m",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": true
+      },
+      "whenAst": {
+        "node": {
+          "name": "terminalFocus",
+          "type": "identifier"
+        },
+        "type": "not"
+      }
+    },
+    {
+      "command": "composer.host",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "h",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": true
+      },
+      "whenAst": {
+        "node": {
+          "name": "terminalFocus",
+          "type": "identifier"
+        },
+        "type": "not"
+      }
+    },
+    {
+      "command": "composer.effort",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "e",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": true
+      },
+      "whenAst": {
+        "node": {
+          "name": "terminalFocus",
+          "type": "identifier"
+        },
+        "type": "not"
+      }
+    },
+    {
+      "command": "composer.mode",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "a",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": true
+      },
+      "whenAst": {
+        "node": {
+          "name": "terminalFocus",
+          "type": "identifier"
+        },
+        "type": "not"
+      }
+    },
+    {
+      "command": "composer.workspace",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "x",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": true
+      },
+      "whenAst": {
+        "node": {
+          "name": "terminalFocus",
+          "type": "identifier"
+        },
+        "type": "not"
+      }
+    },
+    {
+      "command": "composer.branch",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "g",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": true
+      },
+      "whenAst": {
+        "node": {
+          "name": "terminalFocus",
+          "type": "identifier"
+        },
+        "type": "not"
+      }
+    },
+    {
+      "command": "composer.previousWorktree",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "l",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": true
+      },
+      "whenAst": {
+        "node": {
+          "name": "terminalFocus",
+          "type": "identifier"
+        },
+        "type": "not"
+      }
+    },
+    {
+      "command": "pullRequest.copyNumber",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "k",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": true
+      },
+      "whenAst": {
+        "node": {
+          "name": "terminalFocus",
+          "type": "identifier"
+        },
+        "type": "not"
+      }
+    },
+    {
+      "command": "modelPicker.previousProvider",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "arrowup",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": true
+      },
+      "whenAst": {
+        "name": "modelPickerOpen",
+        "type": "identifier"
+      }
+    },
+    {
+      "command": "modelPicker.nextProvider",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "arrowdown",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": true
+      },
+      "whenAst": {
+        "name": "modelPickerOpen",
+        "type": "identifier"
+      }
+    },
+    {
+      "command": "editor.openFavorite",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "o",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": null
+    },
+    {
+      "command": "thread.previous",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "[",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": true
+      },
+      "whenAst": null
+    },
+    {
+      "command": "thread.next",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "]",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": true
+      },
+      "whenAst": null
+    },
+    {
+      "command": "thread.copyReference",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "c",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": true
+      },
+      "whenAst": {
+        "node": {
+          "name": "terminalFocus",
+          "type": "identifier"
+        },
+        "type": "not"
+      }
+    },
+    {
+      "command": "thread.settle",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "s",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": true
+      },
+      "whenAst": {
+        "node": {
+          "name": "terminalFocus",
+          "type": "identifier"
+        },
+        "type": "not"
+      }
+    },
+    {
+      "command": "thread.pin",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "p",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": true
+      },
+      "whenAst": {
+        "node": {
+          "name": "terminalFocus",
+          "type": "identifier"
+        },
+        "type": "not"
+      }
+    },
+    {
+      "command": "thread.undo",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "z",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "left": {
+          "node": {
+            "name": "terminalFocus",
+            "type": "identifier"
+          },
+          "type": "not"
+        },
+        "right": {
+          "node": {
+            "name": "editableFocus",
+            "type": "identifier"
+          },
+          "type": "not"
+        },
+        "type": "and"
+      }
+    },
+    {
+      "command": "thread.jump.1",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "1",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "name": "isDesktop",
+        "type": "identifier"
+      }
+    },
+    {
+      "command": "thread.jump.2",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "2",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "name": "isDesktop",
+        "type": "identifier"
+      }
+    },
+    {
+      "command": "thread.jump.3",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "3",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "name": "isDesktop",
+        "type": "identifier"
+      }
+    },
+    {
+      "command": "thread.jump.4",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "4",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "name": "isDesktop",
+        "type": "identifier"
+      }
+    },
+    {
+      "command": "thread.jump.5",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "5",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "name": "isDesktop",
+        "type": "identifier"
+      }
+    },
+    {
+      "command": "thread.jump.6",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "6",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "name": "isDesktop",
+        "type": "identifier"
+      }
+    },
+    {
+      "command": "thread.jump.7",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "7",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "name": "isDesktop",
+        "type": "identifier"
+      }
+    },
+    {
+      "command": "thread.jump.8",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "8",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "name": "isDesktop",
+        "type": "identifier"
+      }
+    },
+    {
+      "command": "thread.jump.9",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "9",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "name": "isDesktop",
+        "type": "identifier"
+      }
+    },
+    {
+      "command": "modelPicker.jump.1",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "1",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "left": {
+          "name": "modelPickerOpen",
+          "type": "identifier"
+        },
+        "right": {
+          "name": "isDesktop",
+          "type": "identifier"
+        },
+        "type": "and"
+      }
+    },
+    {
+      "command": "modelPicker.jump.2",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "2",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "left": {
+          "name": "modelPickerOpen",
+          "type": "identifier"
+        },
+        "right": {
+          "name": "isDesktop",
+          "type": "identifier"
+        },
+        "type": "and"
+      }
+    },
+    {
+      "command": "modelPicker.jump.3",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "3",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "left": {
+          "name": "modelPickerOpen",
+          "type": "identifier"
+        },
+        "right": {
+          "name": "isDesktop",
+          "type": "identifier"
+        },
+        "type": "and"
+      }
+    },
+    {
+      "command": "modelPicker.jump.4",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "4",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "left": {
+          "name": "modelPickerOpen",
+          "type": "identifier"
+        },
+        "right": {
+          "name": "isDesktop",
+          "type": "identifier"
+        },
+        "type": "and"
+      }
+    },
+    {
+      "command": "modelPicker.jump.5",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "5",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "left": {
+          "name": "modelPickerOpen",
+          "type": "identifier"
+        },
+        "right": {
+          "name": "isDesktop",
+          "type": "identifier"
+        },
+        "type": "and"
+      }
+    },
+    {
+      "command": "modelPicker.jump.6",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "6",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "left": {
+          "name": "modelPickerOpen",
+          "type": "identifier"
+        },
+        "right": {
+          "name": "isDesktop",
+          "type": "identifier"
+        },
+        "type": "and"
+      }
+    },
+    {
+      "command": "modelPicker.jump.7",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "7",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "left": {
+          "name": "modelPickerOpen",
+          "type": "identifier"
+        },
+        "right": {
+          "name": "isDesktop",
+          "type": "identifier"
+        },
+        "type": "and"
+      }
+    },
+    {
+      "command": "modelPicker.jump.8",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "8",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "left": {
+          "name": "modelPickerOpen",
+          "type": "identifier"
+        },
+        "right": {
+          "name": "isDesktop",
+          "type": "identifier"
+        },
+        "type": "and"
+      }
+    },
+    {
+      "command": "modelPicker.jump.9",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "9",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "left": {
+          "name": "modelPickerOpen",
+          "type": "identifier"
+        },
+        "right": {
+          "name": "isDesktop",
+          "type": "identifier"
+        },
+        "type": "and"
+      }
+    },
+    {
+      "command": "usage.cost",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "c",
+        "metaKey": false,
+        "modKey": false,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "name": "usagePageOpen",
+        "type": "identifier"
+      }
+    },
+    {
+      "command": "usage.tokens",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "t",
+        "metaKey": false,
+        "modKey": false,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "name": "usagePageOpen",
+        "type": "identifier"
+      }
+    },
+    {
+      "command": "usage.limits",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "l",
+        "metaKey": false,
+        "modKey": false,
+        "shiftKey": false
+      },
+      "whenAst": {
+        "name": "usagePageOpen",
+        "type": "identifier"
+      }
+    },
+    {
+      "command": "usage.period.day",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "1",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": true
+      },
+      "whenAst": {
+        "name": "usagePageOpen",
+        "type": "identifier"
+      }
+    },
+    {
+      "command": "usage.period.week",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "2",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": true
+      },
+      "whenAst": {
+        "name": "usagePageOpen",
+        "type": "identifier"
+      }
+    },
+    {
+      "command": "usage.period.month",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "3",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": true
+      },
+      "whenAst": {
+        "name": "usagePageOpen",
+        "type": "identifier"
+      }
+    },
+    {
+      "command": "usage.period.quarter",
+      "shortcut": {
+        "altKey": false,
+        "ctrlKey": false,
+        "key": "4",
+        "metaKey": false,
+        "modKey": true,
+        "shiftKey": true
+      },
+      "whenAst": {
+        "name": "usagePageOpen",
+        "type": "identifier"
+      }
+    }
+  ],
+  "keybindingsConfigPath": "/tmp/t3ui-e2e/run-nightly/home/userdata/keybindings.json",
+  "newProjectsRoot": "/tmp/t3ui-e2e/run-nightly/home/projects",
+  "observability": {
+    "localTracingEnabled": true,
+    "logsDirectoryPath": "/tmp/t3ui-e2e/run-nightly/home/userdata/logs",
+    "otlpLogsEnabled": false,
+    "otlpLogsUrl": null,
+    "otlpMetricsEnabled": false,
+    "otlpMetricsUrl": null,
+    "otlpTracesEnabled": false,
+    "otlpTracesUrl": null
+  },
+  "providers": [
+    {
+      "accentColor": null,
+      "auth": {
+        "email": "fake-codex@t3ui.invalid",
+        "label": "ChatGPT Pro 20x Subscription",
+        "status": "authenticated",
+        "type": "chatgpt"
+      },
+      "availability": null,
+      "badgeLabel": null,
+      "checkedAt": "2026-10-02T04:30:08.316Z",
+      "compatibilityAdvisory": {
+        "message": null,
+        "recommendedRange": ">=0.159.0",
+        "recommendedVersion": null,
+        "status": "supported"
+      },
+      "continuation": {
+        "groupKey": "codex:home:/tmp/t3ui-e2e/run-nightly/userhome/.codex"
+      },
+      "displayName": "Codex",
+      "driver": "codex",
+      "enabled": true,
+      "installed": true,
+      "instanceId": "codex",
+      "message": null,
+      "models": [
+        {
+          "aliases": [],
+          "badge": null,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "currentValue": "medium",
+                "description": null,
+                "id": "reasoningEffort",
+                "label": "Reasoning",
+                "options": [
+                  {
+                    "description": null,
+                    "id": "low",
+                    "isDefault": false,
+                    "label": "Low"
+                  },
+                  {
+                    "description": null,
+                    "id": "medium",
+                    "isDefault": true,
+                    "label": "Medium"
+                  },
+                  {
+                    "description": null,
+                    "id": "high",
+                    "isDefault": false,
+                    "label": "High"
+                  },
+                  {
+                    "description": null,
+                    "id": "xhigh",
+                    "isDefault": false,
+                    "label": "Extra High"
+                  }
+                ],
+                "promptInjectedValues": [],
+                "type": "select"
+              },
+              {
+                "currentValue": "default",
+                "description": null,
+                "id": "serviceTier",
+                "label": "Service Tier",
+                "options": [
+                  {
+                    "description": null,
+                    "id": "default",
+                    "isDefault": true,
+                    "label": "Standard"
+                  },
+                  {
+                    "description": "Priority processing at higher cost",
+                    "id": "fast",
+                    "isDefault": false,
+                    "label": "Fast"
+                  }
+                ],
+                "promptInjectedValues": [],
+                "type": "select"
+              }
+            ]
+          },
+          "isCustom": false,
+          "isDefault": false,
+          "isLegacy": true,
+          "name": "GPT-5.4",
+          "shortName": null,
+          "slug": "gpt-5.4",
+          "subProvider": null
+        },
+        {
+          "aliases": [],
+          "badge": null,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "currentValue": "low",
+                "description": null,
+                "id": "reasoningEffort",
+                "label": "Reasoning",
+                "options": [
+                  {
+                    "description": null,
+                    "id": "low",
+                    "isDefault": true,
+                    "label": "Low"
+                  },
+                  {
+                    "description": null,
+                    "id": "medium",
+                    "isDefault": false,
+                    "label": "Medium"
+                  },
+                  {
+                    "description": null,
+                    "id": "high",
+                    "isDefault": false,
+                    "label": "High"
+                  },
+                  {
+                    "description": null,
+                    "id": "xhigh",
+                    "isDefault": false,
+                    "label": "Extra High"
+                  }
+                ],
+                "promptInjectedValues": [],
+                "type": "select"
+              }
+            ]
+          },
+          "isCustom": false,
+          "isDefault": false,
+          "isLegacy": true,
+          "name": "GPT-5.4-Mini",
+          "shortName": null,
+          "slug": "gpt-5.4-mini",
+          "subProvider": null
+        },
+        {
+          "aliases": [],
+          "badge": null,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "currentValue": "medium",
+                "description": null,
+                "id": "reasoningEffort",
+                "label": "Reasoning",
+                "options": [
+                  {
+                    "description": null,
+                    "id": "low",
+                    "isDefault": false,
+                    "label": "Low"
+                  },
+                  {
+                    "description": null,
+                    "id": "medium",
+                    "isDefault": true,
+                    "label": "Medium"
+                  },
+                  {
+                    "description": null,
+                    "id": "high",
+                    "isDefault": false,
+                    "label": "High"
+                  },
+                  {
+                    "description": null,
+                    "id": "xhigh",
+                    "isDefault": false,
+                    "label": "Extra High"
+                  }
+                ],
+                "promptInjectedValues": [],
+                "type": "select"
+              },
+              {
+                "currentValue": "default",
+                "description": null,
+                "id": "serviceTier",
+                "label": "Service Tier",
+                "options": [
+                  {
+                    "description": null,
+                    "id": "default",
+                    "isDefault": true,
+                    "label": "Standard"
+                  },
+                  {
+                    "description": "Priority processing at higher cost",
+                    "id": "fast",
+                    "isDefault": false,
+                    "label": "Fast"
+                  }
+                ],
+                "promptInjectedValues": [],
+                "type": "select"
+              }
+            ]
+          },
+          "isCustom": false,
+          "isDefault": true,
+          "isLegacy": false,
+          "name": "GPT-6-Astra",
+          "shortName": null,
+          "slug": "gpt-6-astra",
+          "subProvider": null
+        },
+        {
+          "aliases": [],
+          "badge": null,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "currentValue": "low",
+                "description": null,
+                "id": "reasoningEffort",
+                "label": "Reasoning",
+                "options": [
+                  {
+                    "description": null,
+                    "id": "low",
+                    "isDefault": true,
+                    "label": "Low"
+                  },
+                  {
+                    "description": null,
+                    "id": "medium",
+                    "isDefault": false,
+                    "label": "Medium"
+                  },
+                  {
+                    "description": null,
+                    "id": "high",
+                    "isDefault": false,
+                    "label": "High"
+                  },
+                  {
+                    "description": null,
+                    "id": "xhigh",
+                    "isDefault": false,
+                    "label": "Extra High"
+                  }
+                ],
+                "promptInjectedValues": [],
+                "type": "select"
+              }
+            ]
+          },
+          "isCustom": false,
+          "isDefault": false,
+          "isLegacy": false,
+          "name": "GPT-6-Luna",
+          "shortName": null,
+          "slug": "gpt-6-luna",
+          "subProvider": null
+        }
+      ],
+      "reportsContextWindow": true,
+      "requiresNewThreadForModelChange": false,
+      "setup": null,
+      "showInteractionModeToggle": true,
+      "skills": [
+        {
+          "description": "Draft a changelog entry from recent commits",
+          "displayName": null,
+          "enabled": true,
+          "name": "changelog",
+          "path": "/tmp/t3ui-e2e/run-nightly/userhome/.codex/skills/changelog/SKILL.md",
+          "scope": "user",
+          "shortDescription": null,
+          "userInvocable": null,
+          "userInvocationOnly": false
+        }
+      ],
+      "slashCommands": [
+        {
+          "description": "Summarize the conversation and reduce context usage",
+          "input": null,
+          "name": "compact"
+        },
+        {
+          "description": "Send this thread and Codex logs to OpenAI",
+          "input": {
+            "hint": "Describe the issue (optional)"
+          },
+          "name": "feedback"
+        }
+      ],
+      "status": "ready",
+      "supportsConversationRollback": false,
+      "supportsTextGeneration": false,
+      "unavailableReason": null,
+      "updateState": null,
+      "usageLimits": {
+        "checkedAt": "2026-10-02T04:30:08.316Z",
+        "windows": [
+          {
+            "id": "primary",
+            "kind": "session",
+            "label": "Session",
+            "resetsAt": "2026-10-02T07:30:08.000Z",
+            "usedPercent": 12,
+            "windowDurationMins": 300
+          },
+          {
+            "id": "secondary",
+            "kind": "weekly",
+            "label": "Weekly",
+            "resetsAt": "2026-10-06T04:30:08.000Z",
+            "usedPercent": 31,
+            "windowDurationMins": 10080
+          }
+        ]
+      },
+      "version": "0.159.0",
+      "versionAdvisory": {
+        "canInstallVersion": false,
+        "canUpdate": false,
+        "checkedAt": "2026-10-02T04:30:08.316Z",
+        "currentVersion": "0.159.0",
+        "latestVersion": null,
+        "message": null,
+        "status": "unknown",
+        "updateCommand": null
+      },
+      "workspaceSnapshots": [
+        {
+          "checkedAt": "2026-10-02T04:30:08.316Z",
+          "cwd": "/tmp/t3ui-e2e/run-nightly/repos/cirrus-docs",
+          "skills": [
+            {
+              "description": "Draft a changelog entry from recent commits",
+              "enabled": true,
+              "name": "changelog",
+              "path": "/tmp/t3ui-e2e/run-nightly/userhome/.codex/skills/changelog/SKILL.md",
+              "scope": "user"
+            }
+          ],
+          "slashCommands": [
+            {
+              "description": "Summarize the conversation and reduce context usage",
+              "name": "compact"
+            },
+            {
+              "description": "Send this thread and Codex logs to OpenAI",
+              "input": {
+                "hint": "Describe the issue (optional)"
+              },
+              "name": "feedback"
+            }
+          ]
+        },
+        {
+          "checkedAt": "2026-10-02T04:30:08.316Z",
+          "cwd": "/tmp/t3ui-e2e/run-nightly/repos/borealis-api",
+          "skills": [
+            {
+              "description": "Draft a changelog entry from recent commits",
+              "enabled": true,
+              "name": "changelog",
+              "path": "/tmp/t3ui-e2e/run-nightly/userhome/.codex/skills/changelog/SKILL.md",
+              "scope": "user"
+            }
+          ],
+          "slashCommands": [
+            {
+              "description": "Summarize the conversation and reduce context usage",
+              "name": "compact"
+            },
+            {
+              "description": "Send this thread and Codex logs to OpenAI",
+              "input": {
+                "hint": "Describe the issue (optional)"
+              },
+              "name": "feedback"
+            }
+          ]
+        },
+        {
+          "checkedAt": "2026-10-02T04:30:08.316Z",
+          "cwd": "/tmp/t3ui-e2e/run-nightly/repos/aurora-web",
+          "skills": [
+            {
+              "description": "Draft a changelog entry from recent commits",
+              "enabled": true,
+              "name": "changelog",
+              "path": "/tmp/t3ui-e2e/run-nightly/userhome/.codex/skills/changelog/SKILL.md",
+              "scope": "user"
+            }
+          ],
+          "slashCommands": [
+            {
+              "description": "Summarize the conversation and reduce context usage",
+              "name": "compact"
+            },
+            {
+              "description": "Send this thread and Codex logs to OpenAI",
+              "input": {
+                "hint": "Describe the issue (optional)"
+              },
+              "name": "feedback"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "accentColor": null,
+      "auth": {
+        "email": null,
+        "label": null,
+        "status": "unknown",
+        "type": null
+      },
+      "availability": null,
+      "badgeLabel": null,
+      "checkedAt": "2026-10-02T04:30:08.317Z",
+      "compatibilityAdvisory": null,
+      "continuation": {
+        "groupKey": "claude:home:/tmp/t3ui-e2e/run-nightly/userhome/.claude"
+      },
+      "displayName": "Claude",
+      "driver": "claudeAgent",
+      "enabled": false,
+      "installed": false,
+      "instanceId": "claudeAgent",
+      "message": "Claude is disabled in T3 Code settings.",
+      "models": [
+        {
+          "aliases": [
+            "opus-5.5",
+            "claude-opus-5.5"
+          ],
+          "badge": "new",
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "currentValue": null,
+                "description": null,
+                "id": "effort",
+                "label": "Reasoning",
+                "options": [
+                  {
+                    "description": null,
+                    "id": "low",
+                    "isDefault": false,
+                    "label": "Low"
+                  },
+                  {
+                    "description": null,
+                    "id": "medium",
+                    "isDefault": true,
+                    "label": "Medium"
+                  },
+                  {
+                    "description": null,
+                    "id": "high",
+                    "isDefault": false,
+                    "label": "High"
+                  },
+                  {
+                    "description": null,
+                    "id": "xhigh",
+                    "isDefault": false,
+                    "label": "Extra High"
+                  },
+                  {
+                    "description": null,
+                    "id": "max",
+                    "isDefault": false,
+                    "label": "Max"
+                  },
+                  {
+                    "description": "xhigh effort plus multi-agent workflow orchestration",
+                    "id": "ultracode",
+                    "isDefault": false,
+                    "label": "Ultracode"
+                  },
+                  {
+                    "description": null,
+                    "id": "ultrathink",
+                    "isDefault": false,
+                    "label": "Ultrathink"
+                  }
+                ],
+                "promptInjectedValues": [
+                  "ultrathink"
+                ],
+                "type": "select"
+              },
+              {
+                "currentValue": null,
+                "description": null,
+                "id": "fastMode",
+                "label": "Fast Mode",
+                "type": "boolean"
+              },
+              {
+                "currentValue": null,
+                "description": null,
+                "id": "contextWindow",
+                "label": "Context Window",
+                "options": [
+                  {
+                    "description": null,
+                    "id": "200k",
+                    "isDefault": false,
+                    "label": "200k"
+                  },
+                  {
+                    "description": null,
+                    "id": "1m",
+                    "isDefault": true,
+                    "label": "1M"
+                  }
+                ],
+                "promptInjectedValues": [],
+                "type": "select"
+              }
+            ]
+          },
+          "isCustom": false,
+          "isDefault": false,
+          "isLegacy": false,
+          "name": "Claude Opus 5.5",
+          "shortName": null,
+          "slug": "claude-opus-5-5",
+          "subProvider": null
+        },
+        {
+          "aliases": [
+            "sonnet-5.5",
+            "claude-sonnet-5.5"
+          ],
+          "badge": "new",
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "currentValue": null,
+                "description": null,
+                "id": "effort",
+                "label": "Reasoning",
+                "options": [
+                  {
+                    "description": null,
+                    "id": "low",
+                    "isDefault": false,
+                    "label": "Low"
+                  },
+                  {
+                    "description": null,
+                    "id": "medium",
+                    "isDefault": false,
+                    "label": "Medium"
+                  },
+                  {
+                    "description": null,
+                    "id": "high",
+                    "isDefault": true,
+                    "label": "High"
+                  },
+                  {
+                    "description": null,
+                    "id": "xhigh",
+                    "isDefault": false,
+                    "label": "Extra High"
+                  },
+                  {
+                    "description": null,
+                    "id": "max",
+                    "isDefault": false,
+                    "label": "Max"
+                  },
+                  {
+                    "description": null,
+                    "id": "ultrathink",
+                    "isDefault": false,
+                    "label": "Ultrathink"
+                  }
+                ],
+                "promptInjectedValues": [
+                  "ultrathink"
+                ],
+                "type": "select"
+              },
+              {
+                "currentValue": null,
+                "description": null,
+                "id": "contextWindow",
+                "label": "Context Window",
+                "options": [
+                  {
+                    "description": null,
+                    "id": "200k",
+                    "isDefault": true,
+                    "label": "200k"
+                  },
+                  {
+                    "description": null,
+                    "id": "1m",
+                    "isDefault": false,
+                    "label": "1M"
+                  }
+                ],
+                "promptInjectedValues": [],
+                "type": "select"
+              }
+            ]
+          },
+          "isCustom": false,
+          "isDefault": false,
+          "isLegacy": false,
+          "name": "Claude Sonnet 5.5",
+          "shortName": null,
+          "slug": "claude-sonnet-5-5",
+          "subProvider": null
+        },
+        {
+          "aliases": [
+            "fable",
+            "fable-5.1",
+            "claude-fable-5.1"
+          ],
+          "badge": null,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "currentValue": null,
+                "description": null,
+                "id": "effort",
+                "label": "Reasoning",
+                "options": [
+                  {
+                    "description": null,
+                    "id": "low",
+                    "isDefault": false,
+                    "label": "Low"
+                  },
+                  {
+                    "description": null,
+                    "id": "medium",
+                    "isDefault": true,
+                    "label": "Medium"
+                  },
+                  {
+                    "description": null,
+                    "id": "high",
+                    "isDefault": false,
+                    "label": "High"
+                  },
+                  {
+                    "description": null,
+                    "id": "xhigh",
+                    "isDefault": false,
+                    "label": "Extra High"
+                  },
+                  {
+                    "description": null,
+                    "id": "max",
+                    "isDefault": false,
+                    "label": "Max"
+                  },
+                  {
+                    "description": "xhigh effort plus multi-agent workflow orchestration",
+                    "id": "ultracode",
+                    "isDefault": false,
+                    "label": "Ultracode"
+                  },
+                  {
+                    "description": null,
+                    "id": "ultrathink",
+                    "isDefault": false,
+                    "label": "Ultrathink"
+                  }
+                ],
+                "promptInjectedValues": [
+                  "ultrathink"
+                ],
+                "type": "select"
+              },
+              {
+                "currentValue": null,
+                "description": null,
+                "id": "contextWindow",
+                "label": "Context Window",
+                "options": [
+                  {
+                    "description": null,
+                    "id": "200k",
+                    "isDefault": false,
+                    "label": "200k"
+                  },
+                  {
+                    "description": null,
+                    "id": "1m",
+                    "isDefault": true,
+                    "label": "1M"
+                  }
+                ],
+                "promptInjectedValues": [],
+                "type": "select"
+              }
+            ]
+          },
+          "isCustom": false,
+          "isDefault": true,
+          "isLegacy": false,
+          "name": "Claude Fable 5.1",
+          "shortName": null,
+          "slug": "claude-fable-5-1",
+          "subProvider": null
+        },
+        {
+          "aliases": [],
+          "badge": null,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "currentValue": null,
+                "description": null,
+                "id": "effort",
+                "label": "Reasoning",
+                "options": [
+                  {
+                    "description": null,
+                    "id": "low",
+                    "isDefault": false,
+                    "label": "Low"
+                  },
+                  {
+                    "description": null,
+                    "id": "medium",
+                    "isDefault": true,
+                    "label": "Medium"
+                  },
+                  {
+                    "description": null,
+                    "id": "high",
+                    "isDefault": false,
+                    "label": "High"
+                  },
+                  {
+                    "description": null,
+                    "id": "xhigh",
+                    "isDefault": false,
+                    "label": "Extra High"
+                  },
+                  {
+                    "description": null,
+                    "id": "max",
+                    "isDefault": false,
+                    "label": "Max"
+                  },
+                  {
+                    "description": "xhigh effort plus multi-agent workflow orchestration",
+                    "id": "ultracode",
+                    "isDefault": false,
+                    "label": "Ultracode"
+                  },
+                  {
+                    "description": null,
+                    "id": "ultrathink",
+                    "isDefault": false,
+                    "label": "Ultrathink"
+                  }
+                ],
+                "promptInjectedValues": [
+                  "ultrathink"
+                ],
+                "type": "select"
+              },
+              {
+                "currentValue": null,
+                "description": null,
+                "id": "contextWindow",
+                "label": "Context Window",
+                "options": [
+                  {
+                    "description": null,
+                    "id": "200k",
+                    "isDefault": false,
+                    "label": "200k"
+                  },
+                  {
+                    "description": null,
+                    "id": "1m",
+                    "isDefault": true,
+                    "label": "1M"
+                  }
+                ],
+                "promptInjectedValues": [],
+                "type": "select"
+              }
+            ]
+          },
+          "isCustom": false,
+          "isDefault": false,
+          "isLegacy": true,
+          "name": "Claude Fable 5",
+          "shortName": null,
+          "slug": "claude-fable-5",
+          "subProvider": null
+        },
+        {
+          "aliases": [
+            "opus",
+            "opus-5",
+            "claude-opus-5.0",
+            "claude-opus-5-0"
+          ],
+          "badge": null,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "currentValue": null,
+                "description": null,
+                "id": "effort",
+                "label": "Reasoning",
+                "options": [
+                  {
+                    "description": null,
+                    "id": "low",
+                    "isDefault": false,
+                    "label": "Low"
+                  },
+                  {
+                    "description": null,
+                    "id": "medium",
+                    "isDefault": false,
+                    "label": "Medium"
+                  },
+                  {
+                    "description": null,
+                    "id": "high",
+                    "isDefault": true,
+                    "label": "High"
+                  },
+                  {
+                    "description": null,
+                    "id": "xhigh",
+                    "isDefault": false,
+                    "label": "Extra High"
+                  },
+                  {
+                    "description": null,
+                    "id": "max",
+                    "isDefault": false,
+                    "label": "Max"
+                  },
+                  {
+                    "description": "xhigh effort plus multi-agent workflow orchestration",
+                    "id": "ultracode",
+                    "isDefault": false,
+                    "label": "Ultracode"
+                  },
+                  {
+                    "description": null,
+                    "id": "ultrathink",
+                    "isDefault": false,
+                    "label": "Ultrathink"
+                  }
+                ],
+                "promptInjectedValues": [
+                  "ultrathink"
+                ],
+                "type": "select"
+              },
+              {
+                "currentValue": null,
+                "description": null,
+                "id": "fastMode",
+                "label": "Fast Mode",
+                "type": "boolean"
+              },
+              {
+                "currentValue": null,
+                "description": null,
+                "id": "contextWindow",
+                "label": "Context Window",
+                "options": [
+                  {
+                    "description": null,
+                    "id": "200k",
+                    "isDefault": false,
+                    "label": "200k"
+                  },
+                  {
+                    "description": null,
+                    "id": "1m",
+                    "isDefault": true,
+                    "label": "1M"
+                  }
+                ],
+                "promptInjectedValues": [],
+                "type": "select"
+              }
+            ]
+          },
+          "isCustom": false,
+          "isDefault": false,
+          "isLegacy": false,
+          "name": "Claude Opus 5",
+          "shortName": null,
+          "slug": "claude-opus-5",
+          "subProvider": null
+        },
+        {
+          "aliases": [
+            "opus-4.8",
+            "claude-opus-4.8"
+          ],
+          "badge": null,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "currentValue": null,
+                "description": null,
+                "id": "effort",
+                "label": "Reasoning",
+                "options": [
+                  {
+                    "description": null,
+                    "id": "low",
+                    "isDefault": false,
+                    "label": "Low"
+                  },
+                  {
+                    "description": null,
+                    "id": "medium",
+                    "isDefault": false,
+                    "label": "Medium"
+                  },
+                  {
+                    "description": null,
+                    "id": "high",
+                    "isDefault": true,
+                    "label": "High"
+                  },
+                  {
+                    "description": null,
+                    "id": "xhigh",
+                    "isDefault": false,
+                    "label": "Extra High"
+                  },
+                  {
+                    "description": null,
+                    "id": "max",
+                    "isDefault": false,
+                    "label": "Max"
+                  },
+                  {
+                    "description": "xhigh effort plus multi-agent workflow orchestration",
+                    "id": "ultracode",
+                    "isDefault": false,
+                    "label": "Ultracode"
+                  },
+                  {
+                    "description": null,
+                    "id": "ultrathink",
+                    "isDefault": false,
+                    "label": "Ultrathink"
+                  }
+                ],
+                "promptInjectedValues": [
+                  "ultrathink"
+                ],
+                "type": "select"
+              },
+              {
+                "currentValue": null,
+                "description": null,
+                "id": "fastMode",
+                "label": "Fast Mode",
+                "type": "boolean"
+              }
+            ]
+          },
+          "isCustom": false,
+          "isDefault": false,
+          "isLegacy": true,
+          "name": "Claude Opus 4.8",
+          "shortName": null,
+          "slug": "claude-opus-4-8",
+          "subProvider": null
+        },
+        {
+          "aliases": [
+            "opus-4.7",
+            "claude-opus-4.7"
+          ],
+          "badge": null,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "currentValue": null,
+                "description": null,
+                "id": "effort",
+                "label": "Reasoning",
+                "options": [
+                  {
+                    "description": null,
+                    "id": "low",
+                    "isDefault": false,
+                    "label": "Low"
+                  },
+                  {
+                    "description": null,
+                    "id": "medium",
+                    "isDefault": false,
+                    "label": "Medium"
+                  },
+                  {
+                    "description": null,
+                    "id": "high",
+                    "isDefault": false,
+                    "label": "High"
+                  },
+                  {
+                    "description": null,
+                    "id": "xhigh",
+                    "isDefault": true,
+                    "label": "Extra High"
+                  },
+                  {
+                    "description": null,
+                    "id": "max",
+                    "isDefault": false,
+                    "label": "Max"
+                  },
+                  {
+                    "description": null,
+                    "id": "ultrathink",
+                    "isDefault": false,
+                    "label": "Ultrathink"
+                  }
+                ],
+                "promptInjectedValues": [
+                  "ultrathink"
+                ],
+                "type": "select"
+              },
+              {
+                "currentValue": null,
+                "description": null,
+                "id": "fastMode",
+                "label": "Fast Mode",
+                "type": "boolean"
+              }
+            ]
+          },
+          "isCustom": false,
+          "isDefault": false,
+          "isLegacy": true,
+          "name": "Claude Opus 4.7",
+          "shortName": null,
+          "slug": "claude-opus-4-7",
+          "subProvider": null
+        },
+        {
+          "aliases": [
+            "opus-4.6",
+            "claude-opus-4.6",
+            "claude-opus-4-6-20251117"
+          ],
+          "badge": null,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "currentValue": null,
+                "description": null,
+                "id": "effort",
+                "label": "Reasoning",
+                "options": [
+                  {
+                    "description": null,
+                    "id": "low",
+                    "isDefault": false,
+                    "label": "Low"
+                  },
+                  {
+                    "description": null,
+                    "id": "medium",
+                    "isDefault": false,
+                    "label": "Medium"
+                  },
+                  {
+                    "description": null,
+                    "id": "high",
+                    "isDefault": true,
+                    "label": "High"
+                  },
+                  {
+                    "description": null,
+                    "id": "max",
+                    "isDefault": false,
+                    "label": "Max"
+                  },
+                  {
+                    "description": null,
+                    "id": "ultrathink",
+                    "isDefault": false,
+                    "label": "Ultrathink"
+                  }
+                ],
+                "promptInjectedValues": [
+                  "ultrathink"
+                ],
+                "type": "select"
+              },
+              {
+                "currentValue": null,
+                "description": null,
+                "id": "fastMode",
+                "label": "Fast Mode",
+                "type": "boolean"
+              },
+              {
+                "currentValue": null,
+                "description": null,
+                "id": "contextWindow",
+                "label": "Context Window",
+                "options": [
+                  {
+                    "description": null,
+                    "id": "200k",
+                    "isDefault": false,
+                    "label": "200k"
+                  },
+                  {
+                    "description": null,
+                    "id": "1m",
+                    "isDefault": true,
+                    "label": "1M"
+                  }
+                ],
+                "promptInjectedValues": [],
+                "type": "select"
+              }
+            ]
+          },
+          "isCustom": false,
+          "isDefault": false,
+          "isLegacy": true,
+          "name": "Claude Opus 4.6",
+          "shortName": null,
+          "slug": "claude-opus-4-6",
+          "subProvider": null
+        },
+        {
+          "aliases": [],
+          "badge": null,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "currentValue": null,
+                "description": null,
+                "id": "effort",
+                "label": "Reasoning",
+                "options": [
+                  {
+                    "description": null,
+                    "id": "low",
+                    "isDefault": false,
+                    "label": "Low"
+                  },
+                  {
+                    "description": null,
+                    "id": "medium",
+                    "isDefault": false,
+                    "label": "Medium"
+                  },
+                  {
+                    "description": null,
+                    "id": "high",
+                    "isDefault": true,
+                    "label": "High"
+                  },
+                  {
+                    "description": null,
+                    "id": "max",
+                    "isDefault": false,
+                    "label": "Max"
+                  }
+                ],
+                "promptInjectedValues": [],
+                "type": "select"
+              },
+              {
+                "currentValue": null,
+                "description": null,
+                "id": "fastMode",
+                "label": "Fast Mode",
+                "type": "boolean"
+              }
+            ]
+          },
+          "isCustom": false,
+          "isDefault": false,
+          "isLegacy": true,
+          "name": "Claude Opus 4.5",
+          "shortName": null,
+          "slug": "claude-opus-4-5",
+          "subProvider": null
+        },
+        {
+          "aliases": [
+            "sonnet",
+            "sonnet-5",
+            "claude-sonnet-5.0",
+            "claude-sonnet-5-0"
+          ],
+          "badge": null,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "currentValue": null,
+                "description": null,
+                "id": "effort",
+                "label": "Reasoning",
+                "options": [
+                  {
+                    "description": null,
+                    "id": "low",
+                    "isDefault": false,
+                    "label": "Low"
+                  },
+                  {
+                    "description": null,
+                    "id": "medium",
+                    "isDefault": false,
+                    "label": "Medium"
+                  },
+                  {
+                    "description": null,
+                    "id": "high",
+                    "isDefault": true,
+                    "label": "High"
+                  },
+                  {
+                    "description": null,
+                    "id": "xhigh",
+                    "isDefault": false,
+                    "label": "Extra High"
+                  },
+                  {
+                    "description": null,
+                    "id": "max",
+                    "isDefault": false,
+                    "label": "Max"
+                  },
+                  {
+                    "description": null,
+                    "id": "ultrathink",
+                    "isDefault": false,
+                    "label": "Ultrathink"
+                  }
+                ],
+                "promptInjectedValues": [
+                  "ultrathink"
+                ],
+                "type": "select"
+              },
+              {
+                "currentValue": null,
+                "description": null,
+                "id": "contextWindow",
+                "label": "Context Window",
+                "options": [
+                  {
+                    "description": null,
+                    "id": "200k",
+                    "isDefault": true,
+                    "label": "200k"
+                  },
+                  {
+                    "description": null,
+                    "id": "1m",
+                    "isDefault": false,
+                    "label": "1M"
+                  }
+                ],
+                "promptInjectedValues": [],
+                "type": "select"
+              }
+            ]
+          },
+          "isCustom": false,
+          "isDefault": false,
+          "isLegacy": false,
+          "name": "Claude Sonnet 5",
+          "shortName": null,
+          "slug": "claude-sonnet-5",
+          "subProvider": null
+        },
+        {
+          "aliases": [
+            "sonnet-4.6",
+            "claude-sonnet-4.6",
+            "claude-sonnet-4-6-20251117"
+          ],
+          "badge": null,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "currentValue": null,
+                "description": null,
+                "id": "effort",
+                "label": "Reasoning",
+                "options": [
+                  {
+                    "description": null,
+                    "id": "low",
+                    "isDefault": false,
+                    "label": "Low"
+                  },
+                  {
+                    "description": null,
+                    "id": "medium",
+                    "isDefault": false,
+                    "label": "Medium"
+                  },
+                  {
+                    "description": null,
+                    "id": "high",
+                    "isDefault": true,
+                    "label": "High"
+                  },
+                  {
+                    "description": null,
+                    "id": "max",
+                    "isDefault": false,
+                    "label": "Max"
+                  },
+                  {
+                    "description": null,
+                    "id": "ultrathink",
+                    "isDefault": false,
+                    "label": "Ultrathink"
+                  }
+                ],
+                "promptInjectedValues": [
+                  "ultrathink"
+                ],
+                "type": "select"
+              },
+              {
+                "currentValue": null,
+                "description": null,
+                "id": "contextWindow",
+                "label": "Context Window",
+                "options": [
+                  {
+                    "description": null,
+                    "id": "200k",
+                    "isDefault": true,
+                    "label": "200k"
+                  },
+                  {
+                    "description": null,
+                    "id": "1m",
+                    "isDefault": false,
+                    "label": "1M"
+                  }
+                ],
+                "promptInjectedValues": [],
+                "type": "select"
+              }
+            ]
+          },
+          "isCustom": false,
+          "isDefault": false,
+          "isLegacy": true,
+          "name": "Claude Sonnet 4.6",
+          "shortName": null,
+          "slug": "claude-sonnet-4-6",
+          "subProvider": null
+        },
+        {
+          "aliases": [
+            "haiku",
+            "haiku-4.5",
+            "claude-haiku-4.5",
+            "claude-haiku-4-5-20251001"
+          ],
+          "badge": null,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "currentValue": null,
+                "description": null,
+                "id": "thinking",
+                "label": "Thinking",
+                "type": "boolean"
+              }
+            ]
+          },
+          "isCustom": false,
+          "isDefault": false,
+          "isLegacy": true,
+          "name": "Claude Haiku 4.5",
+          "shortName": null,
+          "slug": "claude-haiku-4-5",
+          "subProvider": null
+        }
+      ],
+      "reportsContextWindow": true,
+      "requiresNewThreadForModelChange": false,
+      "setup": null,
+      "showInteractionModeToggle": true,
+      "skills": [],
+      "slashCommands": [],
+      "status": "disabled",
+      "supportsConversationRollback": false,
+      "supportsTextGeneration": false,
+      "unavailableReason": null,
+      "updateState": null,
+      "usageLimits": null,
+      "version": null,
+      "versionAdvisory": {
+        "canInstallVersion": false,
+        "canUpdate": true,
+        "checkedAt": "2026-10-02T04:30:08.317Z",
+        "currentVersion": null,
+        "latestVersion": null,
+        "message": null,
+        "status": "unknown",
+        "updateCommand": "/home/user/.local/bin/claude update"
+      },
+      "workspaceSnapshots": null
+    },
+    {
+      "accentColor": null,
+      "auth": {
+        "email": null,
+        "label": null,
+        "status": "unknown",
+        "type": null
+      },
+      "availability": null,
+      "badgeLabel": "Early Access",
+      "checkedAt": "2026-10-02T04:30:08.317Z",
+      "compatibilityAdvisory": null,
+      "continuation": {
+        "groupKey": "cursor:instance:cursor"
+      },
+      "displayName": "Cursor",
+      "driver": "cursor",
+      "enabled": false,
+      "installed": false,
+      "instanceId": "cursor",
+      "message": "Cursor is disabled in T3 Code settings.",
+      "models": [],
+      "reportsContextWindow": false,
+      "requiresNewThreadForModelChange": false,
+      "setup": null,
+      "showInteractionModeToggle": true,
+      "skills": [],
+      "slashCommands": [],
+      "status": "disabled",
+      "supportsConversationRollback": false,
+      "supportsTextGeneration": false,
+      "unavailableReason": null,
+      "updateState": null,
+      "usageLimits": null,
+      "version": null,
+      "versionAdvisory": null,
+      "workspaceSnapshots": null
+    },
+    {
+      "accentColor": null,
+      "auth": {
+        "email": null,
+        "label": null,
+        "status": "unknown",
+        "type": null
+      },
+      "availability": null,
+      "badgeLabel": "Early Access",
+      "checkedAt": "2026-10-02T04:30:08.318Z",
+      "compatibilityAdvisory": null,
+      "continuation": {
+        "groupKey": "grok:instance:grok"
+      },
+      "displayName": "Grok",
+      "driver": "grok",
+      "enabled": false,
+      "installed": false,
+      "instanceId": "grok",
+      "message": "Grok is disabled in T3 Code settings.",
+      "models": [
+        {
+          "aliases": [],
+          "badge": null,
+          "capabilities": {
+            "optionDescriptors": []
+          },
+          "isCustom": false,
+          "isDefault": false,
+          "isLegacy": false,
+          "name": "Grok Build",
+          "shortName": null,
+          "slug": "grok-build",
+          "subProvider": null
+        }
+      ],
+      "reportsContextWindow": false,
+      "requiresNewThreadForModelChange": false,
+      "setup": null,
+      "showInteractionModeToggle": false,
+      "skills": [],
+      "slashCommands": [],
+      "status": "disabled",
+      "supportsConversationRollback": false,
+      "supportsTextGeneration": false,
+      "unavailableReason": null,
+      "updateState": null,
+      "usageLimits": null,
+      "version": null,
+      "versionAdvisory": {
+        "canInstallVersion": false,
+        "canUpdate": false,
+        "checkedAt": "2026-10-02T04:30:08.318Z",
+        "currentVersion": null,
+        "latestVersion": null,
+        "message": null,
+        "status": "unknown",
+        "updateCommand": null
+      },
+      "workspaceSnapshots": null
+    },
+    {
+      "accentColor": null,
+      "auth": {
+        "email": null,
+        "label": null,
+        "status": "unknown",
+        "type": null
+      },
+      "availability": null,
+      "badgeLabel": null,
+      "checkedAt": "2026-10-02T04:30:08.318Z",
+      "compatibilityAdvisory": null,
+      "continuation": {
+        "groupKey": "opencode:instance:opencode"
+      },
+      "displayName": "OpenCode",
+      "driver": "opencode",
+      "enabled": false,
+      "installed": false,
+      "instanceId": "opencode",
+      "message": "OpenCode is disabled in T3 Code settings.",
+      "models": [],
+      "reportsContextWindow": false,
+      "requiresNewThreadForModelChange": false,
+      "setup": null,
+      "showInteractionModeToggle": false,
+      "skills": [],
+      "slashCommands": [],
+      "status": "disabled",
+      "supportsConversationRollback": false,
+      "supportsTextGeneration": false,
+      "unavailableReason": null,
+      "updateState": null,
+      "usageLimits": {
+        "checkedAt": "2026-10-02T04:30:08.318Z",
+        "unavailable": {
+          "reason": "unsupported"
+        },
+        "windows": []
+      },
+      "version": null,
+      "versionAdvisory": {
+        "canInstallVersion": false,
+        "canUpdate": true,
+        "checkedAt": "2026-10-02T04:30:08.318Z",
+        "currentVersion": null,
+        "latestVersion": null,
+        "message": null,
+        "status": "unknown",
+        "updateCommand": "/home/user/.opencode/bin/opencode upgrade"
+      },
+      "workspaceSnapshots": null
+    },
+    {
+      "accentColor": null,
+      "auth": {
+        "email": null,
+        "label": null,
+        "status": "unknown",
+        "type": "oauth-personal"
+      },
+      "availability": null,
+      "badgeLabel": null,
+      "checkedAt": "2026-10-02T04:30:08.325Z",
+      "compatibilityAdvisory": null,
+      "continuation": {
+        "groupKey": "antigravity:instance:antigravity"
+      },
+      "displayName": "Antigravity",
+      "driver": "antigravity",
+      "enabled": false,
+      "installed": false,
+      "instanceId": "antigravity",
+      "message": "Antigravity is disabled in T3 Code settings.",
+      "models": [],
+      "reportsContextWindow": false,
+      "requiresNewThreadForModelChange": false,
+      "setup": {
+        "canAuthenticate": true,
+        "canInstall": true
+      },
+      "showInteractionModeToggle": false,
+      "skills": [],
+      "slashCommands": [],
+      "status": "disabled",
+      "supportsConversationRollback": false,
+      "supportsTextGeneration": false,
+      "unavailableReason": null,
+      "updateState": null,
+      "usageLimits": null,
+      "version": null,
+      "versionAdvisory": null,
+      "workspaceSnapshots": []
+    }
+  ],
+  "reasoningMessages": true,
+  "remoteOpenTargets": [
+    {
+      "host": "fixture-host.tailnet.ts.net",
+      "kind": "tailscale"
+    },
+    {
+      "host": "HOME-PC.local",
+      "kind": "mdns"
+    }
+  ],
+  "scratchWorkspaceRoot": "/tmp/t3ui-e2e/run-nightly/home/scratch",
+  "settings": {
+    "addProjectBaseDirectory": "",
+    "automaticGitFetchInterval": 30000,
+    "backgroundActivity": {
+      "overrides": {},
+      "profile": "balanced",
+      "schemaVersion": 1
+    },
+    "backgroundActivityProfile": "balanced",
+    "bitbucket": {
+      "accessToken": "",
+      "apiToken": "",
+      "email": ""
+    },
+    "continueThreadsAfterServerUpdate": false,
+    "cursorKeychainUsageEnabled": false,
+    "defaultAutoPull": false,
+    "defaultModelSelection": null,
+    "defaultProjectScripts": [],
+    "defaultRuntimeMode": "full-access",
+    "defaultTheme": "",
+    "defaultThemeSetAt": "",
+    "defaultThreadEnvMode": null,
+    "deviceHosts": [],
+    "deviceOnboardingCompleted": false,
+    "enableAgentBrowserAccess": true,
+    "enableAgentDeviceAccess": false,
+    "enableDeviceSupport": false,
+    "enableProviderUpdateChecks": false,
+    "environmentIcon": null,
+    "newWorktreesStartFromOrigin": true,
+    "observability": {
+      "otlpLogsUrl": "",
+      "otlpMetricsUrl": "",
+      "otlpTracesUrl": ""
+    },
+    "projectAgentBrowserAccessOverrides": {},
+    "projectAutoPullOverrides": {},
+    "projectScriptOverrides": {},
+    "projectSettingsFolded": false,
+    "projectSettingsOverrides": {},
+    "providerHealthRefreshInterval": 300000,
+    "providerInstances": {},
+    "providers": {
+      "antigravity": {
+        "apiKey": "",
+        "authMethod": "oauth-personal",
+        "binaryPath": "",
+        "customModels": [],
+        "enabled": false,
+        "gcpLocation": "",
+        "gcpProject": ""
+      },
+      "claudeAgent": {
+        "autoCompactWindow": "",
+        "binaryPath": "claude",
+        "customModels": [],
+        "enabled": false,
+        "homePath": "",
+        "launchArgs": ""
+      },
+      "codex": {
+        "binaryPath": "/home/user/t3UI/e2e/fake-codex/codex",
+        "customModels": [],
+        "enabled": true,
+        "homePath": "/tmp/t3ui-e2e/run-nightly/userhome/.codex",
+        "launchArgs": "",
+        "shadowHomePath": ""
+      },
+      "cursor": {
+        "apiEndpoint": "",
+        "binaryPath": "cursor-agent",
+        "customModels": [],
+        "enabled": false
+      },
+      "grok": {
+        "binaryPath": "grok",
+        "customModels": [],
+        "enabled": false
+      },
+      "opencode": {
+        "binaryPath": "opencode",
+        "customModels": [],
+        "enabled": false,
+        "serverPassword": "",
+        "serverUrl": ""
+      }
+    },
+    "pullRequestMergeMethod": null,
+    "responseStreamingMode": "paragraph",
+    "sidebarAutoSettleAfterDays": 3.0,
+    "sidebarAutoSettleOnMerge": true,
+    "sourceControlWriterModelSelection": null,
+    "sourceControlWritingStyle": {
+      "customInstructions": "",
+      "followChangeRequestTemplates": true,
+      "mode": "repo_conventions"
+    },
+    "storageCleanup": {
+      "browserArtifactsAfterDays": null,
+      "logsAfterDays": null,
+      "worktreeAfterDays": null,
+      "worktreeOnDelete": false,
+      "worktreeOnMerge": false,
+      "worktreeUnchanged": false
+    },
+    "textGenerationModelSelection": {
+      "instanceId": "codex",
+      "model": "gpt-6-luna",
+      "options": [
+        {
+          "id": "reasoningEffort",
+          "value": "low"
+        }
+      ]
+    },
+    "usageLimitSources": {},
+    "usagePriceOverrides": {},
+    "worktreeCleanup": null,
+    "worktreeSubmodules": null
+  },
+  "shellResumeCompletionMarker": true,
+  "shellRevealInFileManager": null,
+  "shellRevealInFileManagerKind": null,
+  "threadResumeCompletionMarker": true,
+  "threadSnapshotPagination": true,
+  "usageLimitSources": null
+}

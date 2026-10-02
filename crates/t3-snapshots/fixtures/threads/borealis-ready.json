@@ -1,0 +1,278 @@
+{
+  "deleted": false,
+  "error": null,
+  "historyEpoch": 1,
+  "lastSequence": 178,
+  "page": {
+    "beforeCursor": null,
+    "hasMore": false,
+    "loadingOlder": false
+  },
+  "status": "live",
+  "thread": {
+    "activeOrderKey": null,
+    "activities": [
+      {
+        "createdAt": "2026-10-02T04:30:12.931Z",
+        "id": "678cf5cb-f05b-4af9-8333-fcc2bbb5ff1a",
+        "kind": "tool.started",
+        "payload": {
+          "data": {
+            "item": {
+              "command": "/bin/bash -lc 'cat src/health.rs'"
+            }
+          },
+          "detail": "/bin/bash -lc 'cat src/health.rs'",
+          "itemType": "command_execution",
+          "status": "inProgress",
+          "title": "Ran command",
+          "toolCallId": "call_a8025124_1"
+        },
+        "sequence": null,
+        "summary": "Ran command started",
+        "tone": "tool",
+        "turnId": "a8025124-89e9-48a5-818a-f347d1527de5"
+      },
+      {
+        "createdAt": "2026-10-02T04:30:12.987Z",
+        "id": "1f447c75-1865-4ba5-8ca4-ef95500ad61e",
+        "kind": "tool.completed",
+        "payload": {
+          "data": {
+            "item": {
+              "aggregatedOutput": "pub fn health() -> &'static str {",
+              "command": "/bin/bash -lc 'cat src/health.rs'"
+            }
+          },
+          "detail": "/bin/bash -lc 'cat src/health.rs'",
+          "itemType": "command_execution",
+          "status": "completed",
+          "title": "Ran command",
+          "toolCallId": "call_a8025124_1"
+        },
+        "sequence": null,
+        "summary": "Ran command",
+        "tone": "tool",
+        "turnId": "a8025124-89e9-48a5-818a-f347d1527de5"
+      },
+      {
+        "createdAt": "2026-10-02T04:30:13.017Z",
+        "id": "598f2650-add5-4f0d-8361-c9299a7ced52",
+        "kind": "tool.started",
+        "payload": {
+          "data": {
+            "files": [
+              {
+                "path": "/tmp/t3ui-e2e/run-nightly/repos/borealis-api/src/health.rs"
+              }
+            ]
+          },
+          "itemType": "file_change",
+          "status": "inProgress",
+          "title": "File change",
+          "toolCallId": "call_a8025124_2"
+        },
+        "sequence": null,
+        "summary": "File change started",
+        "tone": "tool",
+        "turnId": "a8025124-89e9-48a5-818a-f347d1527de5"
+      },
+      {
+        "createdAt": "2026-10-02T04:30:13.078Z",
+        "id": "e1724ac9-7bc5-416b-8524-526c42885907",
+        "kind": "tool.completed",
+        "payload": {
+          "data": {
+            "files": [
+              {
+                "path": "/tmp/t3ui-e2e/run-nightly/repos/borealis-api/src/health.rs"
+              }
+            ]
+          },
+          "itemType": "file_change",
+          "status": "completed",
+          "title": "File change",
+          "toolCallId": "call_a8025124_2"
+        },
+        "sequence": null,
+        "summary": "File change",
+        "tone": "tool",
+        "turnId": "a8025124-89e9-48a5-818a-f347d1527de5"
+      },
+      {
+        "createdAt": "2026-10-02T04:30:13.118Z",
+        "id": "5fa6a48d-6199-4d4f-bdca-838c959dc297",
+        "kind": "tool.started",
+        "payload": {
+          "data": {
+            "item": {
+              "command": "/bin/bash -lc 'cargo check'"
+            }
+          },
+          "detail": "/bin/bash -lc 'cargo check'",
+          "itemType": "command_execution",
+          "status": "inProgress",
+          "title": "Ran command",
+          "toolCallId": "call_a8025124_3"
+        },
+        "sequence": null,
+        "summary": "Ran command started",
+        "tone": "tool",
+        "turnId": "a8025124-89e9-48a5-818a-f347d1527de5"
+      },
+      {
+        "createdAt": "2026-10-02T04:30:13.189Z",
+        "id": "d5bce5fc-bd7a-434f-9518-94e494748087",
+        "kind": "tool.completed",
+        "payload": {
+          "data": {
+            "item": {
+              "aggregatedOutput": "Checking borealis v0.1.0 (/workspace/borealis-api)",
+              "command": "/bin/bash -lc 'cargo check'"
+            }
+          },
+          "detail": "/bin/bash -lc 'cargo check'",
+          "itemType": "command_execution",
+          "status": "completed",
+          "title": "Ran command",
+          "toolCallId": "call_a8025124_3"
+        },
+        "sequence": null,
+        "summary": "Ran command",
+        "tone": "tool",
+        "turnId": "a8025124-89e9-48a5-818a-f347d1527de5"
+      },
+      {
+        "createdAt": "2026-10-02T04:30:13.268Z",
+        "id": "43033b5f-2521-4c70-9043-dd0862652c2a",
+        "kind": "context-window.updated",
+        "payload": {
+          "cachedInputTokens": 6744,
+          "compactsAutomatically": true,
+          "inputTokens": 9666,
+          "lastCachedInputTokens": 6744,
+          "lastInputTokens": 9666,
+          "lastOutputTokens": 1574,
+          "lastReasoningOutputTokens": 562,
+          "lastUsedTokens": 11240,
+          "maxTokens": 272000,
+          "outputTokens": 1574,
+          "reasoningOutputTokens": 562,
+          "usedTokens": 11240
+        },
+        "sequence": null,
+        "summary": "Context window updated",
+        "tone": "info",
+        "turnId": null
+      },
+      {
+        "createdAt": "2026-10-02T04:30:13.269Z",
+        "id": "aa87a590-cf71-4031-a99b-be7de2be035f",
+        "kind": "checkpoint.captured",
+        "payload": {
+          "status": "ready",
+          "turnCount": 1
+        },
+        "sequence": null,
+        "summary": "Checkpoint captured",
+        "tone": "info",
+        "turnId": "a8025124-89e9-48a5-818a-f347d1527de5"
+      }
+    ],
+    "archivedAt": null,
+    "autoSettleDisabledAt": null,
+    "branch": "main",
+    "branchPullRequest": null,
+    "checkpoints": [
+      {
+        "assistantMessageId": "assistant:msg_a8025124_4",
+        "checkpointRef": "refs/t3/checkpoints/dGhyZWFkLWJvcmVhbGlzLXJlYWR5/turn/1",
+        "checkpointTurnCount": 1,
+        "completedAt": "2026-10-02T04:30:13.269Z",
+        "files": [
+          {
+            "additions": 9,
+            "deletions": 0,
+            "kind": "modified",
+            "path": "src/health.rs"
+          }
+        ],
+        "status": "ready",
+        "turnId": "a8025124-89e9-48a5-818a-f347d1527de5"
+      }
+    ],
+    "createdAt": "2026-10-02T04:30:12.225Z",
+    "deletedAt": null,
+    "id": "thread-borealis-ready",
+    "interactionMode": "default",
+    "latestTurn": {
+      "assistantMessageId": "assistant:msg_a8025124_4",
+      "completedAt": "2026-10-02T04:30:13.269Z",
+      "requestedAt": "2026-10-02T04:30:12.225Z",
+      "sourceProposedPlan": null,
+      "startedAt": "2026-10-02T04:30:12.225Z",
+      "state": "completed",
+      "turnId": "a8025124-89e9-48a5-818a-f347d1527de5"
+    },
+    "linkedPullRequest": null,
+    "messages": [
+      {
+        "attachments": [],
+        "context": null,
+        "createdAt": "2026-10-02T04:30:12.225Z",
+        "id": "thread-borealis-ready-msg-1",
+        "role": "user",
+        "streaming": false,
+        "text": "Add a readiness endpoint next to /health.",
+        "turnId": null,
+        "updatedAt": "2026-10-02T04:30:12.225Z"
+      },
+      {
+        "attachments": null,
+        "context": null,
+        "createdAt": "2026-10-02T04:30:13.225Z",
+        "id": "assistant:msg_a8025124_4",
+        "role": "assistant",
+        "streaming": false,
+        "text": "Added `ready()` in `src/health.rs`. It returns `503 starting` until config is loaded, then `200 ready`.\n\n```rust\nlet (status, body) = health::ready(config.is_loaded());\n```",
+        "turnId": "a8025124-89e9-48a5-818a-f347d1527de5",
+        "updatedAt": "2026-10-02T04:30:13.238Z"
+      }
+    ],
+    "modelSelection": {
+      "instanceId": "codex",
+      "model": "gpt-5.4"
+    },
+    "pinOrderKey": null,
+    "pinnedAt": null,
+    "projectId": "project-borealis",
+    "proposedPlans": [],
+    "pullRequests": [],
+    "runtimeMode": "full-access",
+    "session": {
+      "activeTurnId": null,
+      "lastError": null,
+      "providerInstanceId": "codex",
+      "providerName": "codex",
+      "runtimeMode": "full-access",
+      "status": "ready",
+      "threadId": "thread-borealis-ready",
+      "updatedAt": "2026-10-02T04:30:13.269Z"
+    },
+    "settledAt": null,
+    "settledOverride": null,
+    "snoozedAt": null,
+    "snoozedUntil": null,
+    "title": "Add readiness endpoint",
+    "titleRegeneration": null,
+    "titleState": {
+      "needsRefinement": false,
+      "source": "generated",
+      "version": "server:thread-title-rename:af526779-8859-4f95-b2bb-fe62401af470"
+    },
+    "unsettledAt": null,
+    "updatedAt": "2026-10-02T04:30:13.269Z",
+    "worktreePath": null
+  },
+  "threadId": "thread-borealis-ready"
+}

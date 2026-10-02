@@ -1,0 +1,150 @@
+{
+  "deleted": false,
+  "error": null,
+  "historyEpoch": 1,
+  "lastSequence": 178,
+  "page": {
+    "beforeCursor": null,
+    "hasMore": false,
+    "loadingOlder": false
+  },
+  "status": "live",
+  "thread": {
+    "activeOrderKey": null,
+    "activities": [
+      {
+        "createdAt": "2026-10-02T04:30:10.834Z",
+        "id": "d0308f63-5b47-4f33-89f3-52a4c880a811",
+        "kind": "tool.started",
+        "payload": {
+          "data": {
+            "item": {
+              "command": "/bin/bash -lc 'aws s3 sync site/ s3://cirrus-docs --delete'"
+            }
+          },
+          "detail": "/bin/bash -lc 'aws s3 sync site/ s3://cirrus-docs --delete'",
+          "itemType": "command_execution",
+          "status": "inProgress",
+          "title": "Ran command",
+          "toolCallId": "call_c9f4208c_1"
+        },
+        "sequence": null,
+        "summary": "Ran command started",
+        "tone": "tool",
+        "turnId": "c9f4208c-3df3-4a0d-9285-cceea3b52f78"
+      },
+      {
+        "createdAt": "2026-10-02T04:30:10.890Z",
+        "id": "bc8993cc-4cea-47fa-94fe-b09b6819bfd2",
+        "kind": "tool.completed",
+        "payload": {
+          "data": {
+            "item": {
+              "aggregatedOutput": "fatal error: Unable to locate credentials. You can configure credentials by running…",
+              "command": "/bin/bash -lc 'aws s3 sync site/ s3://cirrus-docs --delete'"
+            }
+          },
+          "detail": "/bin/bash -lc 'aws s3 sync site/ s3://cirrus-docs --delete'",
+          "itemType": "command_execution",
+          "status": "failed",
+          "title": "Ran command",
+          "toolCallId": "call_c9f4208c_1"
+        },
+        "sequence": null,
+        "summary": "Ran command",
+        "tone": "tool",
+        "turnId": "c9f4208c-3df3-4a0d-9285-cceea3b52f78"
+      },
+      {
+        "createdAt": "2026-10-02T04:30:10.920Z",
+        "id": "8fede591-b838-4a11-b855-eb99f3642787",
+        "kind": "checkpoint.captured",
+        "payload": {
+          "status": "error",
+          "turnCount": 1
+        },
+        "sequence": null,
+        "summary": "Checkpoint captured",
+        "tone": "info",
+        "turnId": "c9f4208c-3df3-4a0d-9285-cceea3b52f78"
+      }
+    ],
+    "archivedAt": null,
+    "autoSettleDisabledAt": null,
+    "branch": "main",
+    "branchPullRequest": null,
+    "checkpoints": [
+      {
+        "assistantMessageId": "assistant:c9f4208c-3df3-4a0d-9285-cceea3b52f78",
+        "checkpointRef": "refs/t3/checkpoints/dGhyZWFkLWNpcnJ1cy1kZXBsb3k/turn/1",
+        "checkpointTurnCount": 1,
+        "completedAt": "2026-10-02T04:30:10.920Z",
+        "files": [],
+        "status": "error",
+        "turnId": "c9f4208c-3df3-4a0d-9285-cceea3b52f78"
+      }
+    ],
+    "createdAt": "2026-10-02T04:30:10.123Z",
+    "deletedAt": null,
+    "id": "thread-cirrus-deploy",
+    "interactionMode": "default",
+    "latestTurn": {
+      "assistantMessageId": "assistant:c9f4208c-3df3-4a0d-9285-cceea3b52f78",
+      "completedAt": "2026-10-02T04:30:10.920Z",
+      "requestedAt": "2026-10-02T04:30:10.123Z",
+      "sourceProposedPlan": null,
+      "startedAt": "2026-10-02T04:30:10.123Z",
+      "state": "error",
+      "turnId": "c9f4208c-3df3-4a0d-9285-cceea3b52f78"
+    },
+    "linkedPullRequest": null,
+    "messages": [
+      {
+        "attachments": [],
+        "context": null,
+        "createdAt": "2026-10-02T04:30:10.123Z",
+        "id": "thread-cirrus-deploy-msg-1",
+        "role": "user",
+        "streaming": false,
+        "text": "Deploy the docs to production.",
+        "turnId": null,
+        "updatedAt": "2026-10-02T04:30:10.123Z"
+      }
+    ],
+    "modelSelection": {
+      "instanceId": "codex",
+      "model": "gpt-5.4"
+    },
+    "pinOrderKey": null,
+    "pinnedAt": null,
+    "projectId": "project-cirrus",
+    "proposedPlans": [],
+    "pullRequests": [],
+    "runtimeMode": "full-access",
+    "session": {
+      "activeTurnId": null,
+      "lastError": "Deployment failed: AWS credentials are not configured on this machine.",
+      "providerInstanceId": "codex",
+      "providerName": "codex",
+      "runtimeMode": "full-access",
+      "status": "error",
+      "threadId": "thread-cirrus-deploy",
+      "updatedAt": "2026-10-02T04:30:10.920Z"
+    },
+    "settledAt": null,
+    "settledOverride": null,
+    "snoozedAt": null,
+    "snoozedUntil": null,
+    "title": "Deploy docs to production",
+    "titleRegeneration": null,
+    "titleState": {
+      "needsRefinement": false,
+      "source": "generated",
+      "version": "server:thread-title-rename:4cbfccad-33ab-424e-808c-5d333312eadd"
+    },
+    "unsettledAt": null,
+    "updatedAt": "2026-10-02T04:30:10.920Z",
+    "worktreePath": null
+  },
+  "threadId": "thread-cirrus-deploy"
+}

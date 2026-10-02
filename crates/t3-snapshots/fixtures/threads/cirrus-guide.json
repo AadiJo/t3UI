@@ -1,0 +1,235 @@
+{
+  "deleted": false,
+  "error": null,
+  "historyEpoch": 1,
+  "lastSequence": 178,
+  "page": {
+    "beforeCursor": null,
+    "hasMore": false,
+    "loadingOlder": false
+  },
+  "status": "live",
+  "thread": {
+    "activeOrderKey": null,
+    "activities": [
+      {
+        "createdAt": "2026-10-02T04:30:11.769Z",
+        "id": "178d5ccf-b57d-4e06-a1e3-494143befa14",
+        "kind": "tool.started",
+        "payload": {
+          "data": {
+            "item": {
+              "command": "/bin/bash -lc 'cat docs/deploy.md'"
+            }
+          },
+          "detail": "/bin/bash -lc 'cat docs/deploy.md'",
+          "itemType": "command_execution",
+          "status": "inProgress",
+          "title": "Ran command",
+          "toolCallId": "call_4a8862df_1"
+        },
+        "sequence": null,
+        "summary": "Ran command started",
+        "tone": "tool",
+        "turnId": "4a8862df-451a-4c85-910d-edaf5babe2d8"
+      },
+      {
+        "createdAt": "2026-10-02T04:30:11.906Z",
+        "id": "09c9ae8b-2cf1-46d1-ad07-36044ed1561e",
+        "kind": "tool.completed",
+        "payload": {
+          "data": {
+            "item": {
+              "aggregatedOutput": "# Deploying",
+              "command": "/bin/bash -lc 'cat docs/deploy.md'"
+            }
+          },
+          "detail": "/bin/bash -lc 'cat docs/deploy.md'",
+          "itemType": "command_execution",
+          "status": "completed",
+          "title": "Ran command",
+          "toolCallId": "call_4a8862df_1"
+        },
+        "sequence": null,
+        "summary": "Ran command",
+        "tone": "tool",
+        "turnId": "4a8862df-451a-4c85-910d-edaf5babe2d8"
+      },
+      {
+        "createdAt": "2026-10-02T04:30:11.906Z",
+        "id": "c147e16d-ae6c-41da-9df1-e2b3dcc6a50e",
+        "kind": "tool.started",
+        "payload": {
+          "data": {
+            "files": [
+              {
+                "path": "/tmp/t3ui-e2e/run-nightly/repos/cirrus-docs/docs/deploy.md"
+              }
+            ]
+          },
+          "itemType": "file_change",
+          "status": "inProgress",
+          "title": "File change",
+          "toolCallId": "call_4a8862df_2"
+        },
+        "sequence": null,
+        "summary": "File change started",
+        "tone": "tool",
+        "turnId": "4a8862df-451a-4c85-910d-edaf5babe2d8"
+      },
+      {
+        "createdAt": "2026-10-02T04:30:11.923Z",
+        "id": "db110239-349d-46b0-98dc-594db3172cf5",
+        "kind": "tool.completed",
+        "payload": {
+          "data": {
+            "files": [
+              {
+                "path": "/tmp/t3ui-e2e/run-nightly/repos/cirrus-docs/docs/deploy.md"
+              }
+            ]
+          },
+          "itemType": "file_change",
+          "status": "completed",
+          "title": "File change",
+          "toolCallId": "call_4a8862df_2"
+        },
+        "sequence": null,
+        "summary": "File change",
+        "tone": "tool",
+        "turnId": "4a8862df-451a-4c85-910d-edaf5babe2d8"
+      },
+      {
+        "createdAt": "2026-10-02T04:30:12.005Z",
+        "id": "cd068ff6-195d-4ab8-93ab-a937a3328bd0",
+        "kind": "context-window.updated",
+        "payload": {
+          "cachedInputTokens": 3840,
+          "compactsAutomatically": true,
+          "inputTokens": 5504,
+          "lastCachedInputTokens": 3840,
+          "lastInputTokens": 5504,
+          "lastOutputTokens": 896,
+          "lastReasoningOutputTokens": 320,
+          "lastUsedTokens": 6400,
+          "maxTokens": 272000,
+          "outputTokens": 896,
+          "reasoningOutputTokens": 320,
+          "usedTokens": 6400
+        },
+        "sequence": null,
+        "summary": "Context window updated",
+        "tone": "info",
+        "turnId": null
+      },
+      {
+        "createdAt": "2026-10-02T04:30:12.005Z",
+        "id": "f96fb5e3-ce1a-4f96-abd7-d178270bafdf",
+        "kind": "checkpoint.captured",
+        "payload": {
+          "status": "ready",
+          "turnCount": 1
+        },
+        "sequence": null,
+        "summary": "Checkpoint captured",
+        "tone": "info",
+        "turnId": "4a8862df-451a-4c85-910d-edaf5babe2d8"
+      }
+    ],
+    "archivedAt": null,
+    "autoSettleDisabledAt": null,
+    "branch": "main",
+    "branchPullRequest": null,
+    "checkpoints": [
+      {
+        "assistantMessageId": "assistant:msg_4a8862df_3",
+        "checkpointRef": "refs/t3/checkpoints/dGhyZWFkLWNpcnJ1cy1ndWlkZQ/turn/1",
+        "checkpointTurnCount": 1,
+        "completedAt": "2026-10-02T04:30:12.005Z",
+        "files": [
+          {
+            "additions": 5,
+            "deletions": 2,
+            "kind": "modified",
+            "path": "docs/deploy.md"
+          }
+        ],
+        "status": "ready",
+        "turnId": "4a8862df-451a-4c85-910d-edaf5babe2d8"
+      }
+    ],
+    "createdAt": "2026-10-02T04:30:11.068Z",
+    "deletedAt": null,
+    "id": "thread-cirrus-guide",
+    "interactionMode": "default",
+    "latestTurn": {
+      "assistantMessageId": "assistant:msg_4a8862df_3",
+      "completedAt": "2026-10-02T04:30:12.005Z",
+      "requestedAt": "2026-10-02T04:30:11.068Z",
+      "sourceProposedPlan": null,
+      "startedAt": "2026-10-02T04:30:11.068Z",
+      "state": "completed",
+      "turnId": "4a8862df-451a-4c85-910d-edaf5babe2d8"
+    },
+    "linkedPullRequest": null,
+    "messages": [
+      {
+        "attachments": [],
+        "context": null,
+        "createdAt": "2026-10-02T04:30:11.068Z",
+        "id": "thread-cirrus-guide-msg-1",
+        "role": "user",
+        "streaming": false,
+        "text": "Tighten up the deployment guide.",
+        "turnId": null,
+        "updatedAt": "2026-10-02T04:30:11.068Z"
+      },
+      {
+        "attachments": null,
+        "context": null,
+        "createdAt": "2026-10-02T04:30:11.974Z",
+        "id": "assistant:msg_4a8862df_3",
+        "role": "assistant",
+        "streaming": false,
+        "text": "Rewrote `docs/deploy.md` with the exact commands for each step and a rollback note.",
+        "turnId": "4a8862df-451a-4c85-910d-edaf5babe2d8",
+        "updatedAt": "2026-10-02T04:30:11.974Z"
+      }
+    ],
+    "modelSelection": {
+      "instanceId": "codex",
+      "model": "gpt-5.4"
+    },
+    "pinOrderKey": null,
+    "pinnedAt": null,
+    "projectId": "project-cirrus",
+    "proposedPlans": [],
+    "pullRequests": [],
+    "runtimeMode": "full-access",
+    "session": {
+      "activeTurnId": null,
+      "lastError": null,
+      "providerInstanceId": "codex",
+      "providerName": "codex",
+      "runtimeMode": "full-access",
+      "status": "ready",
+      "threadId": "thread-cirrus-guide",
+      "updatedAt": "2026-10-02T04:30:12.005Z"
+    },
+    "settledAt": null,
+    "settledOverride": null,
+    "snoozedAt": null,
+    "snoozedUntil": null,
+    "title": "Tighten deployment guide",
+    "titleRegeneration": null,
+    "titleState": {
+      "needsRefinement": false,
+      "source": "generated",
+      "version": "server:thread-title-rename:c410de1b-ee6a-47ca-bdf7-9b88ccf954cb"
+    },
+    "unsettledAt": null,
+    "updatedAt": "2026-10-02T04:30:12.005Z",
+    "worktreePath": null
+  },
+  "threadId": "thread-cirrus-guide"
+}

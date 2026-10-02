@@ -1,0 +1,137 @@
+{
+  "deleted": false,
+  "error": null,
+  "historyEpoch": 1,
+  "lastSequence": 178,
+  "page": {
+    "beforeCursor": null,
+    "hasMore": false,
+    "loadingOlder": false
+  },
+  "status": "live",
+  "thread": {
+    "activeOrderKey": null,
+    "activities": [
+      {
+        "createdAt": "2026-10-02T04:30:17.384Z",
+        "id": "80393bdf-fa28-4742-a9b0-e722101a134a",
+        "kind": "turn.plan.updated",
+        "payload": {
+          "plan": [
+            {
+              "status": "completed",
+              "step": "Start the test watcher"
+            },
+            {
+              "status": "inProgress",
+              "step": "Fix failing tests"
+            }
+          ]
+        },
+        "sequence": null,
+        "summary": "Plan updated",
+        "tone": "info",
+        "turnId": "c75a91dd-6938-4425-8bcc-1e4866a57e43"
+      },
+      {
+        "createdAt": "2026-10-02T04:30:17.385Z",
+        "id": "bc2d927d-4978-4b1f-96ac-9b0ee8f46037",
+        "kind": "tool.started",
+        "payload": {
+          "data": {
+            "item": {
+              "command": "/bin/bash -lc 'pnpm test --watch'"
+            }
+          },
+          "detail": "/bin/bash -lc 'pnpm test --watch'",
+          "itemType": "command_execution",
+          "status": "inProgress",
+          "title": "Ran command",
+          "toolCallId": "call_c75a91dd_2"
+        },
+        "sequence": null,
+        "summary": "Ran command started",
+        "tone": "tool",
+        "turnId": "c75a91dd-6938-4425-8bcc-1e4866a57e43"
+      }
+    ],
+    "archivedAt": null,
+    "autoSettleDisabledAt": null,
+    "branch": "main",
+    "branchPullRequest": null,
+    "checkpoints": [],
+    "createdAt": "2026-10-02T04:30:16.641Z",
+    "deletedAt": null,
+    "id": "thread-aurora-watch",
+    "interactionMode": "default",
+    "latestTurn": {
+      "assistantMessageId": "assistant:msg_c75a91dd_1",
+      "completedAt": null,
+      "requestedAt": "2026-10-02T04:30:16.641Z",
+      "sourceProposedPlan": null,
+      "startedAt": "2026-10-02T04:30:16.641Z",
+      "state": "running",
+      "turnId": "c75a91dd-6938-4425-8bcc-1e4866a57e43"
+    },
+    "linkedPullRequest": null,
+    "messages": [
+      {
+        "attachments": [],
+        "context": null,
+        "createdAt": "2026-10-02T04:30:16.641Z",
+        "id": "thread-aurora-watch-msg-1",
+        "role": "user",
+        "streaming": false,
+        "text": "Watch the test suite and fix failures as they come in.",
+        "turnId": null,
+        "updatedAt": "2026-10-02T04:30:16.641Z"
+      },
+      {
+        "attachments": null,
+        "context": null,
+        "createdAt": "2026-10-02T04:30:17.354Z",
+        "id": "assistant:msg_c75a91dd_1",
+        "role": "assistant",
+        "streaming": false,
+        "text": "Starting the test watcher. I'll fix failures as they show up.",
+        "turnId": "c75a91dd-6938-4425-8bcc-1e4866a57e43",
+        "updatedAt": "2026-10-02T04:30:17.354Z"
+      }
+    ],
+    "modelSelection": {
+      "instanceId": "codex",
+      "model": "gpt-5.4"
+    },
+    "pinOrderKey": null,
+    "pinnedAt": null,
+    "projectId": "project-aurora",
+    "proposedPlans": [],
+    "pullRequests": [],
+    "runtimeMode": "full-access",
+    "session": {
+      "activeTurnId": "c75a91dd-6938-4425-8bcc-1e4866a57e43",
+      "lastError": null,
+      "providerInstanceId": "codex",
+      "providerName": "codex",
+      "runtimeMode": "full-access",
+      "status": "running",
+      "threadId": "thread-aurora-watch",
+      "updatedAt": "2026-10-02T04:30:16.760Z"
+    },
+    "settledAt": null,
+    "settledOverride": null,
+    "snoozedAt": null,
+    "snoozedUntil": null,
+    "title": "Watch tests and fix failures",
+    "titleRegeneration": null,
+    "titleState": {
+      "needsRefinement": false,
+      "source": "generated",
+      "version": "server:thread-title-rename:307f49e6-c4c2-4627-b763-65d18b0eba82"
+    },
+    "unsettledAt": null,
+    "updatedAt": "2026-10-02T04:30:17.385Z",
+    "worktreePath": null
+  },
+  "threadId": "thread-aurora-watch"
+}

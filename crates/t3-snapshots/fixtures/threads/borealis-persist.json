@@ -1,0 +1,125 @@
+{
+  "deleted": false,
+  "error": null,
+  "historyEpoch": 1,
+  "lastSequence": 178,
+  "page": {
+    "beforeCursor": null,
+    "hasMore": false,
+    "loadingOlder": false
+  },
+  "status": "live",
+  "thread": {
+    "activeOrderKey": null,
+    "activities": [
+      {
+        "createdAt": "2026-10-02T04:30:14.286Z",
+        "id": "28360b42-f2f4-4367-9e94-b33cdef2b62a",
+        "kind": "user-input.requested",
+        "payload": {
+          "questions": [
+            {
+              "header": "Database",
+              "id": "database",
+              "multiSelect": false,
+              "options": [
+                {
+                  "description": "Matches production, needs a running server",
+                  "label": "Postgres"
+                },
+                {
+                  "description": "Embedded file, zero setup",
+                  "label": "SQLite"
+                }
+              ],
+              "question": "Which database should the health checks write to?"
+            }
+          ],
+          "requestId": "2f6b179d-b94e-4ae1-832a-d2d2c1211eea"
+        },
+        "sequence": null,
+        "summary": "User input requested",
+        "tone": "info",
+        "turnId": "fbbb3444-168b-42c8-8266-8558244ded4a"
+      }
+    ],
+    "archivedAt": null,
+    "autoSettleDisabledAt": null,
+    "branch": "main",
+    "branchPullRequest": null,
+    "checkpoints": [],
+    "createdAt": "2026-10-02T04:30:13.521Z",
+    "deletedAt": null,
+    "id": "thread-borealis-persist",
+    "interactionMode": "default",
+    "latestTurn": {
+      "assistantMessageId": null,
+      "completedAt": null,
+      "requestedAt": "2026-10-02T04:30:13.521Z",
+      "sourceProposedPlan": null,
+      "startedAt": "2026-10-02T04:30:13.521Z",
+      "state": "running",
+      "turnId": "fbbb3444-168b-42c8-8266-8558244ded4a"
+    },
+    "linkedPullRequest": null,
+    "messages": [
+      {
+        "attachments": [],
+        "context": null,
+        "createdAt": "2026-10-02T04:30:13.521Z",
+        "id": "thread-borealis-persist-msg-1",
+        "role": "user",
+        "streaming": false,
+        "text": "Set up persistence for the health checks.",
+        "turnId": null,
+        "updatedAt": "2026-10-02T04:30:13.521Z"
+      },
+      {
+        "attachments": null,
+        "context": null,
+        "createdAt": "2026-10-02T04:30:14.220Z",
+        "id": "reasoning:summary:rs_fbbb3444_1",
+        "role": "reasoning",
+        "streaming": false,
+        "text": "**Picking a store**\n\nThe service has no database yet. The choice changes the dependencies, so I should ask before adding one.",
+        "turnId": "fbbb3444-168b-42c8-8266-8558244ded4a",
+        "updatedAt": "2026-10-02T04:30:14.245Z"
+      }
+    ],
+    "modelSelection": {
+      "instanceId": "codex",
+      "model": "gpt-5.4"
+    },
+    "pinOrderKey": null,
+    "pinnedAt": null,
+    "projectId": "project-borealis",
+    "proposedPlans": [],
+    "pullRequests": [],
+    "runtimeMode": "full-access",
+    "session": {
+      "activeTurnId": "fbbb3444-168b-42c8-8266-8558244ded4a",
+      "lastError": null,
+      "providerInstanceId": "codex",
+      "providerName": "codex",
+      "runtimeMode": "full-access",
+      "status": "running",
+      "threadId": "thread-borealis-persist",
+      "updatedAt": "2026-10-02T04:30:13.633Z"
+    },
+    "settledAt": null,
+    "settledOverride": null,
+    "snoozedAt": null,
+    "snoozedUntil": null,
+    "title": "Persist health check results",
+    "titleRegeneration": null,
+    "titleState": {
+      "needsRefinement": false,
+      "source": "generated",
+      "version": "server:thread-title-rename:4cba635b-f413-4766-a7e4-566471ef0316"
+    },
+    "unsettledAt": null,
+    "updatedAt": "2026-10-02T04:30:14.286Z",
+    "worktreePath": null
+  },
+  "threadId": "thread-borealis-persist"
+}
