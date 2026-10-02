@@ -16,6 +16,23 @@ url.workspace = true
 anyhow.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
+chrono.workspace = true
+directories.workspace = true
+parking_lot.workspace = true
+
+# TLS: macOS uses the system stack (Security.framework: Keychain trust, nothing to compile in C,
+# so `script/check-macos.sh` works from Linux). Elsewhere rustls with aws-lc, which also gives
+# tokio-tungstenite's rustls a crypto provider. Declared here rather than through the workspace
+# entry because that one enables rustls unconditionally.
+[target.'cfg(target_os = "macos")'.dependencies]
+reqwest = { version = "0.13", default-features = false, features = ["json", "gzip", "native-tls"] }
+tokio-tungstenite = { workspace = true, features = ["native-tls"] }
+
+[target.'cfg(not(target_os = "macos"))'.dependencies]
+reqwest = { version = "0.13", default-features = false, features = ["json", "gzip", "rustls"] }
+
+[dev-dependencies]
+tracing-subscriber.workspace = true
 
 [lints]
 workspace = true

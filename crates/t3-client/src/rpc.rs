@@ -3,7 +3,9 @@
 //! [`RpcConnection::connect`] opens the socket and starts a task on the networking runtime that
 //! owns it. That task routes server frames to callers by request id, acks every stream chunk
 //! (the server sends nothing more on a stream until it gets the ack), and pings every 5 seconds;
-//! a missing pong by the next tick closes the connection, matching Effect's `makePinger`.
+//! three consecutive missed pongs close the connection, matching upstream's patched
+//! `makePinger`. A server `Defect` fails every in-flight request but keeps the socket open
+//! (protocol.md 1.7); owners of subscriptions resubscribe.
 //!
 //! ```ignore
 //! let conn = RpcConnection::connect(request).await?;
@@ -28,12 +30,36 @@ use futures::{SinkExt as _, StreamExt as _};
 use serde_json::value::RawValue;
 use t3_protocol::{
     Stream, Unary,
-    rpc::{CauseReason, ClientFrame, ExitEncoded, ServerFrame},
+    rpc::{CauseReason, ClientFrame, ExitEncoded, ServerFrame, defect_message},
 };
 use tokio::sync::{mpsc, oneshot, watch};
 use tokio_tungstenite::tungstenite::{self, Message, client::IntoClientRequest};
 
+/// Which way a tapped frame went.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FrameDirection {
+    Sent,
+    Received,
+}
+
+type FrameTap = Box<dyn Fn(FrameDirection, &str) + Send + Sync>;
+static FRAME_TAP: std::sync::OnceLock<FrameTap> = std::sync::OnceLock::new();
+
+/// Installs a process-wide observer for every text frame sent or received (pings included).
+/// For debugging and recording golden transcripts; set it once, before connecting.
+pub fn set_frame_tap(tap: impl Fn(FrameDirection, &str) + Send + Sync + 'static) {
+    let _ = FRAME_TAP.set(Box::new(tap));
+}
+
+fn tap(direction: FrameDirection, text: &str) {
+    if let Some(tap) = FRAME_TAP.get() {
+        tap(direction, text);
+    }
+}
+
 const PING_INTERVAL: Duration = Duration::from_secs(5);
+/// Consecutive unanswered pings before the connection is considered dead.
+const MAX_MISSED_PONGS: u32 = 3;
 const OPEN_TIMEOUT: Duration = Duration::from_secs(15);
 
 /// Why a connection ended.
@@ -43,12 +69,12 @@ pub enum CloseReason {
     Closed,
     /// The server closed the socket.
     Remote(String),
-    /// No pong arrived within one ping interval.
+    /// Three pings in a row went unanswered.
     PingTimeout,
+    /// The environment has no live connection right now.
+    NotConnected,
     /// The socket failed.
     Transport(String),
-    /// The server sent a connection-level defect.
-    Defect(String),
 }
 
 impl std::fmt::Display for CloseReason {
@@ -60,8 +86,8 @@ impl std::fmt::Display for CloseReason {
             }
             CloseReason::Remote(reason) => write!(f, "server closed the connection: {reason}"),
             CloseReason::PingTimeout => write!(f, "server stopped responding"),
+            CloseReason::NotConnected => write!(f, "not connected"),
             CloseReason::Transport(error) => write!(f, "{error}"),
-            CloseReason::Defect(defect) => write!(f, "server error: {defect}"),
         }
     }
 }
@@ -114,6 +140,8 @@ impl<E> RpcError<E> {
 enum Outcome {
     Success(Box<RawValue>),
     Failure(Vec<CauseReason>),
+    /// A connection-level `Defect` frame killed every in-flight request.
+    Defect(String),
     Disconnected(CloseReason),
 }
 
@@ -126,6 +154,7 @@ impl Outcome {
                 serde_json::from_str(value.get()).map_err(|e| RpcError::Decode(e.to_string()))
             }
             Outcome::Failure(cause) => Err(failure_from_cause(cause)),
+            Outcome::Defect(defect) => Err(RpcError::Defect(defect)),
             Outcome::Disconnected(reason) => Err(RpcError::Disconnected(reason)),
         }
     }
@@ -147,14 +176,6 @@ fn failure_from_cause<E: serde::de::DeserializeOwned>(cause: Vec<CauseReason>) -
         }
     }
     defect.map_or(RpcError::Interrupted, RpcError::Defect)
-}
-
-fn defect_message(value: &serde_json::Value) -> String {
-    value
-        .get("message")
-        .and_then(|m| m.as_str())
-        .map(str::to_owned)
-        .unwrap_or_else(|| value.to_string())
 }
 
 enum StreamEvent {
@@ -190,6 +211,14 @@ struct Shared {
 #[derive(Clone)]
 pub struct RpcConnection {
     shared: Arc<Shared>,
+}
+
+impl std::fmt::Debug for RpcConnection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RpcConnection")
+            .field("closed", &self.close_reason())
+            .finish()
+    }
 }
 
 impl RpcConnection {
@@ -344,34 +373,72 @@ pub struct Subscription<M: Stream> {
     _method: PhantomData<fn() -> M>,
 }
 
+/// What [`Subscription::next`] yields: an item, a terminal error, or `None` at the end.
+pub type StreamNext<M> = Option<Result<<M as Stream>::Item, RpcError<<M as Stream>::Error>>>;
+
 impl<M: Stream> Subscription<M> {
     /// The next item, a terminal error, or `None` when the stream completed successfully.
-    pub async fn next(&mut self) -> Option<Result<M::Item, RpcError<M::Error>>> {
+    /// Cancel safe. A `Decode` error affects only that item; the stream continues.
+    pub async fn next(&mut self) -> StreamNext<M> {
         loop {
-            if let Some(raw) = self.buffered.pop_front() {
-                return Some(
-                    serde_json::from_str(raw.get()).map_err(|e| RpcError::Decode(e.to_string())),
-                );
+            if let Some(ready) = self.take_buffered() {
+                return ready;
             }
-            if let Some(error) = self.encode_error.take() {
-                return Some(Err(RpcError::Decode(error)));
+            let event = self.events.recv().await;
+            if let Some(ready) = self.accept(event) {
+                return ready;
             }
-            if self.finished {
-                return None;
+        }
+    }
+
+    /// Like [`next`](Self::next) but never waits: `None` means nothing has arrived yet. Lets a
+    /// consumer apply a whole chunk before publishing state once.
+    pub fn try_next(&mut self) -> Option<StreamNext<M>> {
+        loop {
+            if let Some(ready) = self.take_buffered() {
+                return Some(ready);
             }
-            match self.events.recv().await {
-                Some(StreamEvent::Values(values)) => self.buffered.extend(values),
-                Some(StreamEvent::End(outcome)) => {
-                    self.finished = true;
-                    return match outcome {
-                        Outcome::Success(_) => None,
-                        other => other.into_result::<(), M::Error>().err().map(Err),
-                    };
-                }
-                None => {
-                    self.finished = true;
-                    return Some(Err(RpcError::Disconnected(CloseReason::Closed)));
-                }
+            let event = match self.events.try_recv() {
+                Ok(event) => Some(event),
+                Err(mpsc::error::TryRecvError::Empty) => return None,
+                Err(mpsc::error::TryRecvError::Disconnected) => None,
+            };
+            if let Some(ready) = self.accept(event) {
+                return Some(ready);
+            }
+        }
+    }
+
+    /// A buffered item, the encode error, or the end marker, if any is pending.
+    fn take_buffered(&mut self) -> Option<StreamNext<M>> {
+        if let Some(raw) = self.buffered.pop_front() {
+            return Some(Some(
+                serde_json::from_str(raw.get()).map_err(|e| RpcError::Decode(e.to_string())),
+            ));
+        }
+        if let Some(error) = self.encode_error.take() {
+            return Some(Some(Err(RpcError::Decode(error))));
+        }
+        self.finished.then_some(None)
+    }
+
+    /// Takes in one event from the socket task. Returns a terminal result for `End`.
+    fn accept(&mut self, event: Option<StreamEvent>) -> Option<StreamNext<M>> {
+        match event {
+            Some(StreamEvent::Values(values)) => {
+                self.buffered.extend(values);
+                None
+            }
+            Some(StreamEvent::End(outcome)) => {
+                self.finished = true;
+                Some(match outcome {
+                    Outcome::Success(_) => None,
+                    other => other.into_result::<(), M::Error>().err().map(Err),
+                })
+            }
+            None => {
+                self.finished = true;
+                Some(Some(Err(RpcError::Disconnected(CloseReason::Closed))))
             }
         }
     }
@@ -400,7 +467,7 @@ async fn run_socket(
     let mut pending: HashMap<u64, Pending> = HashMap::new();
     let mut ping =
         tokio::time::interval_at(tokio::time::Instant::now() + PING_INTERVAL, PING_INTERVAL);
-    let mut awaiting_pong = false;
+    let mut pings = PingState::default();
 
     let reason = loop {
         tokio::select! {
@@ -417,21 +484,21 @@ async fn run_socket(
                         break error;
                     }
                 }
+                // Never send `Eof`: it wedges the server side of the connection (protocol.md 1.8).
                 Some(Command::Close) | None => {
-                    let _ = send(&mut socket, &ClientFrame::Eof).await;
                     let _ = socket.close(None).await;
                     break CloseReason::Closed;
                 }
             },
             message = socket.next() => match message {
                 Some(Ok(Message::Text(text))) => {
-                    if let Some(reason) = handle_frame(&mut socket, &mut pending, &mut awaiting_pong, text.as_str()).await {
+                    if let Err(reason) = handle_text(&mut socket, &mut pending, &mut pings, text.as_str()).await {
                         break reason;
                     }
                 }
                 Some(Ok(Message::Binary(bytes))) => {
                     let text = String::from_utf8_lossy(&bytes).into_owned();
-                    if let Some(reason) = handle_frame(&mut socket, &mut pending, &mut awaiting_pong, &text).await {
+                    if let Err(reason) = handle_text(&mut socket, &mut pending, &mut pings, &text).await {
                         break reason;
                     }
                 }
@@ -443,8 +510,11 @@ async fn run_socket(
                 None => break CloseReason::Remote(String::new()),
             },
             _ = ping.tick() => {
-                if awaiting_pong { break CloseReason::PingTimeout; }
-                awaiting_pong = true;
+                if pings.awaiting {
+                    pings.missed += 1;
+                    if pings.missed >= MAX_MISSED_PONGS { break CloseReason::PingTimeout; }
+                }
+                pings.awaiting = true;
                 if let Err(error) = send(&mut socket, &ClientFrame::Ping).await { break error; }
             }
         }
@@ -462,28 +532,50 @@ async fn run_socket(
     }
 }
 
-/// Applies one server frame. Returns a close reason if the connection must end.
+/// Ping bookkeeping. Pongs are not correlated with pings; any pong clears the miss count.
+#[derive(Default)]
+struct PingState {
+    awaiting: bool,
+    missed: u32,
+}
+
+/// Applies one text frame (one message or a batch). Returns a close reason if the connection
+/// must end.
+async fn handle_text(
+    socket: &mut Socket,
+    pending: &mut HashMap<u64, Pending>,
+    pings: &mut PingState,
+    text: &str,
+) -> Result<(), CloseReason> {
+    tap(FrameDirection::Received, text);
+    let frames = match ServerFrame::decode_all(text) {
+        Ok(frames) => frames,
+        Err(error) => {
+            tracing::warn!(%error, "ignoring undecodable rpc frame");
+            return Ok(());
+        }
+    };
+    for frame in frames {
+        handle_frame(socket, pending, pings, frame).await?;
+    }
+    Ok(())
+}
+
 async fn handle_frame(
     socket: &mut Socket,
     pending: &mut HashMap<u64, Pending>,
-    awaiting_pong: &mut bool,
-    text: &str,
-) -> Option<CloseReason> {
-    let frame = match ServerFrame::decode(text) {
-        Ok(frame) => frame,
-        Err(error) => {
-            tracing::warn!(%error, "ignoring undecodable rpc frame");
-            return None;
-        }
-    };
+    pings: &mut PingState,
+    frame: ServerFrame,
+) -> Result<(), CloseReason> {
     match frame {
         ServerFrame::Chunk { request_id, values } => {
             let Ok(id) = request_id.parse::<u64>() else {
-                return None;
+                return Ok(());
             };
             let delivered = match pending.get(&id) {
                 Some(Pending::Stream(tx)) => tx.send(StreamEvent::Values(values)).is_ok(),
-                _ => false,
+                // Unknown or finished id: do not ack (protocol.md 1.5).
+                _ => return Ok(()),
             };
             // Ack so the server sends the next chunk; interrupt if nobody is listening anymore.
             let reply = if delivered {
@@ -492,11 +584,11 @@ async fn handle_frame(
                 pending.remove(&id);
                 ClientFrame::Interrupt { request_id }
             };
-            send(socket, &reply).await.err()
+            send(socket, &reply).await
         }
         ServerFrame::Exit { request_id, exit } => {
             let Ok(id) = request_id.parse::<u64>() else {
-                return None;
+                return Ok(());
             };
             let outcome = match exit {
                 ExitEncoded::Success { value } => Outcome::Success(value),
@@ -507,26 +599,42 @@ async fn handle_frame(
                 Some(Pending::Stream(tx)) => drop(tx.send(StreamEvent::End(outcome))),
                 None => {}
             }
-            None
+            Ok(())
         }
         ServerFrame::Pong => {
-            *awaiting_pong = false;
-            None
+            pings.awaiting = false;
+            pings.missed = 0;
+            Ok(())
         }
-        ServerFrame::Defect { defect } => Some(CloseReason::Defect(defect_message(&defect))),
+        // The request that died never gets an `Exit`, and the frame does not say which one it
+        // was, so fail them all (what the TS client does). The socket itself stays usable.
+        ServerFrame::Defect { defect } => {
+            let message = defect_message(&defect);
+            tracing::warn!(%message, "server defect; failing in-flight requests");
+            for (_, entry) in pending.drain() {
+                match entry {
+                    Pending::Unary(tx) => drop(tx.send(Outcome::Defect(message.clone()))),
+                    Pending::Stream(tx) => {
+                        drop(tx.send(StreamEvent::End(Outcome::Defect(message.clone()))))
+                    }
+                }
+            }
+            Ok(())
+        }
         ServerFrame::ClientProtocolError { error } => {
             tracing::warn!(%error, "server reported a client protocol error");
-            None
+            Ok(())
         }
         ServerFrame::Unknown { tag } => {
             tracing::debug!(%tag, "ignoring unknown rpc frame");
-            None
+            Ok(())
         }
     }
 }
 
 async fn send(socket: &mut Socket, frame: &ClientFrame) -> Result<(), CloseReason> {
     let text = serde_json::to_string(frame).expect("client frames always serialize");
+    tap(FrameDirection::Sent, &text);
     socket
         .send(Message::text(text))
         .await
