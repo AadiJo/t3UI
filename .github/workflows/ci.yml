@@ -67,3 +67,22 @@ jobs:
             dist/*.dmg
             smoke.png
           if-no-files-found: error
+
+  snapshots:
+    name: macOS headless snapshots
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.99.0"
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: snapshots
+      - name: Render scenes
+        run: cargo run -p t3-snapshots -- snapshots
+      - uses: actions/upload-artifact@v4
+        with:
+          name: snapshots
+          path: snapshots/*.png
+          if-no-files-found: error
