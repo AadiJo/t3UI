@@ -13,21 +13,26 @@ No blocking IO on the main thread. Disk reads at startup are allowed only for sm
 ## Data flow
 
 ```
-server ──ws──▶ RpcConnection (t3-client) ──typed items──▶ reducer (t3-client, pure)
-                                                              │
-                         GPUI task (cx.spawn) applies item ◀──┘
+server ──ws──▶ RpcConnection ──typed items──▶ sync task: reducer (pure) ──Arc<State>──▶ watch
+               (t3-client, t3-net runtime)                                                │
+                         GPUI task (cx.spawn): rx.changed().await, borrow the Arc ◀───────┘
                                  │
                        Entity<EnvironmentState>.update(..) + cx.notify()
                                  │
-                         views re-render what changed
+                         views re-render what changed (rows are Arcs: compare with ptr_eq)
 ```
 
-- `t3-protocol` holds serde types for upstream contracts. Unknown fields are ignored; enums keyed
-  by `_tag` keep an `Unknown` fallback so a newer server never breaks decoding.
+- `t3-protocol` holds serde types for upstream contracts. Unknown fields are ignored; string
+  unions keep an `Other(String)` variant and tagged unions an `Unknown` variant, so a newer server
+  never breaks decoding.
 - `t3-client` holds the reducers as plain functions over protocol types
-  (`ShellState::apply(&mut self, event)`, `ThreadState::apply(...)`). They have no GPUI types, so
-  they can be tested with recorded server frames.
-- `t3-app` owns entities that wrap reducer state and the GPUI tasks that feed them.
+  (`ShellState::apply(&mut self, item)`, `ThreadState::apply(...)`). They have no GPUI types, so
+  they are tested with recorded server frames (`crates/t3-client/tests/fixtures`).
+- `t3-client::Environment` runs the reducers on the networking runtime and publishes
+  `Arc<ShellState>` / `Arc<ThreadState>` on `tokio::sync::watch` channels. A slow UI only ever
+  sees the latest state; it never has to replay every delta. Rows inside are `Arc`s shared with
+  the previous state, so only changed rows are new allocations.
+- `t3-app` owns entities that hold the latest published state and the GPUI tasks that feed them.
 
 ## App state (t3-app)
 
