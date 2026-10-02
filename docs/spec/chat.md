@@ -3,8 +3,9 @@
 > Refreshed against fe7d3092c (2026-10-02). Replaces the July-era chat spec in full.
 > Companion files: [`chat-timeline.md`](chat-timeline.md) (rows, row logic, list mechanics),
 > [`markdown.md`](markdown.md) (ChatMarkdown, code blocks, Shiki). The composer, its banner stack,
-> pickers, pending approval / user-input panels and the BranchToolbar are the composer spec; this
-> file only specifies the slot they sit in.
+> pickers, pending approval / user-input panels and the BranchToolbar are in
+> [`composer.md`](composer.md); this file only specifies the slot they sit in. Right panel, terminal
+> drawer and header tool controls (scripts, git) are in [`panels.md`](panels.md).
 
 ## 0. Conventions
 
@@ -18,6 +19,10 @@
 - **Desktop.** Values assume a macOS Electron window >= 1100px, so `sm:` (640), `md:` (768) and
   `lg:` (1024) variants apply. The right panel switches inline to sheet at `max-width: 980px`
   (`rightPanelLayout.ts:1`), which a desktop window can reach; noted where it matters.
+- **Fonts.** Sans = system stack `-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
+  sans-serif` (SF Pro on macOS); mono = `ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Consolas,
+  "Liberation Mono", monospace` (`index.css:156-160`), overridable in Settings → Appearance.
+  Grayscale antialiasing on macOS by default (`fontSmoothing`, `appearanceFonts.ts:119-125`).
 - **Radius.** `--radius` 10px: `rounded-sm` 6, `rounded-md` 8, `rounded-lg` 10, `rounded-xl` 14,
   `rounded-2xl` 18, `rounded-3xl` 22, `rounded` 4. Buttons use `--control-radius` 8px
   (`index.css:92`, `ui/button.tsx:11`).
@@ -179,8 +184,8 @@ div.relative.flex.min-h-0.min-w-0.flex-1.overflow-hidden.bg-background          
 │  │     ├─ [ThreadPreviewMiniPlayer] floating browser preview (preview spec)
 │  │     ├─ AlertDialog "Switch to <branch>?"                                     9.2
 │  │     └─ [PullRequestThreadDialog]                                             9.4
-│  └─ PersistentThreadTerminalDrawer × mounted threads (terminal spec)
-├─ [RightPanelTabs mode="inline"]   right panel present, window > 980px (panels spec)
+│  └─ PersistentThreadTerminalDrawer × mounted threads ([`panels-terminal.md`](panels-terminal.md))
+├─ [RightPanelTabs mode="inline"]   right panel present, window > 980px ([`panels.md`](panels.md))
 ├─ [RightPanelSheet > RightPanelTabs mode="sheet"]  right panel present, window <= 980px
 ├─ AlertDialog "Edit from here?" (revert)                                         9.1
 ├─ LinkPullRequestDialogHost (pull request spec)
@@ -194,7 +199,7 @@ Notes:
   space with bottom padding instead (section 6.3).
 - There is **no right-side plan panel** in this version. Proposed plans render inline in the
   timeline (`chat-timeline.md`). The right panel hosts preview / terminal / diff / files / pull
-  requests / agents / device surfaces (`ChatView.tsx:9648-9810`, panels spec).
+  requests / agents / device surfaces (`ChatView.tsx:9648-9810`, [`panels.md`](panels.md)).
 - There is **no border under the chat header**. The top edge of the timeline fades under the
   header with a mask instead (`topbar-scroll-fade`, `chat-timeline.md`). `NoActiveThreadState` is
   the only chat surface with `border-b`.
@@ -435,7 +440,7 @@ max-w-[calc(100%-2rem)] pt-3` (12px top, width fits content, 16px side margin mi
 Version skew, disconnected environment, branch mismatch, snoozed / settled / woke-from-snooze,
 resume compaction, usage limits, project clone, feedback, background liveness: all go through the
 **composer banner stack** (`ChatView.tsx:6383-6660` builds `composerBannerItems`, rendered by
-`ChatComposer` → `ComposerBannerStack`). Composer spec.
+`ChatComposer` → `ComposerBannerStack`). See [`composer.md`](composer.md).
 
 ---
 
@@ -489,8 +494,8 @@ div[data-chat-composer-overlay]  pointer-events-none absolute inset-x-0 bottom-0
          mx-auto w-full max-w-(--chat-max-width)
       ├─ [hero headline]  only in hero state (6.2)
       └─ div.relative
-         ├─ ComposerSurface.Shell  (@container/composer-surface, max-w chat width; composer spec)
-         │  ├─ ComposerSurface.Host → ChatComposer                      (composer spec)
+         ├─ ComposerSurface.Shell  (@container/composer-surface, max-w chat width; [`composer.md`](composer.md))
+         │  ├─ ComposerSurface.Host → ChatComposer                      ([`composer.md`](composer.md))
          │  └─ div.min-h-0 > div.relative.z-0[data-terminal-open]
          │       └─ [context strip host] min-h 32px (36 below 640) when visible → BranchToolbar
          └─ div aria-hidden  height 20px (16 below 640) + safe-area bottom   (bottom spacer)
@@ -505,7 +510,7 @@ div[data-chat-composer-overlay]  pointer-events-none absolute inset-x-0 bottom-0
   resting composer may host controls there); visible (`min-h`) only when it actually has content.
 - Pending approvals, pending user input, the plan follow-up prompt, queued-message steering, the
   "Loading messages..." status and the composer banner stack all render inside `ChatComposer`
-  (props at `ChatView.tsx:10157-10170`). Composer spec.
+  (props at `ChatView.tsx:10157-10170`). See [`composer.md`](composer.md).
 
 ### 6.2 Hero state (empty draft)
 
@@ -679,7 +684,7 @@ div pointer-events-none absolute inset-2 (8px) z-40 flex items-center justify-ce
      PaperclipIcon 16px text-primary + "Drop files to attach"
 ```
 
-Drop adds files or folders to the composer (`makeWorkspaceFileDropHandlers`, composer spec).
+Drop adds files or folders to the composer (`makeWorkspaceFileDropHandlers`, [`composer.md`](composer.md)).
 
 ---
 
@@ -714,7 +719,7 @@ Drop adds files or folders to the composer (`makeWorkspaceFileDropHandlers`, com
 `ChatView.tsx:10312-10340`: title `Switch to <code>{threadBranch}</code>?`, description "You have
 uncommitted changes. They'll carry over to the other branch, or block the switch if they
 conflict.", buttons Cancel (outline) / "Switch branch" (default). Opened from the composer's branch
-mismatch banner (composer spec).
+mismatch banner ([`composer.md`](composer.md)).
 
 ### 9.3 Expanded image / media viewer
 
@@ -774,7 +779,7 @@ wizard: pull-request / device specs.
 | `terminal.split` / `splitVertical` / `close` / `new` | mod+D, mod+W, ... when `terminalFocus` | Terminal spec |
 | `diff.toggle` | mod+D when `!terminalFocus` | Toggle diff panel |
 | `modelPicker.toggle` | mod+shift+M | Composer model picker |
-| `composer.host/effort/mode/workspace/branch/previousWorktree` | mod+shift+H, ... | Composer controls (composer spec) |
+| `composer.host/effort/mode/workspace/branch/previousWorktree` | mod+shift+H, ... | Composer controls ([`composer.md`](composer.md)) |
 | `thread.steerQueuedMessage` | mod+shift+Enter | Send the oldest queued message now |
 | `thread.stop` | (none by default) | Interrupt the running turn |
 | project script commands | user-defined | Run that script |
@@ -790,7 +795,7 @@ Client settings that change this view (`contracts:settings.ts:298-513`):
 | `chatWidth` | `"comfortable"` | `--chat-max-width` 768 / 1152 / 100% |
 | `timestampFormat` | `"locale"` | Row timestamps (`chat-timeline.md`) |
 | `panelAnimationDurationMs` | `0` | Header padding, panel, hero FLIP animations off |
-| `planModeEnabled` | `false` | Restores the composer Build/Plan toggle and `/plan` `/default` (composer spec). Plans still render inline when the server produces them |
+| `planModeEnabled` | `false` | Restores the composer Build/Plan toggle and `/plan` `/default` ([`composer.md`](composer.md)). Plans still render inline when the server produces them |
 | `accessLevelIndicatorEnabled` | `false` | Restores the composer access-level selector; runtime mode otherwise follows project defaults (`ChatView.tsx:1952-1956`) |
 | `contextWindowMeterEnabled` | `false` | Composer context meter |
 | `composerCollapseOnScroll` | `true` | Scrolling the timeline rests the composer (6.3) |
@@ -803,7 +808,7 @@ Feature presence: plan / default interaction modes **exist** (thread `interactio
 follow-up prompt `shouldShowPlanFollowUpPrompt`, `ChatView.logic.ts:950-964`) but the toggle is
 hidden by default. Runtime-mode / access selection **exists** behind `accessLevelIndicatorEnabled`.
 The right-panel plan surface is gone; the composer shows a tasks badge for the active
-`turn.plan.updated` plan (composer spec). The timeline minimap **exists** and is not
+`turn.plan.updated` plan ([`composer.md`](composer.md)). The timeline minimap **exists** and is not
 setting-gated (`chat-timeline.md`).
 
 ---

@@ -493,7 +493,7 @@ div.group.flex.flex-col.items-end.gap-1 (4)
 | skill | `skill`, skill icon + label | tooltip `${name}`; aria `Skill, {label}` |
 | image | `image` button: thumbnail 1.17em (accent = average image color) + middle-truncated name (max 288px) + size `text-3xs` | click → media viewer; aria `Image attachment, {name}, {size}` |
 | file / video | `file` / `video`: Pierre icon or `FilmIcon` + name + size | click → file preview / video viewer; tooltip `{name}\n{size}`; disabled when not downloadable |
-| terminal | `TerminalContextInlineChip` (composer spec) | |
+| terminal | `TerminalContextInlineChip` ([`composer.md`](composer.md)) | |
 | element | popover chip `MousePointerClickIcon` → details card (page title, url, selector, source `file:line`, HTML + styles previews 160/128px tall) | aria `Browser element, {label}. Show details` |
 | review-comment | popover chip `MessageCircleIcon` → card: file path (workspace-relative, `text-xs font-medium`), `{section} · {range}` (`text-2xs secondary-label`), comment text, then the fenced code (non-diff) or a unified `@pierre/diffs` FileDiff | PR summaries use the PR chip (state icon, tooltip/preview with PR details) |
 | preview-annotation | popover chip → card: screenshot (max 256px tall, click to expand) or "Screenshot unavailable", page title/url ("Preview annotation" fallback), comment, target summary, style-change count, selected elements | |
@@ -630,7 +630,7 @@ section @container/changed-files mt-4 (16) rounded-lg (10) bg-secondary (dark bg
   layout `inline-grid grid-cols-[4ch_4ch] gap-2 text-right`; compact numbers `1.2k`, `15k`,
   `1.5m`; aria `{a} additions, {d} deletions`.
 - "Open diff" / file click: `useDiffPanelStore.selectTurn(threadRef, turnId, path)` then open the
-  right panel's diff surface (`ChatView.tsx:9511-9520`, panels spec).
+  right panel's diff surface (`ChatView.tsx:9511-9520`, [`panels.md`](panels.md)).
 
 ### 8.9 Proposed plan card
 
@@ -654,7 +654,7 @@ Save dialog: "Save plan to workspace", description `Enter a path relative to <co
 field "Workspace path" (prefilled `{sanitized-title}.md` or `plan.md`), Cancel / Save ("Saving..."),
 RPC `projects.writeFile {cwd, relativePath, contents}`; toasts "Plan saved to workspace", "Could not
 save plan", "Enter a workspace path", "Workspace path is unavailable", "Could not copy plan".
-Implement / Refine actions are composer controls when plan mode is on (composer spec).
+Implement / Refine actions are composer controls when plan mode is on ([`composer.md`](composer.md)).
 
 ### 8.10 Working row
 
@@ -864,7 +864,7 @@ The timeline never shows approve/answer controls. Requests appear as passive wor
 "… approval requested" / "Approval resolved"; folded user input rows with the answers). The
 interactive panels are in the composer's top drawer (`ChatComposer.tsx:6231-6300`,
 `ComposerPendingApprovalPanel`, `ComposerPendingApprovalActions`, `ComposerPendingUserInputPanel`;
-pending list from `derivePendingRequests(activities)`, `crt:pendingRequests.ts:124`). Composer spec.
+pending list from `derivePendingRequests(activities)`, `crt:pendingRequests.ts:124`). See [`composer.md`](composer.md).
 Approval kinds there: "App access approval" (mcp-elicitation), "Command approval", "File read
 approval", "App permission approval" (permission), "File change approval"; buttons Decline / Approve
 / ⋯ (Cancel, Always allow this session).

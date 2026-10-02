@@ -377,5 +377,5 @@ div.chat-markdown-table-container  my 10.4px  data-expanded
 - **`text-box: trim`, `@starting-style` fades, dotted underline as background** have no direct
   GPUI equivalents; emulate (custom paint for the dotted underline, per-block opacity animation).
 - **Native context menus** for links and file chips (same question as `chat.md` 15).
-- **Run in terminal** needs the terminal surface (terminal spec) to accept a command.
+- **Run in terminal** needs the terminal surface ([`panels-terminal.md`](panels-terminal.md)) to accept a command.
 - **Themed palettes** override code-block colors; out of scope until themes land.
