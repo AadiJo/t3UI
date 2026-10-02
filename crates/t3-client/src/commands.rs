@@ -140,6 +140,16 @@ pub fn new_thread_turn(
     turn
 }
 
+/// "Revert to this message": restores files and history to checkpoint `turn_count`.
+pub fn revert_checkpoint(thread_id: ThreadId, turn_count: u32) -> ClientCommand {
+    ClientCommand::ThreadCheckpointRevert {
+        command_id: CommandId::random(),
+        thread_id,
+        turn_count,
+        created_at: now(),
+    }
+}
+
 /// The stop button. `turn_id` targets a specific turn; `None` interrupts whatever runs.
 pub fn interrupt_turn(thread_id: ThreadId, turn_id: Option<TurnId>) -> ClientCommand {
     ClientCommand::ThreadTurnInterrupt {

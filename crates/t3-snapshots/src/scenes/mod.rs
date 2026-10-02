@@ -5,6 +5,7 @@
 //! the module below and append it in [`all`]. Keep names unique and kebab-case, ending in
 //! `-dark` / `-light` when a scene exists in both appearances.
 
+mod chat;
 mod diff;
 mod gallery;
 mod markdown;
@@ -50,6 +51,7 @@ impl Scene {
 pub fn all() -> Vec<Scene> {
     let mut scenes = Vec::new();
     scenes.extend(workspace::scenes());
+    scenes.extend(chat::scenes());
     scenes.extend(gallery::scenes());
     scenes.extend(terminal::scenes());
     scenes.extend(diff::scenes());

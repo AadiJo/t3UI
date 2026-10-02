@@ -7,6 +7,7 @@
 //!   [`workspace::build_main_view`].
 //! - [`sidebar`], [`keybindings`], [`toast`], [`dialogs`]: shell pieces other views reuse.
 
+pub mod chat;
 pub mod chrome;
 pub mod dialogs;
 pub mod keybindings;
