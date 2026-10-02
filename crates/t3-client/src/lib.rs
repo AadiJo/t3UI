@@ -13,6 +13,7 @@
 //! - [`pending`]: open approvals and questions derived from a thread's activities.
 
 pub mod auth;
+pub mod cloud;
 pub mod commands;
 pub mod connection;
 pub mod environment;
