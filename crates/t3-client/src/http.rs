@@ -20,7 +20,7 @@ use t3_protocol::{
 use url::Url;
 
 use crate::{
-    auth::ClientInfo,
+    auth::{BoxFuture, ClientInfo},
     connection::{BlockedReason, ConnectionFailure, TransientReason},
 };
 
@@ -45,6 +45,15 @@ pub trait HttpAuth: Send + Sync + 'static {
     /// Adds auth headers for one request. DPoP implementations sign `method` and `url`, so
     /// this is called once per request and never reused.
     fn authorize(&self, method: &Method, url: &Url, headers: &mut HeaderMap) -> Result<(), String>;
+
+    /// Renews the credential: before each request when it is about to expire
+    /// (`rejected: false`), and once after the server answered 401 (`rejected: true`). Resolves
+    /// to whether the credential changed, i.e. whether a rejected request is worth retrying.
+    /// Bearer tokens cannot be renewed (the default); T3 Connect re-mints its one-hour DPoP
+    /// tokens here.
+    fn renew(&self, _rejected: bool) -> BoxFuture<Result<bool, String>> {
+        Box::pin(async { Ok(false) })
+    }
 }
 
 /// `Authorization: Bearer <token>` from pairing.
@@ -170,6 +179,7 @@ impl std::fmt::Debug for EnvironmentHttp {
     }
 }
 
+#[derive(Clone)]
 enum Body {
     Empty,
     Form(String),
@@ -179,7 +189,8 @@ enum Body {
     },
 }
 
-fn client() -> &'static reqwest::Client {
+/// The process-wide HTTP client (connection pool shared with T3 Connect's Clerk and relay calls).
+pub(crate) fn client() -> &'static reqwest::Client {
     static CLIENT: OnceLock<reqwest::Client> = OnceLock::new();
     CLIENT.get_or_init(|| {
         reqwest::Client::builder()
@@ -226,32 +237,29 @@ impl EnvironmentHttp {
         credential: &str,
         client: &ClientInfo,
     ) -> Result<AccessTokenResult, HttpError> {
-        let request = TokenExchangeRequest {
-            client_label: Some(&client.label),
-            client_device_type: Some(client.device_type),
-            client_os: Some(client.os),
-            ..TokenExchangeRequest::pairing(credential)
-        };
-        let mut form = url::form_urlencoded::Serializer::new(String::new());
-        form.append_pair("grant_type", request.grant_type)
-            .append_pair("subject_token", request.subject_token)
-            .append_pair("subject_token_type", request.subject_token_type)
-            .append_pair("requested_token_type", request.requested_token_type);
-        for (key, value) in [
-            ("scope", request.scope),
-            ("client_label", request.client_label),
-            ("client_device_type", request.client_device_type),
-            ("client_os", request.client_os),
-        ] {
-            if let Some(value) = value {
-                form.append_pair(key, value);
-            }
-        }
         self.json(
             Method::POST,
             self.resolve("/oauth/token"),
-            Body::Form(form.finish()),
+            Body::Form(token_exchange_form(credential, client)),
             false,
+            AUTH_TIMEOUT,
+        )
+        .await
+    }
+
+    /// `POST /oauth/token` for a one-time T3 Connect credential. Build this client with an
+    /// [`HttpAuth`] that adds a `DPoP` proof (no `ath`): the environment binds the issued token
+    /// (`token_type: "DPoP"`, one hour) to that key.
+    pub async fn exchange_bootstrap_credential(
+        &self,
+        credential: &str,
+        client: &ClientInfo,
+    ) -> Result<AccessTokenResult, HttpError> {
+        self.json(
+            Method::POST,
+            self.resolve("/oauth/token"),
+            Body::Form(token_exchange_form(credential, client)),
+            true,
             AUTH_TIMEOUT,
         )
         .await
@@ -378,47 +386,96 @@ impl EnvironmentHttp {
             None
         };
         crate::runtime::spawn(async move {
-            let mut headers = HeaderMap::new();
-            if let Some(auth) = &auth {
-                auth.authorize(&method, &url, &mut headers)
-                    .map_err(HttpError::Auth)?;
-            }
-            let mut request = client()
-                .request(method.clone(), url.clone())
-                .headers(headers)
-                .timeout(timeout);
-            request = match body {
-                Body::Empty => request,
-                Body::Form(form) => request
-                    .header(
-                        reqwest::header::CONTENT_TYPE,
-                        "application/x-www-form-urlencoded",
-                    )
-                    .body(form),
-                Body::Bytes {
-                    content_type,
-                    bytes,
-                } => request
-                    .header(reqwest::header::CONTENT_TYPE, content_type)
-                    .body(bytes),
+            let Some(auth) = auth else {
+                return send_once(&method, &url, body, None, timeout).await;
             };
-            let response = request.send().await.map_err(map_reqwest_error)?;
-            let status = response.status();
-            let bytes = response.bytes().await.map_err(map_reqwest_error)?;
-            if let Some(tap) = RESPONSE_TAP.get() {
-                tap(&method, &url, status.as_u16(), &bytes);
+            auth.renew(false).await.map_err(HttpError::Auth)?;
+            let result = send_once(&method, &url, body.clone(), Some(&*auth), timeout).await;
+            // One retry after a 401 if the auth could renew its credential (expired or revoked
+            // DPoP token). Bodies of authenticated requests are empty or small forms.
+            if let Err(HttpError::Status { status: 401, .. }) = &result
+                && auth.renew(true).await.unwrap_or(false)
+            {
+                return send_once(&method, &url, body, Some(&*auth), timeout).await;
             }
-            if status.is_success() {
-                Ok(bytes.to_vec())
-            } else {
-                Err(HttpError::Status {
-                    status: status.as_u16(),
-                    error: serde_json::from_slice(&bytes).ok().map(Box::new),
-                    body: String::from_utf8_lossy(&bytes).into_owned(),
-                })
-            }
+            result
         })
         .await
+    }
+}
+
+/// The `/oauth/token` form for exchanging a one-time credential with the standard client scopes.
+fn token_exchange_form(credential: &str, client: &ClientInfo) -> String {
+    let request = TokenExchangeRequest {
+        client_label: Some(&client.label),
+        client_device_type: Some(client.device_type),
+        client_os: Some(client.os),
+        ..TokenExchangeRequest::pairing(credential)
+    };
+    let mut form = url::form_urlencoded::Serializer::new(String::new());
+    form.append_pair("grant_type", request.grant_type)
+        .append_pair("subject_token", request.subject_token)
+        .append_pair("subject_token_type", request.subject_token_type)
+        .append_pair("requested_token_type", request.requested_token_type);
+    for (key, value) in [
+        ("scope", request.scope),
+        ("client_label", request.client_label),
+        ("client_device_type", request.client_device_type),
+        ("client_os", request.client_os),
+    ] {
+        if let Some(value) = value {
+            form.append_pair(key, value);
+        }
+    }
+    form.finish()
+}
+
+/// One request: fresh auth headers (DPoP proofs are single use), then the body of a 2xx.
+async fn send_once(
+    method: &Method,
+    url: &Url,
+    body: Body,
+    auth: Option<&dyn HttpAuth>,
+    timeout: Duration,
+) -> Result<Vec<u8>, HttpError> {
+    let mut headers = HeaderMap::new();
+    if let Some(auth) = auth {
+        auth.authorize(method, url, &mut headers)
+            .map_err(HttpError::Auth)?;
+    }
+    let mut request = client()
+        .request(method.clone(), url.clone())
+        .headers(headers)
+        .timeout(timeout);
+    request = match body {
+        Body::Empty => request,
+        Body::Form(form) => request
+            .header(
+                reqwest::header::CONTENT_TYPE,
+                "application/x-www-form-urlencoded",
+            )
+            .body(form),
+        Body::Bytes {
+            content_type,
+            bytes,
+        } => request
+            .header(reqwest::header::CONTENT_TYPE, content_type)
+            .body(bytes),
+    };
+    let response = request.send().await.map_err(map_reqwest_error)?;
+    let status = response.status();
+    let bytes = response.bytes().await.map_err(map_reqwest_error)?;
+    if let Some(tap) = RESPONSE_TAP.get() {
+        tap(method, url, status.as_u16(), &bytes);
+    }
+    if status.is_success() {
+        Ok(bytes.to_vec())
+    } else {
+        Err(HttpError::Status {
+            status: status.as_u16(),
+            error: serde_json::from_slice(&bytes).ok().map(Box::new),
+            body: String::from_utf8_lossy(&bytes).into_owned(),
+        })
     }
 }
 
