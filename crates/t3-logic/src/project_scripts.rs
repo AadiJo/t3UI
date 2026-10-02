@@ -1,19 +1,167 @@
 //! Project scripts ("actions") in the chat header (web `projectScripts.ts`,
-//! `shared/projectScripts.ts`, `lib/projectScriptKeybindings.ts`, and the shortcut capture of
-//! `KeybindingsSettings.logic.ts`).
+//! `shared/projectScripts.ts`, `lib/projectScriptKeybindings.ts`, the editor input of
+//! `projectScriptEditor.tsx`, and the shortcut capture of `KeybindingsSettings.logic.ts`).
+//!
+//! Scripts live in the server settings, not on the project: a project's
+//! `projectSettingsOverrides[id].defaultProjectScripts` wins, then the environment's
+//! `defaultProjectScripts` ([`resolve_project_scripts`]). Saving writes the whole list back with
+//! `server.updateSettings` ([`scripts_patch`]).
 
 use std::collections::{BTreeMap, HashSet};
 
-use t3_protocol::{orchestration::ProjectScript, server::ResolvedKeybindingRule};
+use serde_json::{Map, Value};
+use t3_protocol::{
+    orchestration::{ProjectScript, ProjectScriptIcon},
+    server::{ResolvedKeybindingRule, ServerSettings},
+};
 
 use crate::keybindings::{Platform, ShortcutEvent, parse_shortcut};
 
 /// Script ids are at most this long (`MAX_SCRIPT_ID_LENGTH`).
 pub const MAX_SCRIPT_ID_LENGTH: usize = 24;
 
-/// The keybinding command that runs a script.
-pub fn script_command(script_id: &str) -> String {
-    format!("script.{script_id}.run")
+/// The keybinding command that runs a script, or `None` for legacy ids the command pattern
+/// (`script.[a-z0-9][a-z0-9-]*.run`, id at most 24 chars) rejects; those scripts still run but
+/// cannot have a shortcut.
+pub fn script_command(script_id: &str) -> Option<String> {
+    let valid = !script_id.is_empty()
+        && script_id.len() <= MAX_SCRIPT_ID_LENGTH
+        && script_id
+            .bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-')
+        && !script_id.starts_with('-');
+    valid.then(|| format!("script.{script_id}.run"))
+}
+
+/// What the add/edit dialog submits (`NewProjectScriptInput`).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ScriptInput {
+    pub name: String,
+    pub command: String,
+    pub icon: ProjectScriptIcon,
+    pub run_on_worktree_create: bool,
+    /// Setup scripts only: hold the agent until the script exits (`async: false`).
+    pub wait_for_setup: bool,
+    pub keybinding: Option<String>,
+    pub preview_url: Option<String>,
+    pub auto_open_preview: bool,
+}
+
+impl ScriptInput {
+    /// The dialog's fields for an existing script (`editorRequestForScript`).
+    pub fn from_script(script: &ProjectScript, rules: &[ResolvedKeybindingRule]) -> Self {
+        Self {
+            name: script.name.clone(),
+            command: script.command.clone(),
+            icon: script.icon.clone(),
+            run_on_worktree_create: script.run_on_worktree_create,
+            wait_for_setup: script.run_on_worktree_create && script.run_async == Some(false),
+            keybinding: script_command(&script.id)
+                .and_then(|command| keybinding_value_for_command(rules, &command)),
+            preview_url: script.preview_url.clone(),
+            auto_open_preview: script.auto_open_preview.unwrap_or(false),
+        }
+    }
+}
+
+impl Default for ScriptInput {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            command: String::new(),
+            icon: ProjectScriptIcon::Play,
+            run_on_worktree_create: false,
+            wait_for_setup: false,
+            keybinding: None,
+            preview_url: None,
+            auto_open_preview: false,
+        }
+    }
+}
+
+/// `buildProjectScript`: `async: false` only for a setup script that waits; the preview
+/// fields only with a preview URL.
+pub fn build_script(id: String, input: &ScriptInput) -> ProjectScript {
+    ProjectScript {
+        id,
+        name: input.name.clone(),
+        command: input.command.clone(),
+        icon: input.icon.clone(),
+        run_on_worktree_create: input.run_on_worktree_create,
+        run_async: (input.run_on_worktree_create && input.wait_for_setup).then_some(false),
+        preview_url: input.preview_url.clone(),
+        auto_open_preview: input.preview_url.as_ref().map(|_| input.auto_open_preview),
+    }
+}
+
+/// `resolveProjectScripts`: the project's override, then the environment defaults. Before the
+/// server folds the legacy map, `projectScriptOverrides[id]` (null meaning "use defaults") and
+/// the project's own scripts still count.
+pub fn resolve_project_scripts(
+    settings: &ServerSettings,
+    project_id: &str,
+    project_scripts: &[ProjectScript],
+) -> Vec<ProjectScript> {
+    let defaults = || settings.default_project_scripts.clone().unwrap_or_default();
+    let decode = |value: &Value| serde_json::from_value::<Vec<ProjectScript>>(value.clone()).ok();
+    let override_scripts = settings
+        .other
+        .get("projectSettingsOverrides")
+        .and_then(|overrides| overrides.get(project_id))
+        .and_then(|project| project.get("defaultProjectScripts"))
+        .and_then(decode);
+    if let Some(scripts) = override_scripts {
+        return scripts;
+    }
+    if settings
+        .other
+        .get("projectSettingsFolded")
+        .and_then(Value::as_bool)
+        .unwrap_or(false)
+    {
+        return defaults();
+    }
+    match settings
+        .other
+        .get("projectScriptOverrides")
+        .and_then(|legacy| legacy.get(project_id))
+    {
+        Some(Value::Null) => defaults(),
+        Some(value) => decode(value).unwrap_or_else(defaults),
+        None if !project_scripts.is_empty() => project_scripts.to_vec(),
+        None => defaults(),
+    }
+}
+
+/// The `server.updateSettings` patch that stores `scripts` for a project. Servers with the
+/// `projectSettingsOverrides` capability get the canonical key (merged over the project's
+/// other overrides); older ones the legacy per-project map.
+pub fn scripts_patch(
+    settings: &ServerSettings,
+    project_id: &str,
+    scripts: &[ProjectScript],
+    supports_project_overrides: bool,
+) -> Map<String, Value> {
+    let scripts = serde_json::to_value(scripts).unwrap_or(Value::Array(Vec::new()));
+    let mut patch = Map::new();
+    if supports_project_overrides {
+        let mut project = settings
+            .other
+            .get("projectSettingsOverrides")
+            .and_then(|overrides| overrides.get(project_id))
+            .and_then(Value::as_object)
+            .cloned()
+            .unwrap_or_default();
+        project.insert("defaultProjectScripts".into(), scripts);
+        let mut overrides = Map::new();
+        overrides.insert(project_id.to_owned(), Value::Object(project));
+        patch.insert("projectSettingsOverrides".into(), Value::Object(overrides));
+    } else {
+        let mut overrides = Map::new();
+        overrides.insert(project_id.to_owned(), scripts);
+        patch.insert("projectScriptOverrides".into(), Value::Object(overrides));
+    }
+    patch
 }
 
 /// The header's primary script: `preferred` (last run) when it still exists, else the first
@@ -213,9 +361,13 @@ pub fn runtime_env(project_root: &str, worktree_path: Option<&str>) -> BTreeMap<
 #[cfg(test)]
 mod tests {
     //! Failure modes: ids with leading/trailing dashes or over 24 chars, collision suffixes
-    //! pushing ids past the limit, the setup script flag left on two scripts, an edited script
-    //! appended instead of replaced, shortcuts captured from bare modifiers or with `mod` mapped
-    //! to the wrong physical key per platform, and the worktree env var set for a blank path.
+    //! pushing ids past the limit, legacy ids given a shortcut command the server rejects, the
+    //! setup script flag left on two scripts, an edited script appended instead of replaced,
+    //! `async: false` written for non-setup scripts, preview fields kept without a URL, the
+    //! wrong settings source winning (override vs folded defaults vs legacy null), the patch
+    //! dropping a project's other overrides, shortcuts captured from bare modifiers or with
+    //! `mod` mapped to the wrong physical key per platform, and the worktree env var set for a
+    //! blank path.
     use super::*;
     use crate::keybindings::Modifiers;
     use t3_protocol::orchestration::ProjectScriptIcon;
@@ -244,7 +396,9 @@ mod tests {
         let next = next_script_id(long, [id.as_str()]);
         assert!(next.len() <= MAX_SCRIPT_ID_LENGTH, "{next}");
         assert!(next.ends_with("-2"));
-        assert_eq!(script_command("lint"), "script.lint.run");
+        assert_eq!(script_command("lint").as_deref(), Some("script.lint.run"));
+        assert_eq!(script_command("Legacy_ID"), None);
+        assert_eq!(script_command("-x"), None);
     }
 
     #[test]
@@ -307,6 +461,65 @@ mod tests {
         assert!(is_valid_keybinding("mod+shift+t"));
         assert!(is_valid_keybinding(""));
         assert!(!is_valid_keybinding("mod+shift"));
+    }
+
+    #[test]
+    fn build_and_resolve() {
+        let input = ScriptInput {
+            name: "Dev".into(),
+            command: "bun dev".into(),
+            wait_for_setup: true,
+            auto_open_preview: true,
+            ..Default::default()
+        };
+        let dev = build_script("dev".into(), &input);
+        assert_eq!(dev.run_async, None, "only setup scripts wait");
+        assert_eq!(dev.auto_open_preview, None, "no preview without a URL");
+        let setup = build_script(
+            "setup".into(),
+            &ScriptInput {
+                run_on_worktree_create: true,
+                preview_url: Some("http://localhost:5173".into()),
+                ..input.clone()
+            },
+        );
+        assert_eq!(setup.run_async, Some(false));
+        assert_eq!(setup.auto_open_preview, Some(true));
+
+        let settings = |other: serde_json::Value| ServerSettings {
+            default_project_scripts: Some(vec![script("default", false)]),
+            other: other.as_object().cloned().unwrap_or_default(),
+            ..ServerSettings::default()
+        };
+        let own = vec![script("own", false)];
+        let ids = |scripts: Vec<ProjectScript>| -> Vec<String> {
+            scripts.into_iter().map(|s| s.id).collect()
+        };
+        let none = settings(serde_json::json!({}));
+        assert_eq!(ids(resolve_project_scripts(&none, "p", &own)), ["own"]);
+        assert_eq!(ids(resolve_project_scripts(&none, "p", &[])), ["default"]);
+        let legacy_null = settings(serde_json::json!({"projectScriptOverrides": {"p": null}}));
+        assert_eq!(
+            ids(resolve_project_scripts(&legacy_null, "p", &own)),
+            ["default"]
+        );
+        let folded = settings(serde_json::json!({"projectSettingsFolded": true}));
+        assert_eq!(
+            ids(resolve_project_scripts(&folded, "p", &own)),
+            ["default"]
+        );
+        let overridden = settings(serde_json::json!({
+            "projectSettingsFolded": true,
+            "projectSettingsOverrides": {"p": {"defaultProjectScripts": [], "autoPull": true}}
+        }));
+        assert!(resolve_project_scripts(&overridden, "p", &own).is_empty());
+
+        let patch = scripts_patch(&overridden, "p", &own, true);
+        let project = &patch["projectSettingsOverrides"]["p"];
+        assert_eq!(project["autoPull"], serde_json::json!(true));
+        assert_eq!(project["defaultProjectScripts"][0]["id"], "own");
+        let legacy = scripts_patch(&none, "p", &own, false);
+        assert_eq!(legacy["projectScriptOverrides"]["p"][0]["id"], "own");
     }
 
     #[test]
