@@ -15,15 +15,17 @@
 //! 4. Re-delivered items (resume overlap) are applied twice.
 //! 5. The completion marker does not move the status to live.
 
+mod support;
+
 use std::collections::HashMap;
 
 use serde_json::Value;
-use t3_client::{ShellState, SyncStatus, ThreadState};
+use support::{Entry, Transcript, assert_matches_server};
+use t3_client::{ShellState, SyncStatus};
 use t3_protocol::{
-    ThreadId,
     orchestration::{
-        EventBody, OrchestrationShellSnapshot, OrchestrationThreadDetailSnapshot, SessionStatus,
-        ShellStreamItem, ThreadStreamItem, TurnState,
+        EventBody, OrchestrationShellSnapshot, SessionStatus, ShellStreamItem, ThreadStreamItem,
+        TurnState,
     },
     rpc::ServerFrame,
     server::ServerConfigStreamEvent,
@@ -31,102 +33,9 @@ use t3_protocol::{
 
 const FIXTURE: &str = include_str!("fixtures/turn-error-session.jsonl");
 
-/// One recorded line.
-enum Entry {
-    Sent(Value),
-    Received(Value),
-    Http { path: String, body: Value },
-}
-
-struct Transcript {
-    entries: Vec<Entry>,
-}
-
 impl Transcript {
     fn load() -> Self {
-        let entries = FIXTURE
-            .lines()
-            .map(|line| {
-                let mut value: Value = serde_json::from_str(line).unwrap();
-                match value["dir"].as_str().unwrap() {
-                    "sent" => Entry::Sent(value["frame"].take()),
-                    "received" => Entry::Received(value["frame"].take()),
-                    "http" => Entry::Http {
-                        path: value["path"].as_str().unwrap().to_owned(),
-                        body: value["body"].take(),
-                    },
-                    other => panic!("unknown direction {other}"),
-                }
-            })
-            .collect();
-        Transcript { entries }
-    }
-
-    /// Request ids of the requests for `tag`, in order, with their payloads.
-    fn requests(&self, tag: &str) -> Vec<(String, Value)> {
-        self.entries
-            .iter()
-            .filter_map(|entry| match entry {
-                Entry::Sent(frame) if frame["_tag"] == "Request" && frame["tag"] == tag => {
-                    Some((frame["id"].as_str()?.to_owned(), frame["payload"].clone()))
-                }
-                _ => None,
-            })
-            .collect()
-    }
-
-    /// The request id of the `tag` request whose payload satisfies `pick`.
-    fn request_id(&self, tag: &str, pick: impl Fn(&Value) -> bool) -> String {
-        self.requests(tag)
-            .into_iter()
-            .find(|(_, payload)| pick(payload))
-            .unwrap_or_else(|| panic!("no {tag} request matched"))
-            .0
-    }
-
-    /// Every stream item delivered for `request_id`, decoded as `T`, in order.
-    fn items<T: serde::de::DeserializeOwned>(&self, request_id: &str) -> Vec<T> {
-        self.received_frames()
-            .into_iter()
-            .filter_map(|frame| match frame {
-                ServerFrame::Chunk {
-                    request_id: id,
-                    values,
-                } if id == request_id => Some(values),
-                _ => None,
-            })
-            .flatten()
-            .map(|raw| {
-                serde_json::from_str(raw.get())
-                    .unwrap_or_else(|e| panic!("item failed to decode: {e}\n{}", raw.get()))
-            })
-            .collect()
-    }
-
-    /// Received frames decoded from their exact text (the wire codec, not `serde_json::Value`).
-    fn received_frames(&self) -> Vec<ServerFrame> {
-        self.entries
-            .iter()
-            .filter_map(|entry| match entry {
-                Entry::Received(frame) => Some(
-                    ServerFrame::decode(&frame.to_string())
-                        .unwrap_or_else(|e| panic!("frame failed to decode: {e}\n{frame}")),
-                ),
-                _ => None,
-            })
-            .collect()
-    }
-
-    fn http<T: serde::de::DeserializeOwned>(&self, path_prefix: &str) -> T {
-        self.entries
-            .iter()
-            .find_map(|entry| match entry {
-                Entry::Http { path, body } if path.starts_with(path_prefix) => {
-                    Some(serde_json::from_value(body.clone()).unwrap())
-                }
-                _ => None,
-            })
-            .unwrap_or_else(|| panic!("no http response for {path_prefix}"))
+        Transcript::parse(FIXTURE)
     }
 }
 
@@ -252,42 +161,11 @@ fn shell_replay_matches_the_servers_later_snapshot() {
 #[test]
 fn thread_replay_matches_the_servers_later_snapshot() {
     let transcript = Transcript::load();
-    let live_id = transcript.request_id("orchestration.subscribeThread", |p| {
-        p.get("afterSequence").is_some()
-    });
-    let fresh_id = transcript.request_id("orchestration.subscribeThread", |p| {
-        p.get("afterSequence").is_none()
-    });
-
-    let initial: OrchestrationThreadDetailSnapshot = transcript.http("/api/orchestration/threads/");
-    let thread_id: ThreadId = initial.thread.id.clone();
-    let mut state = ThreadState::new(thread_id);
-    state.apply_snapshot(initial);
-    state.begin_sync(true);
-    let live: Vec<ThreadStreamItem> = transcript.items(&live_id);
-    for item in live.clone() {
-        state.apply(item);
-    }
+    let [thread_id] = transcript.followed_threads().try_into().unwrap();
+    let (state, server) = transcript.replay_thread(&thread_id, |_| {});
     assert_eq!(state.status, SyncStatus::Live);
-
-    let Some(ThreadStreamItem::Snapshot(server)) = transcript.items(&fresh_id).into_iter().next()
-    else {
-        panic!("fresh subscription did not start with a snapshot");
-    };
+    assert_matches_server(&state, &server);
     let ours = state.thread.as_ref().unwrap();
-    let theirs = &server.thread;
-    assert_eq!(state.last_sequence, server.snapshot_sequence);
-    assert_eq!(ours.messages, theirs.messages);
-    assert_eq!(ours.session, theirs.session);
-    assert_eq!(ours.checkpoints, theirs.checkpoints);
-    assert_eq!(ours.title, theirs.title);
-    assert_eq!(ours.model_selection, theirs.model_selection);
-    let turn = |t: &t3_protocol::orchestration::OrchestrationThread| {
-        t.latest_turn
-            .as_ref()
-            .map(|turn| (turn.turn_id.clone(), turn.state.clone()))
-    };
-    assert_eq!(turn(ours), turn(theirs));
     assert_eq!(
         ours.latest_turn.as_ref().map(|t| &t.state),
         Some(&TurnState::Error)
@@ -296,23 +174,20 @@ fn thread_replay_matches_the_servers_later_snapshot() {
         ours.session.as_ref().map(|s| &s.status),
         Some(&SessionStatus::Error)
     );
-    // Activity order is the reducer's (provider sequence, time, id); the snapshot is DB order.
-    let ids = |t: &t3_protocol::orchestration::OrchestrationThread| {
-        let mut ids: Vec<_> = t.activities.iter().map(|a| a.id.clone()).collect();
-        ids.sort();
-        ids
-    };
-    assert_eq!(ids(ours), ids(theirs));
     assert_eq!(ours.activities.len(), 10);
 
-    let before = state.clone();
-    for item in live {
+    // Re-delivery (resume overlap) changes nothing.
+    let live_id = transcript.request_id("orchestration.subscribeThread", |p| {
+        p.get("afterSequence").is_some()
+    });
+    let mut again = state.clone();
+    for item in transcript.items::<ThreadStreamItem>(&live_id) {
         assert!(
-            matches!(item, ThreadStreamItem::Synchronized) || !state.apply(item),
+            matches!(item, ThreadStreamItem::Synchronized) || !again.apply(item),
             "a re-delivered item changed the state"
         );
     }
-    assert_eq!(state, before);
+    assert_eq!(again, state);
 }
 
 #[test]
