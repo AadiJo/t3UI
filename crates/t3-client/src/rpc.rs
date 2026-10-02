@@ -63,6 +63,9 @@ const MAX_MISSED_PONGS: u32 = 3;
 const OPEN_TIMEOUT: Duration = Duration::from_secs(15);
 /// How long a best-effort close handshake may take.
 const CLOSE_TIMEOUT: Duration = Duration::from_secs(2);
+/// Longest a single frame write may take. The socket task does one thing at a time, so a peer
+/// that stops reading would otherwise freeze keepalive, interrupts, and close forever.
+const WRITE_TIMEOUT: Duration = Duration::from_secs(10);
 
 /// Why a connection ended.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -77,6 +80,8 @@ pub enum CloseReason {
     NotConnected,
     /// The server sent a connection-level defect; every in-flight request was lost.
     Defect(String),
+    /// A write did not finish within the write deadline: the server stopped reading.
+    WriteTimeout,
     /// The socket failed.
     Transport(String),
 }
@@ -92,6 +97,7 @@ impl std::fmt::Display for CloseReason {
             CloseReason::PingTimeout => write!(f, "server stopped responding"),
             CloseReason::NotConnected => write!(f, "not connected"),
             CloseReason::Defect(defect) => write!(f, "server error: {defect}"),
+            CloseReason::WriteTimeout => write!(f, "server stopped reading"),
             CloseReason::Transport(error) => write!(f, "{error}"),
         }
     }
@@ -492,7 +498,7 @@ async fn run_socket(
                 }
                 // Never send `Eof`: it wedges the server side of the connection (protocol.md 1.8).
                 Some(Command::Close) | None => {
-                    let _ = socket.close(None).await;
+                    let _ = tokio::time::timeout(CLOSE_TIMEOUT, socket.close(None)).await;
                     break CloseReason::Closed;
                 }
             },
@@ -644,11 +650,12 @@ async fn handle_frame(
     }
 }
 
+/// Writes one frame within [`WRITE_TIMEOUT`]; a stalled write ends the connection.
 async fn send(socket: &mut Socket, frame: &ClientFrame) -> Result<(), CloseReason> {
     let text = serde_json::to_string(frame).expect("client frames always serialize");
     tap(FrameDirection::Sent, &text);
-    socket
-        .send(Message::text(text))
-        .await
-        .map_err(|e| CloseReason::Transport(e.to_string()))
+    match tokio::time::timeout(WRITE_TIMEOUT, socket.send(Message::text(text))).await {
+        Ok(result) => result.map_err(|e| CloseReason::Transport(e.to_string())),
+        Err(_) => Err(CloseReason::WriteTimeout),
+    }
 }

@@ -4,6 +4,9 @@
 //! 1. After a connection-level `Defect`, in-flight requests are failed but the socket stays
 //!    open: streams that survived on the server stay allocated and un-acked while followers
 //!    resubscribe on top, so the connection must close (and the supervisor reconnect).
+//! 2. A peer that stops reading fills the TCP send buffer; an unbounded write then blocks the
+//!    socket task forever, freezing keepalive, interrupts, and close. Every write and the close
+//!    handshake need a deadline that ends the session.
 
 mod support;
 
@@ -11,11 +14,12 @@ use std::time::Duration;
 
 use serde_json::{Value, json};
 use support::ws::FakeServer;
-use t3_client::{RpcConnection, RpcError};
+use t3_client::{CloseReason, RpcConnection, RpcError};
 use t3_protocol::{ServerError, methods::Empty};
 
 t3_protocol::stream!(TestStream, "test.stream", Empty => Value, ServerError);
 t3_protocol::unary!(TestUnary, "test.unary", Empty => Value, ServerError);
+t3_protocol::unary!(TestBig, "test.big", Value => Value, ServerError);
 
 async fn connect(server: &FakeServer) -> (RpcConnection, support::ws::FakePeer) {
     let (conn, peer) = tokio::join!(RpcConnection::connect(server.url.clone()), server.accept());
@@ -58,4 +62,37 @@ async fn defect_fails_in_flight_requests_and_closes_the_connection() {
         peer.closed_within(Duration::from_secs(3)).await,
         "the client did not close the socket"
     );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_peer_that_stops_reading_cannot_freeze_the_connection() {
+    let server = FakeServer::bind().await;
+    // The peer completes the handshake and then never reads again.
+    let (conn, _silent_peer) = connect(&server).await;
+
+    // 64 MiB in 4 MiB frames: far more than the loopback socket buffers hold, so a write
+    // blocks, while each frame stays under tungstenite's size limits.
+    let blocked: Vec<_> = (0..16)
+        .map(|_| {
+            let conn = conn.clone();
+            let chunk = Value::String("x".repeat(4 * 1024 * 1024));
+            tokio::spawn(async move { conn.request::<TestBig>(&chunk).await })
+        })
+        .collect();
+    tokio::time::sleep(Duration::from_secs(2)).await;
+    conn.close();
+
+    let reason = tokio::time::timeout(Duration::from_secs(20), conn.closed())
+        .await
+        .expect("a blocked write froze the connection");
+    assert!(
+        matches!(reason, CloseReason::WriteTimeout | CloseReason::Closed),
+        "{reason}"
+    );
+    for request in blocked {
+        assert!(matches!(
+            request.await.unwrap(),
+            Err(RpcError::Disconnected(_))
+        ));
+    }
 }
