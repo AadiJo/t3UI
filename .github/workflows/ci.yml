@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  linux:
+    name: Linux check + tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install GPUI system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc g++ clang pkg-config libfontconfig-dev libwayland-dev \
+            libxkbcommon-x11-dev libx11-xcb-dev libssl-dev libzstd-dev libvulkan1
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.99.0"
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace
+
+  macos:
+    name: macOS build + DMG
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.99.0"
+      - uses: Swatinem/rust-cache@v2
+      - name: Build release binary
+        run: cargo build --release -p t3-app
+      - name: Bundle app + DMG
+        run: |
+          T3UI_VERSION="0.1.0-${GITHUB_SHA::7}" script/bundle-macos.sh
+          ls -la dist
+      - name: Launch smoke test
+        run: |
+          # The app must start and keep running with a real window for a few seconds.
+          dist/T3UI.app/Contents/MacOS/t3ui > smoke.log 2>&1 &
+          PID=$!
+          sleep 8
+          if ! kill -0 "$PID"; then echo "app exited early"; cat smoke.log; exit 1; fi
+          screencapture -x smoke.png || true
+          kill "$PID" || true
+          cat smoke.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: T3UI-macos-arm64
+          path: |
+            dist/*.dmg
+            smoke.png
+          if-no-files-found: error

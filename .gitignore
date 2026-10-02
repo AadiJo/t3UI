@@ -1,0 +1,6 @@
+/target
+/dist
+*.dmg
+.DS_Store
+/e2e/.state
+/e2e/node_modules

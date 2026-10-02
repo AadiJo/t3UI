@@ -1,0 +1,59 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+default-members = ["crates/t3-app"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+rust-version = "1.99"
+publish = false
+
+[workspace.dependencies]
+# Internal crates
+t3-protocol = { path = "crates/t3-protocol" }
+t3-client = { path = "crates/t3-client" }
+t3-ui = { path = "crates/t3-ui" }
+
+# UI. gpui-kit re-exports GPUI (gpui-pre), gpui-base and gpui-component, pinned together.
+gpui-kit = { version = "=0.7.0" }
+
+# Wire + async
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["raw_value"] }
+tokio = { version = "1.53", features = ["rt-multi-thread", "macros", "sync", "time", "net", "io-util"] }
+tokio-tungstenite = { version = "0.30", default-features = false, features = ["connect", "rustls-tls-native-roots"] }
+reqwest = { version = "0.13", default-features = false, features = ["json", "rustls", "stream"] }
+futures = "0.3"
+url = { version = "2.5", features = ["serde"] }
+
+# Utilities
+anyhow = "1"
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+uuid = { version = "1.26", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+base64 = "0.23"
+directories = "6"
+parking_lot = "0.12"
+
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+
+[workspace.lints.clippy]
+dbg_macro = "deny"
+todo = "warn"
+
+[profile.dev]
+# Dependencies are optimized so GPUI stays responsive in debug builds.
+debug = "limited"
+
+[profile.dev.package."*"]
+opt-level = 2
+
+[profile.release]
+lto = "thin"
+codegen-units = 16
+debug = "line-tables-only"
