@@ -36,6 +36,7 @@ pub use main_column::{MainViewKey, build_main_view, collapsed_titlebar_inset};
 use crate::{
     chrome::text_tooltip,
     keybindings::{ShortcutScope, resolve_key_down, shortcut_label},
+    panels::RightPanel,
     sidebar::Sidebar,
     state::AppState,
     toast::ToastLayer,
@@ -72,6 +73,8 @@ pub struct Workspace {
     collapse: Option<Collapse>,
     rail_drag: Option<RailDrag>,
     toasts: Entity<ToastLayer>,
+    /// The thread's right panel, beside the main view inside the main column (panels/).
+    right_panel: Entity<RightPanel>,
     focus: FocusHandle,
     _subscriptions: Vec<Subscription>,
 }
@@ -110,6 +113,7 @@ impl Workspace {
             collapse: None,
             rail_drag: None,
             toasts: ToastLayer::global(cx),
+            right_panel: cx.new(|cx| RightPanel::new(window, cx)),
             focus: cx.focus_handle(),
             _subscriptions: subscriptions,
         }
@@ -353,6 +357,7 @@ impl Render for Workspace {
         let width = self.sidebar_width;
         let open = self.app_state.read(cx).sidebar_open();
         let dragging = self.rail_drag.as_ref().is_some_and(|drag| drag.moved);
+        let hide_main = self.right_panel.read(cx).hides_main_view(window, cx);
 
         div()
             .id("workspace")
@@ -403,9 +408,26 @@ impl Render for Workspace {
                     .flex_col()
                     .bg(colors.app_main_glass)
                     .child(
-                        self.main_view
-                            .clone()
-                            .cached(gpui_kit::StyleRefinement::default().size_full()),
+                        div()
+                            .size_full()
+                            .flex()
+                            .flex_row()
+                            .child(
+                                div()
+                                    .flex_1()
+                                    .min_w_0()
+                                    .h_full()
+                                    // A maximized right panel collapses the chat column.
+                                    .when(hide_main, |this| {
+                                        this.flex_none().w_0().overflow_hidden()
+                                    })
+                                    .child(
+                                        self.main_view.clone().cached(
+                                            gpui_kit::StyleRefinement::default().size_full(),
+                                        ),
+                                    ),
+                            )
+                            .child(self.right_panel.clone()),
                     )
                     .child(NoiseOverlay),
             )

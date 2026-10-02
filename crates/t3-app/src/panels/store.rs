@@ -6,8 +6,13 @@ use std::collections::HashMap;
 
 use gpui_kit::{App, AppContext as _, Context, Entity, Global, Pixels, px};
 use t3_logic::ThreadRef;
+use t3_protocol::TurnId;
 
-use super::model::{SurfaceKind, ThreadPanel};
+use super::{
+    context::PanelContext,
+    model::{SurfaceKind, ThreadPanel},
+    thread_detail::ThreadDetail,
+};
 use crate::state::AppState;
 
 /// Default inline width (`PreviewPanelShell.tsx`).
@@ -21,6 +26,10 @@ pub struct RightPanels {
     threads: HashMap<ThreadRef, ThreadPanel>,
     /// The thread whose panel fills the window (not persisted).
     maximized: Option<ThreadRef>,
+    /// Thread detail per thread, shared by its surfaces.
+    details: HashMap<ThreadRef, Entity<ThreadDetail>>,
+    /// "View diff" requests the diff surface applies when it next renders.
+    turn_requests: HashMap<ThreadRef, (TurnId, Option<String>)>,
 }
 
 struct GlobalRightPanels(Entity<RightPanels>);
@@ -40,6 +49,8 @@ impl RightPanels {
                 app_state,
                 threads: HashMap::new(),
                 maximized: None,
+                details: HashMap::new(),
+                turn_requests: HashMap::new(),
             }
         });
         cx.set_global(GlobalRightPanels(store.clone()));
@@ -118,6 +129,42 @@ impl RightPanels {
             self.maximized = next;
             cx.notify();
         }
+    }
+
+    /// The thread's detail, subscribing on first use.
+    pub fn detail(&mut self, thread: &ThreadRef, cx: &mut Context<Self>) -> Entity<ThreadDetail> {
+        if let Some(detail) = self.details.get(thread) {
+            return detail.clone();
+        }
+        let context = PanelContext::new(self.app_state.clone(), thread.clone());
+        let detail = cx.new(|cx| ThreadDetail::live(&context, cx));
+        self.details.insert(thread.clone(), detail.clone());
+        detail
+    }
+
+    /// Supplies a thread's detail (snapshot fixtures).
+    pub fn set_detail(&mut self, thread: ThreadRef, detail: Entity<ThreadDetail>) {
+        self.details.insert(thread, detail);
+    }
+
+    /// Opens the diff tab on `turn_id`, scrolled to `file_path` (timeline "View diff",
+    /// `selectTurn` + `open("diff")`).
+    pub fn open_turn_diff(
+        &mut self,
+        thread: &ThreadRef,
+        turn_id: TurnId,
+        file_path: Option<String>,
+        cx: &mut Context<Self>,
+    ) {
+        self.turn_requests
+            .insert(thread.clone(), (turn_id, file_path));
+        self.open(thread, SurfaceKind::Diff, cx);
+        cx.notify();
+    }
+
+    /// Takes the pending "View diff" request for `thread`.
+    pub fn take_turn_request(&mut self, thread: &ThreadRef) -> Option<(TurnId, Option<String>)> {
+        self.turn_requests.remove(thread)
     }
 
     /// The stored panel width, clamped to the window (`360..=min(1400, 70% of window)`).
